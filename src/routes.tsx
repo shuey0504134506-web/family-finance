@@ -13,6 +13,7 @@ import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { BudgetScreen } from './features/budget/BudgetScreen';
 import { CategoriesScreen } from './features/categories/CategoriesScreen';
+import { SearchScreen } from './features/search/SearchScreen';
 import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { readDeviceUser } from './services/deviceUser';
@@ -107,6 +108,7 @@ export function AppRoutes() {
         <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
         <Route path="/:scope/budget" element={<BudgetScreen />} />
         <Route path="/categories" element={<CategoriesScreen />} />
+        <Route path="/search" element={<SearchScreen />} />
         <Route path="/tithes" element={<TitheScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Route>

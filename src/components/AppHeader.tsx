@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { formatMonthYear } from '../domain/dates';
 import { useMonth } from '../features/month/MonthContext';
-import { ChevronLeft, ChevronRight, GearIcon } from './icons';
+import { ChartIcon, ChevronLeft, ChevronRight, GearIcon, SearchIcon } from './icons';
 
 /**
  * שורת כותרת קבועה (sticky): הגדרות בצד שמאל, חודש במרכז.
@@ -41,7 +41,24 @@ export function AppHeader() {
           </button>
         </div>
 
-        <div className="header-side header-side-end" />
+        <div className="header-side header-side-end">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="סיכומים"
+            onClick={() => navigate('/summary')}
+          >
+            <ChartIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="חיפוש"
+            onClick={() => navigate('/search')}
+          >
+            <SearchIcon />
+          </button>
+        </div>
       </div>
 
       {status !== 'current' && (
