@@ -3,8 +3,12 @@ import type { Transaction } from './types';
 
 /**
  * מעשרות. הנוסחה כאן מבודדת בכוונה כדי שיהיה קל לשנות אותה.
- * - הכנסות העסק עצמן לא נכנסות לחישוב, רק הנטו שעבר למשק הבית.
+ *
+ * - הכנסות העסק הגולמיות לא נכנסות לחישוב, רק הנטו של העסק שעבר למשק הבית.
  * - החוב מצטבר מחודש לחודש ואינו מתאפס.
+ * - הכנסה חייבת = הכנסות משק הבית החייבות + נטו העסק המצטבר.
+ * - הפסד עסקי מקטין רק את החלק שנובע מנטו העסק. הוא מקזז רווח עסקי של חודשים קודמים,
+ *   אך אינו מקטין מעשר על הכנסות אחרות של משק הבית, ואינו יורד מתחת לאפס.
  */
 
 export interface TitheBalance {
@@ -22,8 +26,7 @@ export function computeTitheBalance(
   paidAgorot: Agorot,
   bps: number,
 ): TitheBalance {
-  // הפסד מקטין את ההכנסה החייבת, אבל אי אפשר "לחייב" מעשר שלילי.
-  // כך הפסד לא יוצג בטעות כ"עודף מעשרות" כשלא ניתן כלום.
+  // רשת ביטחון: אי אפשר "לחייב" מעשר שלילי, וגם לא להציג הפסד כ"עודף מעשרות".
   const requiredAgorot = Math.max(0, applyBasisPoints(liableIncomeAgorot, bps));
   const difference = requiredAgorot - paidAgorot;
   return {
@@ -39,19 +42,15 @@ type TitheIncomeTx = Pick<Transaction, 'type' | 'amountAgorot' | 'titheStatus'>;
 type TithePaymentTx = Pick<Transaction, 'type' | 'amountAgorot' | 'isTithePayment'>;
 
 /**
- * הכנסה החייבת במעשר בחודש: הכנסות משק הבית שלא סומנו "פטורה",
- * ועוד הנטו שעבר מהעסק (שחייב במעשר).
+ * הכנסות משק הבית החייבות במעשר בחודש: הכנסות שלא סומנו "פטורה".
+ * נטו העסק אינו כלול כאן, והוא נכנס לחישוב בנפרד (ראו titheByMonth).
  */
-export function titheLiableIncome(
-  householdTransactions: readonly TitheIncomeTx[],
-  businessTransferAgorot: Agorot,
-): Agorot {
-  const own = sumAgorot(
+export function householdTitheLiableIncome(householdTransactions: readonly TitheIncomeTx[]): Agorot {
+  return sumAgorot(
     householdTransactions
       .filter((t) => t.type === 'income' && t.titheStatus === 'liable')
       .map((t) => t.amountAgorot),
   );
-  return own + businessTransferAgorot;
 }
 
 /**
@@ -79,7 +78,11 @@ export function tithePaid(
 
 export interface TitheMonthInput {
   yearMonth: string;
-  liableIncomeAgorot: Agorot;
+  /** הכנסות משק הבית החייבות במעשר באותו חודש */
+  householdLiableIncomeAgorot: Agorot;
+  /** נטו העסק שעבר למשק הבית באותו חודש. שלילי כשהעסק הפסיד. */
+  businessNetAgorot: Agorot;
+  /** מעשר ששולם באותו חודש */
   paidAgorot: Agorot;
 }
 
@@ -89,23 +92,40 @@ export interface TitheMonthRow {
   month: TitheBalance;
   /** המצב המצטבר מתחילת הנתונים ועד סוף החודש הזה */
   cumulative: TitheBalance;
+  /** נטו העסק המצטבר עד סוף החודש (יכול להיות שלילי), לפני החסם על אפס */
+  cumulativeBusinessNetAgorot: Agorot;
 }
 
 /**
  * שורה לכל חודש, עם יתרה מצטברת. העיגול נעשה פעם אחת על הסכום המצטבר,
  * כדי שלא יצטברו סטיות עיגול.
+ *
+ * ההכנסה החייבת המצטברת = הכנסות משק הבית החייבות (מצטבר)
+ *                         + max(0, נטו העסק המצטבר).
+ * כך הפסד עסקי מקזז רק רווח עסקי, ואינו מקטין מעשר על הכנסות אחרות.
  */
 export function titheByMonth(months: readonly TitheMonthInput[], bps: number): TitheMonthRow[] {
   const sorted = [...months].sort((a, b) => (a.yearMonth < b.yearMonth ? -1 : 1));
-  let runningLiable = 0;
+  let runningHousehold = 0;
+  let runningBusinessNet = 0;
   let runningPaid = 0;
   return sorted.map((m) => {
-    runningLiable += m.liableIncomeAgorot;
+    runningHousehold += m.householdLiableIncomeAgorot;
+    runningBusinessNet += m.businessNetAgorot;
     runningPaid += m.paidAgorot;
     return {
       yearMonth: m.yearMonth,
-      month: computeTitheBalance(m.liableIncomeAgorot, m.paidAgorot, bps),
-      cumulative: computeTitheBalance(runningLiable, runningPaid, bps),
+      month: computeTitheBalance(
+        m.householdLiableIncomeAgorot + m.businessNetAgorot,
+        m.paidAgorot,
+        bps,
+      ),
+      cumulative: computeTitheBalance(
+        runningHousehold + Math.max(0, runningBusinessNet),
+        runningPaid,
+        bps,
+      ),
+      cumulativeBusinessNetAgorot: runningBusinessNet,
     };
   });
 }
