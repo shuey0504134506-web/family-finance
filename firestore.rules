@@ -1,0 +1,220 @@
+rules_version = '2';
+
+// כללי האבטחה של האפליקציה.
+//
+// עיקרון מרכזי: כל הנתונים של משתמש נמצאים תחת users/{uid}/...
+// ורק המשתמש עצמו (request.auth.uid == uid) יכול לקרוא או לכתוב אותם.
+// אין כתיבה או קריאה לשום נתיב אחר (ברירת מחדל: חסום).
+//
+// חשוב: אין כאן match עם {document=**} מתחת ל-users/{uid}. כלל כזה היה עוקף
+// את בדיקות התקינות שבכל אוסף, כי ב-Firestore כללים מתחברים ב-OR.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- פונקציות עזר ----------
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isShortString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function isNonEmptyString(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    // ---------- נתוני פרופיל: users/{uid} ----------
+
+    function validUser(data) {
+      return data.keys().hasOnly([
+               'firstName', 'lastName', 'email', 'businessName',
+               'accountMode', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'firstName', 'lastName', 'email', 'businessName',
+               'accountMode', 'createdAt', 'updatedAt'
+             ])
+             && isNonEmptyString(data.firstName, 60)
+             && isNonEmptyString(data.lastName, 60)
+             && isShortString(data.email, 254)
+             && isShortString(data.businessName, 120)
+             && data.accountMode in ['both', 'business', 'household']
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
+    // ---------- הגדרות: users/{uid}/settings/main ----------
+
+    function validSettings(data) {
+      return data.keys().hasOnly([
+               'titheBps', 'countBusinessTithePayments',
+               'businessTransferMode', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'titheBps', 'countBusinessTithePayments',
+               'businessTransferMode', 'updatedAt'
+             ])
+             && data.titheBps is int
+             && data.titheBps >= 0
+             && data.titheBps <= 10000
+             && data.countBusinessTithePayments is bool
+             && data.businessTransferMode in ['positive-only', 'allow-negative']
+             && data.updatedAt is int;
+    }
+
+    // ---------- פרופיל עסק / משק בית ----------
+
+    function validProfileDoc(data) {
+      return data.keys().hasOnly(['name', 'createdAt', 'updatedAt'])
+             && data.keys().hasAll(['name', 'createdAt', 'updatedAt'])
+             && isShortString(data.name, 120)
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
+    // ---------- קטגוריות ----------
+
+    function validCategory(data, categoryId) {
+      return data.keys().hasOnly([
+               'id', 'scope', 'type', 'name', 'active',
+               'isDefault', 'sortOrder', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'id', 'scope', 'type', 'name', 'active',
+               'isDefault', 'sortOrder', 'createdAt', 'updatedAt'
+             ])
+             && data.id == categoryId
+             && data.scope in ['business', 'household']
+             && data.type in ['income', 'expense']
+             && isNonEmptyString(data.name, 60)
+             && data.active is bool
+             && data.isDefault is bool
+             && data.sortOrder is int
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
+    // ---------- פעולות כספיות (הכנסות והוצאות) ----------
+    // זהה לעסק ולמשק בית. הסכום תמיד מספר שלם חיובי של אגורות.
+
+    function validTransaction(data, transactionId) {
+      return data.keys().hasOnly([
+               'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
+               'counterparty', 'categoryId', 'categoryName', 'paymentMethod',
+               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
+               'counterparty', 'categoryId', 'categoryName', 'paymentMethod',
+               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt'
+             ])
+             && data.id == transactionId
+             && data.type in ['income', 'expense']
+             && data.amountAgorot is int
+             && data.amountAgorot > 0
+             && data.amountAgorot <= 100000000000
+             && data.date is string
+             && data.date.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+             && data.yearMonth == data.date[0:7]
+             && data.year is int
+             && data.month is int
+             && data.month >= 1
+             && data.month <= 12
+             && isShortString(data.counterparty, 120)
+             && isNonEmptyString(data.categoryId, 100)
+             && isShortString(data.categoryName, 60)
+             && data.paymentMethod in ['cash', 'credit', 'direct', 'check', 'transfer']
+             && isShortString(data.note, 1000)
+             && data.titheStatus in ['liable', 'exempt']
+             && data.isTithePayment is bool
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
+    // ---------- הנתיבים ----------
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && validUser(request.resource.data);
+      allow update: if isOwner(uid)
+                    && validUser(request.resource.data)
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+
+      match /settings/{settingsId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && settingsId == 'main'
+                              && validSettings(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /businessProfile/{profileId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && profileId == 'main'
+                              && validProfileDoc(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /householdProfile/{profileId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && profileId == 'main'
+                              && validProfileDoc(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /categories/{categoryId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validCategory(request.resource.data, categoryId);
+        allow update: if isOwner(uid)
+                      && validCategory(request.resource.data, categoryId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        // לא מוחקים קטגוריות כדי לא לאבד היסטוריה. משביתים (active=false).
+        // המחיקה מותרת רק בעת מחיקת חשבון, ולכן היא פתוחה לבעלים.
+        allow delete: if isOwner(uid);
+      }
+
+      match /businessTransactions/{transactionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validTransaction(request.resource.data, transactionId);
+        allow update: if isOwner(uid)
+                      && validTransaction(request.resource.data, transactionId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+
+      match /householdTransactions/{transactionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validTransaction(request.resource.data, transactionId);
+        allow update: if isOwner(uid)
+                      && validTransaction(request.resource.data, transactionId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+
+      // budgets ו-titheRecords: המבנה המדויק ייקבע כשיבנו (שלבים 8 ו-9).
+      // עד אז הם פתוחים לבעלים בלבד, עם הגבלת גודל בסיסית.
+      match /budgets/{budgetId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && request.resource.data.keys().size() <= 20;
+      }
+
+      match /titheRecords/{recordId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && request.resource.data.keys().size() <= 20;
+      }
+    }
+
+    // כל שאר הנתיבים חסומים.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
