@@ -1,47 +1,21 @@
-import { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { AppHeader } from '../../components/AppHeader';
 import { formatMonthYear } from '../../domain/dates';
-import { buildTitheInputs, titheByMonth } from '../../domain/tithe';
-import { scopesForMode } from '../../domain/types';
-import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
-import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { ScreenBack } from './ScreenBack';
+import { useTitheRows } from './useTitheRows';
+import { Icon } from '../../components/Icon';
 
 /**
  * מסך מעשרות. החוב מצטבר מתחילת הנתונים ועד סוף החודש הנבחר, ואינו מתאפס בתחילת חודש.
  * הנוסחה עצמה נמצאת ב-src/domain/tithe.ts ונבדקת שם.
  */
 export function TitheScreen() {
-  const { user, profile } = useReadyAuth();
   const settings = useSettings();
   const month = useMonth();
-
-  const scopes = scopesForMode(profile.accountMode);
-  const hasHousehold = scopes.includes('household');
-  const hasBusiness = scopes.includes('business');
-
-  const household = useTransactionsUpTo(user.uid, 'household', month.selected, hasHousehold);
-  const business = useTransactionsUpTo(user.uid, 'business', month.selected, hasBusiness);
-
-  const loading = household.loading || business.loading;
-  const error = household.error ?? business.error;
-
-  const rows = useMemo(
-    () =>
-      titheByMonth(
-        buildTitheInputs(household.items, business.items, {
-          lastYearMonth: month.selected,
-          countBusinessTithePayments: settings.countBusinessTithePayments,
-          transferMode: settings.businessTransferMode,
-        }),
-        settings.titheBps,
-      ),
-    [household.items, business.items, month.selected, settings],
-  );
+  const { rows, loading, error, hasBusiness, hasHousehold } = useTitheRows(true);
 
   if (!hasHousehold) return <Navigate to="/" replace />;
 
@@ -58,7 +32,7 @@ export function TitheScreen() {
       <main className="content" aria-busy={loading}>
         <ScreenBack to="/household" label="חזרה למשק הבית" />
         <h1 className="scope-title">
-          <span aria-hidden="true">🙏</span> מעשרות
+          <Icon name="tithe" /> מעשרות
         </h1>
 
         {error ? (

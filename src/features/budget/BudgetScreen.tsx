@@ -2,7 +2,14 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { AppHeader } from '../../components/AppHeader';
-import { BUDGET_STATUS_LABELS, buildBudgetRows, type BudgetRow } from '../../domain/budget';
+import {
+  BUDGET_STATUS_LABELS,
+  budgetUsage,
+  buildBudgetRows,
+  overallBudgetId,
+  splitBudgets,
+  type BudgetRow,
+} from '../../domain/budget';
 import { formatMonthYear } from '../../domain/dates';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from '../../domain/money';
 import { totalsByCategory } from '../../domain/summary';
@@ -15,6 +22,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { ScreenBack } from '../tithes/ScreenBack';
+import { Icon } from '../../components/Icon';
 
 /**
  * תקציב חודשי לפי קטגוריית הוצאה (נפרד לעסק ולמשק בית). התקציב קבוע ותקף לכל חודש,
@@ -42,15 +50,26 @@ function BudgetContent({ scope }: { scope: Scope }) {
   const transactions = useMonthTransactions(user.uid, scope, month.selected, true);
   const [editing, setEditing] = useState<string | null>(null);
 
-  const scopeBudgets = useMemo(() => budgets.filter((b) => b.scope === scope), [budgets, scope]);
+  const split = useMemo(() => splitBudgets(budgets, scope), [budgets, scope]);
+  const overallId = overallBudgetId(scope);
+  // מסמכי התקציב הפרטניים בלבד (בלי התקציב הכללי)
+  const scopeBudgets = useMemo(
+    () => budgets.filter((b) => b.scope === scope && b.id !== overallId),
+    [budgets, scope, overallId],
+  );
+  const expenseByCategory = useMemo(() => totalsByCategory(transactions.items, 'expense'), [transactions.items]);
+  const totalExpenses = useMemo(
+    () => [...expenseByCategory.values()].reduce((a, b) => a + b, 0),
+    [expenseByCategory],
+  );
   const rows = useMemo(
     () =>
       buildBudgetRows(
         categories.filter((c) => c.scope === scope),
         scopeBudgets,
-        totalsByCategory(transactions.items, 'expense'),
+        expenseByCategory,
       ),
-    [categories, scope, scopeBudgets, transactions.items],
+    [categories, scope, scopeBudgets, expenseByCategory],
   );
 
   const totals = useMemo(() => {
@@ -73,7 +92,7 @@ function BudgetContent({ scope }: { scope: Scope }) {
       <main className="content" aria-busy={loading}>
         <ScreenBack to={`/${scope}`} label="חזרה" />
         <h1 className="scope-title">
-          <span aria-hidden="true">🎯</span> תקציב · {scope === 'business' ? 'עסק' : 'משק בית'}
+          <Icon name="budget" /> תקציב · {scope === 'business' ? 'עסק' : 'משק בית'}
         </h1>
         <p className="muted small">
           תקציב חודשי לכל קטגוריית הוצאה. הניצול מחושב מהוצאות {formatMonthYear(month.selected)}.
@@ -89,18 +108,25 @@ function BudgetContent({ scope }: { scope: Scope }) {
           </div>
         ) : (
           <>
-            {totals.budget > 0 && (
-              <section className="card">
-                <div className="row-between">
-                  <span>סך התקציבים שהוגדרו</span>
-                  <Amount agorot={totals.budget} />
-                </div>
-                <div className="row-between">
-                  <span>נוצל מתוכם</span>
-                  <Amount agorot={totals.used} />
-                </div>
-              </section>
-            )}
+            <OverallBudgetCard
+              overallAgorot={split.overallAgorot}
+              usedAgorot={totalExpenses}
+              categoriesTotalAgorot={split.categoriesTotalAgorot}
+              categoriesUsedAgorot={totals.used}
+              onSave={(amountAgorot) => {
+                const existing = budgets.find((b) => b.id === overallId);
+                saveBudget(user.uid, scope, overallId, amountAgorot, existing?.createdAt).catch(() =>
+                  reportFailure('לא הצלחנו לסנכרן את התקציב. יש לנסות שוב.'),
+                );
+              }}
+              onRemove={() =>
+                deleteBudget(user.uid, overallId).catch(() =>
+                  reportFailure('לא הצלחנו לסנכרן את מחיקת התקציב.'),
+                )
+              }
+            />
+
+            <h2 className="section-title">תקציב לפי קטגוריה</h2>
 
             <ul className="budget-list">
               {rows.map((row) => (
@@ -131,6 +157,146 @@ function BudgetContent({ scope }: { scope: Scope }) {
         )}
       </main>
     </div>
+  );
+}
+
+/**
+ * תקציב חודשי כללי לתחום. אפשר להגדיר אותו בלי שום תקציב פרטני.
+ * הכפתור "התאמה לסכום הפרטניים" מציב כתקציב הכללי את סכום התקציבים לפי קטגוריה.
+ * אין חובה שהכללי יהיה שווה לסכום הפרטניים.
+ */
+function OverallBudgetCard({
+  overallAgorot,
+  usedAgorot,
+  categoriesTotalAgorot,
+  categoriesUsedAgorot,
+  onSave,
+  onRemove,
+}: {
+  overallAgorot: number | null;
+  usedAgorot: number;
+  categoriesTotalAgorot: number;
+  categoriesUsedAgorot: number;
+  onSave: (amountAgorot: number) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const usage = overallAgorot === null ? null : budgetUsage(overallAgorot, usedAgorot);
+  const percent = usage?.percentUsed ?? 0;
+  const canMatch = categoriesTotalAgorot > 0 && categoriesTotalAgorot !== overallAgorot;
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const amount = parseShekelsToAgorot(text);
+    if (amount === null || amount <= 0 || amount > MAX_TRANSACTION_AGOROT) {
+      setError('יש להזין סכום תקין גדול מאפס. לדוגמה: 8,000');
+      return;
+    }
+    onSave(amount);
+    setEditing(false);
+  };
+
+  return (
+    <section className="card budget-row" aria-label="תקציב חודשי כללי">
+      <div className="row-between">
+        <strong>תקציב חודשי כללי</strong>
+        {usage && <span className={`budget-status budget-${usage.status}`}>{BUDGET_STATUS_LABELS[usage.status]}</span>}
+      </div>
+
+      {usage ? (
+        <>
+          <div
+            className={`budget-bar budget-${usage.status}`}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.min(100, Math.round(percent))}
+            aria-label="ניצול התקציב הכללי"
+          >
+            <div style={{ width: `${Math.min(100, percent)}%` }} />
+          </div>
+          <div className="row-between small">
+            <span>
+              נוצל <Amount agorot={usage.usedAgorot} /> מתוך <Amount agorot={usage.budgetAgorot} /> ({percent}%)
+            </span>
+            <span className={usage.remainingAgorot < 0 ? 'tone-expense' : 'muted'}>
+              {usage.remainingAgorot < 0 ? 'חריגה של ' : 'נותר '}
+              <Amount agorot={Math.abs(usage.remainingAgorot)} />
+            </span>
+          </div>
+        </>
+      ) : (
+        <div className="muted small">
+          לא הוגדר תקציב כללי. אפשר להגדיר אותו גם בלי תקציבים לפי קטגוריה. הוצאות החודש:{' '}
+          <Amount agorot={usedAgorot} />
+        </div>
+      )}
+
+      {categoriesTotalAgorot > 0 && (
+        <div className="muted small">
+          סכום התקציבים לפי קטגוריה: <Amount agorot={categoriesTotalAgorot} />, מתוכם נוצל{' '}
+          <Amount agorot={categoriesUsedAgorot} />.
+        </div>
+      )}
+
+      {editing ? (
+        <form className="budget-edit" onSubmit={submit} noValidate>
+          <label htmlFor="overall-budget" className="small">
+            תקציב חודשי כללי (₪)
+          </label>
+          <input
+            id="overall-budget"
+            className={`input${error ? ' input-error' : ''}`}
+            inputMode="decimal"
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {error && <div className="field-error">{error}</div>}
+          <div className="budget-actions">
+            <button type="submit" className="btn btn-primary">
+              שמירה
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditing(false)}>
+              ביטול
+            </button>
+            {usage && (
+              <button
+                type="button"
+                className="btn btn-danger-outline"
+                onClick={() => {
+                  onRemove();
+                  setEditing(false);
+                }}
+              >
+                הסרת התקציב הכללי
+              </button>
+            )}
+          </div>
+        </form>
+      ) : (
+        <div className="budget-actions">
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              setText(overallAgorot === null ? '' : String(overallAgorot / 100));
+              setError('');
+              setEditing(true);
+            }}
+          >
+            {usage ? 'שינוי התקציב הכללי' : 'הגדרת תקציב כללי'}
+          </button>
+          {canMatch && (
+            <button type="button" className="link-btn" onClick={() => onSave(categoriesTotalAgorot)}>
+              התאמה לסכום התקציבים לפי קטגוריה (<Amount agorot={categoriesTotalAgorot} />)
+            </button>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

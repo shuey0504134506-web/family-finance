@@ -4,6 +4,7 @@ import { Field } from '../../components/Field';
 import { describeError } from '../../services/authErrors';
 import { requestPasswordReset } from '../../services/authService';
 import { isValidEmail } from './validation';
+import { Icon } from '../../components/Icon';
 
 export function ForgotPasswordScreen() {
   const location = useLocation();
@@ -51,7 +52,7 @@ export function ForgotPasswordScreen() {
         {sent ? (
           <div className="card success-card">
             <div className="success-icon" aria-hidden="true">
-              ✉️
+              <Icon name="mail" size="2em" />
             </div>
             <p>
               אם קיים חשבון עם הכתובת <bdi dir="ltr">{email}</bdi>, נשלח אליה מייל לשחזור הסיסמה.

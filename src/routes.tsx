@@ -16,6 +16,7 @@ import { CategoriesScreen } from './features/categories/CategoriesScreen';
 import { SearchScreen } from './features/search/SearchScreen';
 import { SummaryScreen } from './features/summary/SummaryScreen';
 import { TitheScreen } from './features/tithes/TitheScreen';
+import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { readDeviceUser } from './services/deviceUser';
 
@@ -105,6 +106,7 @@ export function AppRoutes() {
         <Route index element={<HomeRedirect />} />
         <Route path="/business" element={<ScopeRoute scope="business" />} />
         <Route path="/household" element={<ScopeRoute scope="household" />} />
+ <Route path="/:scope/list/:type" element={<TransactionListScreen />} />
         <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
         <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
         <Route path="/:scope/budget" element={<BudgetScreen />} />

@@ -1,4 +1,4 @@
-import { collection, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Category, Scope, TransactionType } from '../domain/types';
 import { newId } from './ids';
@@ -26,7 +26,7 @@ export function createCategory(
   type: TransactionType,
   name: string,
   sortOrder: number,
-): Promise<void> {
+): { id: string; saved: Promise<void> } {
   const now = Date.now();
   const id = newId();
   const category: Category = {
@@ -40,7 +40,7 @@ export function createCategory(
     createdAt: now,
     updatedAt: now,
   };
-  return setDoc(doc(db, 'users', uid, 'categories', id), category);
+  return { id, saved: setDoc(doc(db, 'users', uid, 'categories', id), category) };
 }
 
 /** שינוי שם או הפעלה/השבתה. קטגוריות לא נמחקות, כדי לא לאבד היסטוריה. */
@@ -56,4 +56,15 @@ export function updateCategory(
     updatedAt: Date.now(),
   };
   return setDoc(doc(db, 'users', uid, 'categories', category.id), updated);
+}
+
+/**
+ * מחיקת קטגוריה (מההגדרות בלבד). פעולות קיימות שלה שומרות את שם הקטגוריה שנשמר בהן,
+ * ולכן ההיסטוריה והסיכומים לא נפגעים. התקציב של הקטגוריה נמחק יחד איתה.
+ */
+export async function deleteCategory(uid: string, categoryId: string): Promise<void> {
+  await Promise.all([
+    deleteDoc(doc(db, 'users', uid, 'categories', categoryId)),
+    deleteDoc(doc(db, 'users', uid, 'budgets', categoryId)),
+  ]);
 }

@@ -9,6 +9,7 @@ function shortDate(date: string): string {
 }
 
 const SYNCED_FLASH_MS = 4000;
+const HIGHLIGHT_MS = 3500;
 
 /**
  * רשימת פעולות החודש. כל פעולה מציגה את מצב השמירה שלה בכנות:
@@ -18,13 +19,29 @@ const SYNCED_FLASH_MS = 4000;
 export function TransactionList({
   scope,
   items,
+  highlightId,
 }: {
   scope: Scope;
   items: readonly TransactionRecord[];
+  /** פעולה להבלטה לכמה רגעים (למשל אחרי מעבר מהחיפוש) */
+  highlightId?: string;
 }) {
   const navigate = useNavigate();
   const [justSynced, setJustSynced] = useState<ReadonlySet<string>>(new Set());
   const previousPending = useRef<Set<string>>(new Set());
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const flashed = useRef(false);
+
+  // הבלטה חד-פעמית: גלילה לפעולה, וצביעה שנעלמת אחרי כמה שניות.
+  useEffect(() => {
+    if (!highlightId || flashed.current) return;
+    if (!items.some((i) => i.id === highlightId)) return;
+    flashed.current = true;
+    setFlashId(highlightId);
+    document.getElementById(`tx-${highlightId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const timer = window.setTimeout(() => setFlashId(null), HIGHLIGHT_MS);
+    return () => window.clearTimeout(timer);
+  }, [highlightId, items]);
 
   useEffect(() => {
     const nowPending = new Set(items.filter((i) => i.pendingSync).map((i) => i.id));
@@ -58,10 +75,10 @@ export function TransactionList({
         const isIncome = item.type === 'income';
         const title = item.counterparty || item.categoryName;
         return (
-          <li key={item.id}>
+          <li key={item.id} id={`tx-${item.id}`}>
             <button
               type="button"
-              className="tx-row"
+              className={`tx-row${flashId === item.id ? ' is-highlight' : ''}`}
               onClick={() => navigate(`/${scope}/edit/${item.id}`)}
               aria-label={`${isIncome ? 'הכנסה' : 'הוצאה'}, ${title}, לעריכה`}
             >

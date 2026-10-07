@@ -12,6 +12,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { IncomeExpenseChart } from './IncomeExpenseChart';
+import { Icon } from '../../components/Icon';
 
 type Period = 'month' | 'year';
 
@@ -86,14 +87,14 @@ export function SummaryScreen() {
       <main className="content" aria-busy={loading}>
         <ScreenBack to="/" label="חזרה" />
         <h1 className="scope-title">
-          <span aria-hidden="true">📊</span> סיכומים
+          <Icon name="chart" /> סיכומים
         </h1>
 
         {scopes.length > 1 && (
           <div className="segmented" role="group" aria-label="תחום">
             {scopes.map((s) => (
               <button key={s} type="button" className={s === scope ? 'is-active' : ''} aria-pressed={s === scope} onClick={() => setScope(s)}>
-                {s === 'business' ? '💼 עסק' : '🏠 משק בית'}
+                <Icon name={s} /> {s === 'business' ? 'עסק' : 'משק בית'}
               </button>
             ))}
           </div>

@@ -8,6 +8,7 @@ import { scopesForMode, type Scope, type TransactionRecord } from '../../domain/
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
+import { Icon } from '../../components/Icon';
 
 const MAX_RESULTS = 200;
 // החיפוש טוען את כל ההיסטוריה (עד חודש רחוק בעתיד).
@@ -55,8 +56,9 @@ export function SearchScreen() {
   const shown = results.slice(0, MAX_RESULTS);
 
   const open = (item: ScopedTx) => {
+    // עוברים לרשימה של אותו חודש וסוג, והפעולה מוגללת ומודגשת לכמה רגעים.
     month.setMonth(item.yearMonth);
-    navigate(`/${item.scope}`, { replace: true });
+    navigate(`/${item.scope}/list/${item.type}`, { state: { highlightId: item.id } });
   };
 
   return (
@@ -101,8 +103,8 @@ export function SearchScreen() {
             {(
               [
                 ['all', 'עסק ומשק בית'],
-                ['business', '💼 עסק'],
-                ['household', '🏠 משק בית'],
+                ['business', 'עסק'],
+                ['household', 'משק בית'],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -112,6 +114,11 @@ export function SearchScreen() {
                 aria-pressed={scopeFilter === value}
                 onClick={() => setScopeFilter(value)}
               >
+                {value !== 'all' && (
+                  <>
+                    <Icon name={value} />{' '}
+                  </>
+                )}
                 {label}
               </button>
             ))}
@@ -145,7 +152,7 @@ export function SearchScreen() {
                       type="button"
                       className="tx-row"
                       onClick={() => open(item)}
-                      aria-label={`מעבר ל${formatMonthYear(item.yearMonth)}`}
+                      aria-label={`הצגה ב${formatMonthYear(item.yearMonth)}`}
                     >
                       <span className="tx-date">
                         {item.date.slice(8, 10)}/{item.date.slice(5, 7)}
@@ -155,7 +162,7 @@ export function SearchScreen() {
                       <span className="tx-main">
                         <span className="tx-title">{item.counterparty || item.categoryName}</span>
                         <span className="tx-sub">
-                          {scopes.length > 1 ? (item.scope === 'business' ? '💼 ' : '🏠 ') : ''}
+                          {scopes.length > 1 && (<><Icon name={item.scope} />{' '}</>)}
                           {item.categoryName}
                           {item.note ? ` · ${item.note}` : ''}
                         </span>

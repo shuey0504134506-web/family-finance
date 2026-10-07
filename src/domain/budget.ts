@@ -45,7 +45,7 @@ export const BUDGET_STATUS_LABELS: Record<BudgetStatus, string> = {
   over: 'חריגה',
 };
 
-import type { Budget, Category } from './types';
+import type { Budget, Category, Scope } from './types';
 
 export interface BudgetRow {
   categoryId: string;
@@ -89,4 +89,86 @@ export function buildBudgetRows(
     if (!b.usage) return -1;
     return severity[a.usage.status] - severity[b.usage.status];
   });
+}
+
+// ---------- תקציב כללי + תקציבים פרטניים ----------
+
+/** מזהה מסמך התקציב הכללי של תחום. אינו מתנגש עם מזהי קטגוריות. */
+export function overallBudgetId(scope: Scope): string {
+  return `overall-${scope}`;
+}
+
+export interface SplitBudgets {
+  /** התקציב החודשי הכללי, או null אם לא הוגדר */
+  overallAgorot: Agorot | null;
+  /** תקציבים פרטניים לפי מזהה קטגוריה */
+  byCategory: Map<string, Agorot>;
+  /** סכום כל התקציבים הפרטניים */
+  categoriesTotalAgorot: Agorot;
+}
+
+/** מפריד את מסמכי התקציב של תחום לתקציב כללי ולתקציבים פרטניים. */
+export function splitBudgets(budgets: readonly Budget[], scope: Scope): SplitBudgets {
+  const overallId = overallBudgetId(scope);
+  let overallAgorot: Agorot | null = null;
+  const byCategory = new Map<string, Agorot>();
+  let total = 0;
+  for (const b of budgets) {
+    if (b.scope !== scope) continue;
+    if (b.id === overallId) {
+      overallAgorot = b.amountAgorot;
+    } else {
+      byCategory.set(b.categoryId, b.amountAgorot);
+      total += b.amountAgorot;
+    }
+  }
+  return { overallAgorot, byCategory, categoriesTotalAgorot: total };
+}
+
+export type BudgetSummary =
+  | { kind: 'none' }
+  | {
+      kind: 'set';
+      /** על מה מבוסס החישוב: התקציב הכללי, או סכום התקציבים הפרטניים */
+      basis: 'overall' | 'categories';
+      budgetAgorot: Agorot;
+      usedAgorot: Agorot;
+      /** סכום החריגה (0 אם לא חרגו) */
+      overAgorot: Agorot;
+      status: BudgetStatus;
+    };
+
+/**
+ * תקציר לכפתור במסך הבית.
+ * יש תקציב כללי: משווים אליו את כל הוצאות החודש.
+ * אין כללי אבל יש פרטניים: משווים את ההוצאות בקטגוריות שיש להן תקציב לסכום התקציבים.
+ */
+export function summarizeBudget(
+  split: SplitBudgets,
+  expenseByCategory: ReadonlyMap<string, Agorot>,
+): BudgetSummary {
+  let basis: 'overall' | 'categories';
+  let budget: Agorot;
+  let used: Agorot;
+  if (split.overallAgorot !== null) {
+    basis = 'overall';
+    budget = split.overallAgorot;
+    used = 0;
+    for (const amount of expenseByCategory.values()) used += amount;
+  } else if (split.byCategory.size > 0) {
+    basis = 'categories';
+    budget = split.categoriesTotalAgorot;
+    used = 0;
+    for (const id of split.byCategory.keys()) used += expenseByCategory.get(id) ?? 0;
+  } else {
+    return { kind: 'none' };
+  }
+  return {
+    kind: 'set',
+    basis,
+    budgetAgorot: budget,
+    usedAgorot: used,
+    overAgorot: Math.max(0, used - budget),
+    status: budgetStatus(budget, used),
+  };
 }

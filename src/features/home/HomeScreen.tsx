@@ -1,21 +1,26 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
+import { Icon } from '../../components/Icon';
 import { AppHeader } from '../../components/AppHeader';
 import { ScopeTabs } from '../../components/ScopeTabs';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
+import { splitBudgets, summarizeBudget } from '../../domain/budget';
 import {
   businessNet,
   businessTransferToHousehold,
   householdTotals,
+  totalsByCategory,
   totalsOf,
 } from '../../domain/summary';
 import { scopesForMode, type Scope } from '../../domain/types';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
-import { TransactionList } from '../transactions/TransactionList';
+import { useBudgets } from '../../hooks/useBudgets';
+import { useTitheRows } from '../tithes/useTitheRows';
+import { QuickLink } from './QuickLink';
 import { BalanceFrame } from './BalanceFrame';
 import { notStartedText } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
@@ -53,6 +58,22 @@ export function HomeScreen({ scope }: { scope: Scope }) {
     [household.items, transferAgorot],
   );
 
+  // תקציר התקציב לכפתור (לפי התחום שמוצג)
+  const { budgets } = useBudgets(user.uid);
+  const budgetSummary = useMemo(
+    () =>
+      summarizeBudget(
+        splitBudgets(budgets, scope),
+        totalsByCategory(scope === 'business' ? business.items : household.items, 'expense'),
+      ),
+    [budgets, scope, business.items, household.items],
+  );
+
+  // יתרת מעשרות: רק במשק הבית, ורק בחודש שהתחיל
+  const showTithe = scope === 'household' && month.status !== 'future';
+  const tithe = useTitheRows(showTithe);
+  const titheCurrent = tithe.rows[tithe.rows.length - 1];
+
   const swipe = useSwipe(
     // החלקה ימינה: חושפת את מה שמשמאל (משק בית). שמאלה: העסק.
     () => {
@@ -77,7 +98,7 @@ export function HomeScreen({ scope }: { scope: Scope }) {
 
       <main className="content" aria-busy={loading}>
         <h1 className="scope-title">
-          <span aria-hidden="true">{isBusiness ? '💼' : '🏠'}</span> {title}
+          <Icon name={isBusiness ? 'business' : 'household'} /> {title}
         </h1>
 
         {active.error ? (
@@ -111,6 +132,8 @@ export function HomeScreen({ scope }: { scope: Scope }) {
           incomeAgorot={totals.incomeAgorot}
           expenseAgorot={totals.expenseAgorot}
           loading={loading}
+          onOpenIncome={() => navigate(`/${scope}/list/income`)}
+          onOpenExpense={() => navigate(`/${scope}/list/expense`)}
         />
 
         {month.status !== 'future' && !active.error && (
@@ -120,14 +143,14 @@ export function HomeScreen({ scope }: { scope: Scope }) {
               className="btn btn-income"
               onClick={() => navigate(`/${scope}/add/income`)}
             >
-              ＋ הכנסה
+              <Icon name="plus" /> הכנסה
             </button>
             <button
               type="button"
               className="btn btn-expense"
               onClick={() => navigate(`/${scope}/add/expense`)}
             >
-              ＋ הוצאה
+              <Icon name="plus" /> הוצאה
             </button>
           </div>
         )}
@@ -139,7 +162,7 @@ export function HomeScreen({ scope }: { scope: Scope }) {
           >
             <div className="row-between">
               <span>
-                <span aria-hidden="true">💼</span>{' '}
+                <Icon name="business" />{' '}
                 {householdSummary.fromBusinessAgorot < 0
                   ? 'הפסד מהעסק (נטו)'
                   : 'הכנסה מהעסק (נטו)'}
@@ -159,19 +182,51 @@ export function HomeScreen({ scope }: { scope: Scope }) {
 
         {month.status !== 'future' && (
           <div className="quick-links">
-            <button type="button" className="btn btn-secondary" onClick={() => navigate(`/${scope}/budget`)}>
-              🎯 תקציב
-            </button>
+            <QuickLink
+              icon="budget"
+              title="תקציב"
+              tone={budgetSummary.kind === 'set' && budgetSummary.overAgorot > 0 ? 'bad' : undefined}
+              onClick={() => navigate(`/${scope}/budget`)}
+            >
+              {active.loading || business.loading ? (
+                'טוען…'
+              ) : budgetSummary.kind === 'none' ? (
+                'לא הוגדר תקציב'
+              ) : budgetSummary.overAgorot > 0 ? (
+                <>
+                  חרגת מהתקציב החודש ב-<Amount agorot={budgetSummary.overAgorot} />
+                </>
+              ) : (
+                <>
+                  נוצל <Amount agorot={budgetSummary.usedAgorot} /> מתוך{' '}
+                  <Amount agorot={budgetSummary.budgetAgorot} />
+                </>
+              )}
+            </QuickLink>
+
             {!isBusiness && (
-              <button type="button" className="btn btn-secondary tithe-link" onClick={() => navigate('/tithes')}>
-                🙏 מעשרות
-              </button>
+              <QuickLink
+                icon="tithe"
+                title="מעשרות"
+                tone={titheCurrent && titheCurrent.cumulative.remainingAgorot > 0 ? 'bad' : undefined}
+                onClick={() => navigate('/tithes')}
+              >
+                {tithe.loading || !titheCurrent ? (
+                  'טוען…'
+                ) : titheCurrent.cumulative.remainingAgorot > 0 ? (
+                  <>
+                    יתרת מעשרות לתת: <Amount agorot={titheCurrent.cumulative.remainingAgorot} />
+                  </>
+                ) : titheCurrent.cumulative.surplusAgorot > 0 ? (
+                  <>
+                    ניתן מעבר לנדרש: <Amount agorot={titheCurrent.cumulative.surplusAgorot} />
+                  </>
+                ) : (
+                  'המעשר מאוזן'
+                )}
+              </QuickLink>
             )}
           </div>
-        )}
-
-        {month.status !== 'future' && !active.error && !active.loading && (
-          <TransactionList scope={scope} items={active.items} />
         )}
       </main>
 

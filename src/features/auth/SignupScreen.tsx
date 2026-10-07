@@ -4,6 +4,7 @@ import { Field } from '../../components/Field';
 import { describeError } from '../../services/authErrors';
 import { useAuth } from './AuthContext';
 import { validateSignup, type SignupValues } from './validation';
+import { Icon } from '../../components/Icon';
 
 export function SignupScreen() {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ export function SignupScreen() {
         <div className="auth-column">
           <div className="card success-card">
             <div className="success-icon" aria-hidden="true">
-              ✅
+              <Icon name="check" size="2em" />
             </div>
             <h1>החשבון נוצר בהצלחה</h1>
             <p className="muted">

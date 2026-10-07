@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildBudgetRows, budgetStatus, budgetUsage } from './budget';
+import {
+  budgetStatus,
+  budgetUsage,
+  buildBudgetRows,
+  overallBudgetId,
+  splitBudgets,
+  summarizeBudget,
+} from './budget';
 
 describe('budgetUsage (דוגמת התקציב מהמסמך)', () => {
   it('12,000 תקציב, 8,000 נוצל -> נשאר 4,000, 66.7%', () => {
@@ -107,5 +114,64 @@ describe('buildBudgetRows', () => {
       new Map([['b', 5]]),
     );
     expect(rows.map((r) => r.categoryId).sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('תקציב כללי ופרטני', () => {
+  const doc = (id: string, scope: 'business' | 'household', amountAgorot: number, categoryId = id) => ({
+    id,
+    scope,
+    categoryId,
+    amountAgorot,
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
+  it('מפריד תקציב כללי מפרטניים, ומתעלם מתחום אחר', () => {
+    const split = splitBudgets(
+      [
+        doc(overallBudgetId('household'), 'household', 900_000),
+        doc('food', 'household', 300_000),
+        doc('bills', 'household', 200_000),
+        doc('fuel', 'business', 999),
+      ],
+      'household',
+    );
+    expect(split.overallAgorot).toBe(900_000);
+    expect(split.categoriesTotalAgorot).toBe(500_000);
+    expect([...split.byCategory.keys()].sort()).toEqual(['bills', 'food']);
+  });
+
+  it('בלי שום תקציב: none', () => {
+    expect(summarizeBudget(splitBudgets([], 'household'), new Map([['a', 5]]))).toEqual({ kind: 'none' });
+  });
+
+  it('תקציב כללי בלי קטגוריות פרטניות: משווה את כל ההוצאות', () => {
+    const split = splitBudgets([doc(overallBudgetId('household'), 'household', 1_000_000)], 'household');
+    const summary = summarizeBudget(split, new Map([['a', 300_000], ['b', 200_000]]));
+    expect(summary).toMatchObject({ kind: 'set', basis: 'overall', budgetAgorot: 1_000_000, usedAgorot: 500_000, overAgorot: 0, status: 'ok' });
+  });
+
+  it('חריגה מהתקציב הכללי מחזירה את סכום החריגה', () => {
+    const split = splitBudgets([doc(overallBudgetId('household'), 'household', 400_000)], 'household');
+    const summary = summarizeBudget(split, new Map([['a', 300_000], ['b', 200_000]]));
+    expect(summary).toMatchObject({ kind: 'set', usedAgorot: 500_000, overAgorot: 100_000, status: 'over' });
+  });
+
+  it('רק תקציבים פרטניים: משווה רק הוצאות בקטגוריות שיש להן תקציב', () => {
+    const split = splitBudgets([doc('food', 'household', 300_000)], 'household');
+    const summary = summarizeBudget(split, new Map([['food', 100_000], ['other', 900_000]]));
+    expect(summary).toMatchObject({ kind: 'set', basis: 'categories', budgetAgorot: 300_000, usedAgorot: 100_000 });
+  });
+
+  it('התקציב הכללי גובר גם כשיש פרטניים', () => {
+    const split = splitBudgets(
+      [doc(overallBudgetId('household'), 'household', 1_000_000), doc('food', 'household', 300_000)],
+      'household',
+    );
+    expect(summarizeBudget(split, new Map([['food', 100_000], ['x', 100_000]]))).toMatchObject({
+      basis: 'overall',
+      usedAgorot: 200_000,
+    });
   });
 });

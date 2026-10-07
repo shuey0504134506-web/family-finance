@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Scope } from '../domain/types';
+import { Icon } from './Icon';
 
 /**
  * כפתור מעבר ברור בין עסק למשק בית, בתחתית המסך (אזור האגודל).
@@ -20,7 +21,7 @@ export function ScopeTabs({ active }: { active: Scope }) {
         aria-current={active === 'business' ? 'page' : undefined}
         onClick={() => go('business')}
       >
-        <span aria-hidden="true">💼</span> עסק
+        <Icon name="business" /> עסק
       </button>
       <button
         type="button"
@@ -28,7 +29,7 @@ export function ScopeTabs({ active }: { active: Scope }) {
         aria-current={active === 'household' ? 'page' : undefined}
         onClick={() => go('household')}
       >
-        <span aria-hidden="true">🏠</span> משק בית
+        <Icon name="household" /> משק בית
       </button>
     </nav>
   );

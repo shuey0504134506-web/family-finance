@@ -2,9 +2,10 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { scopesForMode, type Category, type Scope, type TransactionType } from '../../domain/types';
 import { useCategories } from '../../hooks/useCategories';
-import { createCategory, updateCategory } from '../../services/categoryService';
+import { createCategory, deleteCategory, updateCategory } from '../../services/categoryService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useSyncNotice } from '../sync/SyncNotice';
+import { Icon } from '../../components/Icon';
 
 const MAX_NAME = 60;
 
@@ -19,6 +20,7 @@ export function CategoriesScreen() {
   const [newName, setNewName] = useState('');
   const [error, setError] = useState('');
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const visible = useMemo(
     () => categories.filter((c) => c.scope === scope && c.type === type),
@@ -37,7 +39,7 @@ export function CategoriesScreen() {
     if (name.length > MAX_NAME) return setError(`השם ארוך מדי (עד ${MAX_NAME} תווים).`);
     if (nameTaken(name)) return setError('כבר קיימת קטגוריה בשם הזה.');
     const sortOrder = Math.max(-1, ...visible.map((c) => c.sortOrder)) + 1;
-    createCategory(user.uid, scope, type, name, sortOrder).catch(fail);
+    createCategory(user.uid, scope, type, name, sortOrder).saved.catch(fail);
     setNewName('');
     setError('');
   };
@@ -66,7 +68,7 @@ export function CategoriesScreen() {
                 aria-pressed={s === scope}
                 onClick={() => setScope(s)}
               >
-                {s === 'business' ? '💼 עסק' : '🏠 משק בית'}
+                <Icon name={s} /> {s === 'business' ? 'עסק' : 'משק בית'}
               </button>
             ))}
           </div>
@@ -134,6 +136,27 @@ export function CategoriesScreen() {
                       </button>
                     </div>
                   </>
+                ) : deleting === c.id ? (
+                  <>
+                    <p className="category-delete-text">
+                      למחוק את "{c.name}"? פעולות שכבר נרשמו בקטגוריה נשארות עם שמה, והתקציב שלה יימחק.
+                    </p>
+                    <div className="budget-actions">
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => {
+                          deleteCategory(user.uid, c.id).catch(fail);
+                          setDeleting(null);
+                        }}
+                      >
+                        כן, למחוק
+                      </button>
+                      <button type="button" className="btn btn-secondary" onClick={() => setDeleting(null)}>
+                        ביטול
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <span className="category-name">
@@ -158,6 +181,9 @@ export function CategoriesScreen() {
                       >
                         {c.active ? 'השבתה' : 'הפעלה'}
                       </button>
+                      <button type="button" className="link-btn link-danger" onClick={() => setDeleting(c.id)}>
+                        מחיקה
+                      </button>
                     </span>
                   </>
                 )}
@@ -166,7 +192,7 @@ export function CategoriesScreen() {
           </ul>
         )}
         <p className="muted small">
-          קטגוריה מושבתת לא מוצעת בפעולות חדשות, אבל פעולות קיימות שלה נשארות ומופיעות בסיכומים.
+          קטגוריה מושבתת לא מוצעת בפעולות חדשות. מחיקה אפשרית רק כאן, ופעולות קיימות נשארות עם שם הקטגוריה שהיה להן. אפשר להוסיף קטגוריה חדשה גם מתוך טופס הכנסה או הוצאה.
         </p>
       </main>
     </div>

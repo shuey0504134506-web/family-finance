@@ -92,3 +92,24 @@ describe('TotalsTiles', () => {
     expect(visibleText(html)).not.toContain('0 ₪');
   });
 });
+
+describe('TotalsTiles כפתורים', () => {
+  it('כשיש פעולת פתיחה, המשבצות הן כפתורים עם רמז "לרשימה"', () => {
+    const html = renderToStaticMarkup(
+      <TotalsTiles
+        incomeAgorot={100}
+        expenseAgorot={50}
+        loading={false}
+        onOpenIncome={() => undefined}
+        onOpenExpense={() => undefined}
+      />,
+    );
+    expect(html.match(/<button/g)).toHaveLength(2);
+    expect(visibleText(html)).toContain('לרשימה');
+  });
+
+  it('בלי פעולת פתיחה אין כפתורים', () => {
+    const html = renderToStaticMarkup(<TotalsTiles incomeAgorot={100} expenseAgorot={50} loading={false} />);
+    expect(html).not.toContain('<button');
+  });
+});

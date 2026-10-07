@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
+import { Icon } from '../../components/Icon';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { todayIso } from '../../domain/dates';
 import {
@@ -19,6 +20,7 @@ import {
   type TransactionType,
 } from '../../domain/types';
 import { useCategories } from '../../hooks/useCategories';
+import { createCategory } from '../../services/categoryService';
 import { newId } from '../../services/ids';
 import {
   deleteTransaction,
@@ -152,17 +154,46 @@ function TransactionForm({
   // מונע שליחה כפולה גם אם לוחצים מהר מכפי שהמסך מתעדכן.
   const submitted = useRef(false);
 
-  const options = useMemo(
-    () =>
-      categories.filter(
+  // קטגוריות שנוספו עכשיו מהטופס, כדי שיופיעו מיד גם לפני שהמנוי מתעדכן
+  const [added, setAdded] = useState<Array<{ id: string; name: string }>>([]);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+
+  const options = useMemo(() => {
+    const base = categories
+      .filter(
         (c) =>
           c.scope === scope &&
           c.type === draft.type &&
           // קטגוריה שהושבתה נשארת זמינה לפעולה שכבר משתמשת בה
           (c.active || c.id === existing?.categoryId),
-      ),
-    [categories, scope, draft.type, existing?.categoryId],
-  );
+      )
+      .map((c) => ({ id: c.id, name: c.name }));
+    const known = new Set(base.map((c) => c.id));
+    return [...base, ...added.filter((c) => !known.has(c.id))];
+  }, [categories, scope, draft.type, existing?.categoryId, added]);
+
+  const onAddCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) return setCategoryError('יש להזין שם לקטגוריה.');
+    if (name.length > 60) return setCategoryError('השם ארוך מדי (עד 60 תווים).');
+    const same = options.find((c) => c.name.trim() === name);
+    if (same) {
+      // כבר קיימת קטגוריה בשם הזה: בוחרים אותה במקום ליצור כפילות
+      update('categoryId', same.id);
+    } else {
+      const sortOrder =
+        Math.max(-1, ...categories.filter((c) => c.scope === scope && c.type === draft.type).map((c) => c.sortOrder)) + 1;
+      const { id, saved } = createCategory(user.uid, scope, draft.type, name, sortOrder);
+      saved.catch(() => reportFailure('לא הצלחנו לסנכרן את הקטגוריה החדשה. יש לנסות שוב.'));
+      setAdded((previous) => [...previous, { id, name }]);
+      update('categoryId', id);
+    }
+    setNewCategoryName('');
+    setCategoryError('');
+    setAddingCategory(false);
+  };
 
   const isIncome = draft.type === 'income';
   const title = `${existing ? 'עריכת' : 'הוספת'} ${isIncome ? 'הכנסה' : 'הוצאה'}`;
@@ -262,6 +293,43 @@ function TransactionForm({
               ))}
             </select>
             {errors.category && <div className="field-error">{errors.category}</div>}
+            {addingCategory ? (
+              <div className="inline-add">
+                <input
+                  className={`input${categoryError ? ' input-error' : ''}`}
+                  aria-label="שם הקטגוריה החדשה"
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onAddCategory();
+                    }
+                  }}
+                />
+                {categoryError && <div className="field-error">{categoryError}</div>}
+                <div className="inline-add-actions">
+                  <button type="button" className="btn btn-primary" onClick={onAddCategory}>
+                    הוספה
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setAddingCategory(false);
+                      setCategoryError('');
+                    }}
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="link-btn" onClick={() => setAddingCategory(true)}>
+                <Icon name="plus" /> קטגוריה חדשה
+              </button>
+            )}
           </div>
 
           <div className="field">
