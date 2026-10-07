@@ -22,13 +22,12 @@
 
 **עדיין לא קיים:** הוספה ועריכה של הכנסות והוצאות, ולכן המסך הראשי יציג אפסים עד סבב 2.
 
-## מה צריך להגדיר פעם אחת (בשפה פשוטה)
+## הפעלה בלי להתקין שום דבר על המחשב (הדרך המומלצת)
 
-### 1. התקנת Node.js
+הכול נעשה דרך הדפדפן. GitHub מריץ את הבדיקות וה-Build בענן ומפרסם את האפליקציה בכתובת אינטרנט,
+שאפשר לפתוח גם מהטלפון.
 
-מורידים את הגרסה המומלצת (LTS) מ-https://nodejs.org ומתקינים.
-
-### 2. יצירת פרויקט Firebase
+### שלב 1: יצירת פרויקט Firebase
 
 1. נכנסים ל-https://console.firebase.google.com עם חשבון Google.
 2. לוחצים **Create a project**, נותנים שם, ואפשר לכבות את Google Analytics.
@@ -38,14 +37,22 @@
    - מצב: **Production mode**.
 5. גלגל השיניים ליד "Project Overview" ← **Project settings** ← **General**.
    בחלק **Your apps** לוחצים על סמל ה-Web (`</>`), נותנים שם ולוחצים **Register app**.
-   מופיעים ערכים כמו `apiKey`, `authDomain`, `projectId`. משאירים את החלון פתוח.
+   מופיעים ערכים כמו `apiKey`, `authDomain`, `projectId`. משאירים את החלון פתוח לשלב 3.
 
-### 3. חיבור האפליקציה ל-Firebase
+### שלב 2: העלאת חוקי האבטחה (חשוב מאוד, לפני שימוש אמיתי)
 
-1. בתיקיית הפרויקט מעתיקים את `.env.example` לקובץ חדש בשם `.env`.
-2. ממלאים בו את הערכים מ-Firebase:
+1. ב-Firebase Console: **Build ← Firestore Database ← Rules**.
+2. מוחקים את התוכן ומדביקים במקומו את כל התוכן של הקובץ `firestore.rules` מה-Repository.
+3. לוחצים **Publish**.
 
-| משתנה ב-`.env` | הערך מ-Firebase |
+בלי השלב הזה, Firestore במצב Production חוסם הכול והאפליקציה לא תצליח לשמור נתונים.
+
+### שלב 3: העברת פרטי Firebase ל-GitHub
+
+ב-GitHub: ה-Repository ← **Settings** ← **Secrets and variables** ← **Actions** ←
+**New repository secret**. יוצרים סוד נפרד לכל שורה (השם בדיוק כמו בטבלה, הערך מ-Firebase):
+
+| שם הסוד | הערך מ-Firebase |
 | --- | --- |
 | `VITE_FIREBASE_API_KEY` | `apiKey` |
 | `VITE_FIREBASE_AUTH_DOMAIN` | `authDomain` |
@@ -55,29 +62,45 @@
 | `VITE_FIREBASE_APP_ID` | `appId` |
 | `VITE_PRIVACY_CONTACT_EMAIL` | אופציונלי: מייל ליצירת קשר במדיניות הפרטיות |
 
-הקובץ `.env` לא עולה ל-GitHub (הוא ב-`.gitignore`). לא מדביקים אותו בשום מקום ציבורי.
+### שלב 4: הפעלת האתר ב-GitHub Pages
 
-### 4. העלאת חוקי האבטחה (חשוב מאוד, לפני שימוש אמיתי)
+1. ב-GitHub: **Settings** ← **Pages**.
+2. תחת **Build and deployment**, בשדה **Source** בוחרים **GitHub Actions**.
+3. אם ה-Repository פרטי והאפשרות חסומה: GitHub Pages בחשבון חינמי עובד רק עם Repository ציבורי.
+   ראו הערה למטה.
 
-הדרך הפשוטה, בלי התקנות:
+### שלב 5: הרשאת הכתובת ב-Firebase
 
-1. ב-Firebase Console: **Build ← Firestore Database ← Rules**.
-2. מוחקים את התוכן ומדביקים במקומו את כל התוכן של הקובץ `firestore.rules` מהפרויקט.
-3. לוחצים **Publish**.
+הכתובת של האתר היא `https://שם-המשתמש.github.io/family-finance/`. ב-Firebase Console:
+**Authentication ← Settings ← Authorized domains ← Add domain**, ומוסיפים את
+`שם-המשתמש.github.io` (בלי `https://` ובלי הסוף). בלי זה ההתחברות תיחסם.
 
-בלי השלב הזה, Firestore במצב Production חוסם הכול והאפליקציה לא תצליח לשמור נתונים.
+### שלב 6: פרסום
 
-## הרצה מקומית
+ב-GitHub נכנסים ללשונית **Actions**, בוחרים את ה-workflow
+**בדיקות ופריסה ל-GitHub Pages** ולוחצים **Run workflow**. אחרי כמה דקות מופיע וי ירוק, והאתר זמין
+בכתובת מהשלב הקודם. מאותו רגע כל שינוי בקוד מתפרסם אוטומטית.
 
-בטרמינל, בתיקיית הפרויקט:
+אם יש X אדום: לוחצים עליו כדי לראות באיזה שלב נכשל, ושולחים לי את ההודעה.
+
+### הערה: Repository ציבורי או פרטי
+
+ב-GitHub חינמי, Pages זמין רק ל-Repository ציבורי. הקוד הציבורי אינו חושף נתונים: הנתונים נמצאים
+ב-Firebase ומוגנים בחוקי האבטחה, ופרטי החיבור של Firebase נועדו מעצמם להיות גלויים באתר. הסודות
+(Secrets) אינם מופיעים בקוד. מי שמעדיף Repository פרטי יכול לפרוס ל-Firebase Hosting במקום, אבל זה
+דורש מפתח שירות והגדרה נוספת.
+
+## הרצה מקומית (למי שיכול להתקין תוכנות)
+
+אופציונלי. דורש Node.js (גרסת LTS מ-https://nodejs.org). מעתיקים את `.env.example` לקובץ בשם `.env`,
+ממלאים את אותם ערכי Firebase, ובטרמינל:
 
 ```
 npm install
 npm run dev
 ```
 
-הכתובת שתודפס (בדרך כלל http://localhost:5173) נפתחת בדפדפן. כדי לראות איך זה נראה בטלפון, אפשר
-לפתוח את כלי המפתחים של Chrome (F12) ולבחור תצוגת מכשיר נייד.
+הכתובת שתודפס (בדרך כלל http://localhost:5173) נפתחת בדפדפן.
 
 ## בדיקות ו-Build
 
@@ -97,7 +120,7 @@ npm run test:rules
 סכום או תאריך לא תקינים נדחית. הבדיקות כתובות ועוברות קומפילציה, **אך עדיין לא הורצו בפועל**, כי
 האמולטור לא היה זמין בסביבה שבה נבנה הסבב הראשון. מומלץ להריץ אותן לפני שימוש אמיתי.
 
-## פריסה (Firebase Hosting)
+## פריסה חלופית (Firebase Hosting, דורשת התקנות)
 
 1. מתקינים את הכלי: `npm install -g firebase-tools`, ואז `firebase login`.
 2. ב-Firebase Console: **Build ← Hosting ← Get started** (פעם אחת).
