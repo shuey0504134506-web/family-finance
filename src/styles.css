@@ -789,3 +789,151 @@ code {
     animation: none !important;
   }
 }
+
+/* ---------- הוספה ורשימת פעולות ---------- */
+
+.add-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.btn-income {
+  background: var(--income);
+  color: #fff;
+}
+
+.btn-expense {
+  background: var(--expense);
+  color: #fff;
+}
+
+.btn-danger {
+  background: var(--expense);
+  color: #fff;
+}
+
+.btn-danger-outline {
+  margin-top: 16px;
+  background: var(--surface);
+  color: var(--expense);
+  border-color: var(--expense);
+}
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+select.input {
+  appearance: auto;
+}
+
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap);
+  font-weight: 600;
+}
+
+.check-row input {
+  width: 24px;
+  height: 24px;
+}
+
+.delete-confirm {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+
+.tx-date {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  min-width: 44px;
+}
+
+.tx-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tx-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.tx-sub {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.tx-sync {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tx-sync-pending {
+  color: var(--tithe);
+}
+
+.tx-sync-done {
+  color: var(--income);
+}
+
+.sync-failure {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(80px + var(--safe-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--expense);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.sync-failure .link-btn {
+  color: #fff;
+  text-decoration: underline;
+}

@@ -11,6 +11,7 @@ import { HomeScreen } from './features/home/HomeScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
+import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { readDeviceUser } from './services/deviceUser';
 
 function LoadingScreen() {
@@ -99,6 +100,8 @@ export function AppRoutes() {
         <Route index element={<HomeRedirect />} />
         <Route path="/business" element={<ScopeRoute scope="business" />} />
         <Route path="/household" element={<ScopeRoute scope="household" />} />
+        <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
+        <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Route>
 

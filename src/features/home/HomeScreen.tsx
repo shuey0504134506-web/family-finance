@@ -15,6 +15,7 @@ import { scopesForMode, type Scope } from '../../domain/types';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
+import { TransactionList } from '../transactions/TransactionList';
 import { BalanceFrame } from './BalanceFrame';
 import { notStartedText } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
@@ -112,6 +113,25 @@ export function HomeScreen({ scope }: { scope: Scope }) {
           loading={loading}
         />
 
+        {month.status !== 'future' && !active.error && (
+          <div className="add-actions">
+            <button
+              type="button"
+              className="btn btn-income"
+              onClick={() => navigate(`/${scope}/add/income`)}
+            >
+              ＋ הכנסה
+            </button>
+            <button
+              type="button"
+              className="btn btn-expense"
+              onClick={() => navigate(`/${scope}/add/expense`)}
+            >
+              ＋ הוצאה
+            </button>
+          </div>
+        )}
+
         {!isBusiness && hasBusiness && !loading && (
           <section
             className="card business-income-card"
@@ -135,6 +155,10 @@ export function HomeScreen({ scope }: { scope: Scope }) {
                 : 'רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים.'}
             </p>
           </section>
+        )}
+
+        {month.status !== 'future' && !active.error && !active.loading && (
+          <TransactionList scope={scope} items={active.items} />
         )}
       </main>
 

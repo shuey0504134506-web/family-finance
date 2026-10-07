@@ -1,8 +1,12 @@
 import {
   collection,
+  deleteDoc,
+  doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   where,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -57,4 +61,28 @@ export function subscribeMonthTransactions(
     },
     onError,
   );
+}
+
+/**
+ * שומר פעולה (חדשה או קיימת) תחת מזהה קבוע. כתיבה חוזרת לאותו מזהה אינה יוצרת כפילות.
+ *
+ * ההבטחה מתממשת רק כשהשרת מאשר. בלי אינטרנט הפעולה נשמרת במכשיר ומסונכרנת מאוחר יותר,
+ * ולכן הקוד הקורא אינו ממתין לתוצאה כדי להמשיך, אלא מדווח על כישלון אם הוא מגיע.
+ */
+export function saveTransaction(uid: string, scope: Scope, transaction: Transaction): Promise<void> {
+  return setDoc(doc(transactionsCollection(uid, scope), transaction.id), transaction);
+}
+
+export function deleteTransaction(uid: string, scope: Scope, id: string): Promise<void> {
+  return deleteDoc(doc(transactionsCollection(uid, scope), id));
+}
+
+/** פעולה בודדת לעריכה. עובד גם בלי חיבור, מתוך המטמון המקומי. */
+export async function getTransaction(
+  uid: string,
+  scope: Scope,
+  id: string,
+): Promise<Transaction | null> {
+  const snapshot = await getDoc(doc(transactionsCollection(uid, scope), id));
+  return snapshot.exists() ? { ...(snapshot.data() as Transaction), id: snapshot.id } : null;
 }
