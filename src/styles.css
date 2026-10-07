@@ -420,7 +420,7 @@ code {
   /* פריסה פיזית קבועה: הגדרות משמאל, חודש במרכז */
   direction: ltr;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   min-height: 56px;
   padding: 0 calc(6px + var(--safe-right)) 0 calc(6px + var(--safe-left));
@@ -1489,4 +1489,19 @@ select.input {
 .content > .back-link {
   align-self: flex-start;
   margin-bottom: -8px;
+}
+
+/* כותרת עליונה: כל הכפתורים חייבים להיכנס גם במסכים צרים (320-360px) */
+.header-row .month-nav {
+  justify-self: center;
+  min-width: 0;
+}
+
+.header-row .icon-btn {
+  width: 42px;
+}
+
+.header-row .month-label {
+  white-space: nowrap;
+  font-size: 0.95rem;
 }
