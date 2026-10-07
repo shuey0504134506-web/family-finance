@@ -1135,3 +1135,139 @@ select.input {
   display: flex;
   gap: 4px;
 }
+
+/* ---------- גרפים והשוואות ---------- */
+
+.chart {
+  margin: 0;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.swatch-income,
+.bar-income {
+  background: var(--income);
+  fill: var(--income);
+}
+
+.swatch-expense,
+.bar-expense {
+  background: var(--expense);
+  fill: var(--expense);
+}
+
+.chart-readout {
+  min-height: 1.5em;
+  font-size: 0.875rem;
+  margin-bottom: 4px;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-tick {
+  fill: var(--text-muted);
+  font-size: 10px;
+}
+
+.chart-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.chart-focus {
+  fill: var(--accent-soft);
+  opacity: 0.7;
+}
+
+.chart-table summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.chart-table th,
+.chart-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+}
+
+.compare-list,
+.share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compare-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.compare-values {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.compare-change {
+  font-weight: 800;
+  min-width: 64px;
+  text-align: end;
+}
+
+.share-bar {
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.share-bar > div {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.share-expense > div {
+  background: var(--expense);
+}
+
+.share-income > div {
+  background: var(--income);
+}
