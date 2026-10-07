@@ -57,12 +57,23 @@ export function BalanceFrame(props: Props) {
               <Amount agorot={props.incomeAgorot} className="tone-income" />
             </dd>
           </div>
-          {props.fromBusinessAgorot !== undefined && props.fromBusinessAgorot > 0 && (
+          {props.fromBusinessAgorot !== undefined && props.fromBusinessAgorot !== 0 && (
             <div className="balance-subrow">
-              <dt>מתוכן: הכנסה מהעסק</dt>
-              <dd>
-                <Amount agorot={props.fromBusinessAgorot} />
-              </dd>
+              {props.fromBusinessAgorot > 0 ? (
+                <>
+                  <dt>מתוכן: הכנסה מהעסק</dt>
+                  <dd>
+                    <Amount agorot={props.fromBusinessAgorot} />
+                  </dd>
+                </>
+              ) : (
+                <>
+                  <dt>מתוכן: הפסד מהעסק (מקטין את ההכנסות)</dt>
+                  <dd>
+                    <Amount agorot={Math.abs(props.fromBusinessAgorot)} className="tone-expense" />
+                  </dd>
+                </>
+              )}
             </div>
           )}
           <div>

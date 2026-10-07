@@ -22,7 +22,9 @@ export function computeTitheBalance(
   paidAgorot: Agorot,
   bps: number,
 ): TitheBalance {
-  const requiredAgorot = applyBasisPoints(liableIncomeAgorot, bps);
+  // הפסד מקטין את ההכנסה החייבת, אבל אי אפשר "לחייב" מעשר שלילי.
+  // כך הפסד לא יוצג בטעות כ"עודף מעשרות" כשלא ניתן כלום.
+  const requiredAgorot = Math.max(0, applyBasisPoints(liableIncomeAgorot, bps));
   const difference = requiredAgorot - paidAgorot;
   return {
     liableIncomeAgorot,

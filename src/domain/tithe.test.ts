@@ -15,6 +15,13 @@ describe('computeTitheBalance', () => {
     expect(balance.surplusAgorot).toBe(15_000);
   });
 
+  it('הפסד לא יוצר חוב מעשר שלילי ולא עודף בדיוני', () => {
+    const balance = computeTitheBalance(-300_000, 0, 1000);
+    expect(balance.requiredAgorot).toBe(0);
+    expect(balance.remainingAgorot).toBe(0);
+    expect(balance.surplusAgorot).toBe(0);
+  });
+
   it('יתרה אפס כשהמעשר שולם בדיוק', () => {
     const balance = computeTitheBalance(1_000_000, 100_000, 1000);
     expect(balance.remainingAgorot).toBe(0);
@@ -33,6 +40,14 @@ describe('titheLiableIncome', () => {
       1_800_000,
     );
     expect(liable).toBe(2_000_000);
+  });
+
+  it('הפסד עסקי מקטין את ההכנסה החייבת', () => {
+    const liable = titheLiableIncome(
+      [{ type: 'income', amountAgorot: 500_000, titheStatus: 'liable' }],
+      -300_000,
+    );
+    expect(liable).toBe(200_000);
   });
 
   it('הכנסות העסק הגולמיות אינן חלק מהחישוב, רק הנטו שעבר', () => {
@@ -102,6 +117,19 @@ describe('titheByMonth - דוגמת ינואר/פברואר מהמסמך', () =>
     );
     expect(feb[1].cumulative.remainingAgorot).toBe(0);
     expect(feb[1].cumulative.surplusAgorot).toBe(10_000);
+  });
+
+  it('הפסד בחודש אחד מקזז רווח מחודש קודם בחישוב המצטבר', () => {
+    const result = titheByMonth(
+      [
+        { yearMonth: '2026-01', liableIncomeAgorot: 1_000_000, paidAgorot: 0 },
+        { yearMonth: '2026-02', liableIncomeAgorot: -400_000, paidAgorot: 0 },
+      ],
+      1000,
+    );
+    // מצטבר: 10,000 פחות 4,000 = 6,000 חייבים, מעשר 600
+    expect(result[1].cumulative.liableIncomeAgorot).toBe(600_000);
+    expect(result[1].cumulative.requiredAgorot).toBe(60_000);
   });
 
   it('החוב לא מתאפס בתחילת חודש חדש', () => {

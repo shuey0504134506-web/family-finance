@@ -29,13 +29,14 @@ export function businessNet(businessTotals: Totals): Agorot {
 /**
  * הסכום שעובר מהעסק למשק הבית כהכנסה.
  * רק הנטו עובר, לעולם לא ההכנסות הגולמיות של העסק. זה מה שמונע ספירה כפולה.
+ * בברירת המחדל גם חודש הפסדי עובר: ההפסד מופיע במשק הבית כהכנסה שלילית.
  */
 export function businessTransferToHousehold(
   netAgorot: Agorot,
-  mode: BusinessTransferMode = 'positive-only',
+  mode: BusinessTransferMode = 'allow-negative',
 ): Agorot {
-  if (mode === 'allow-negative') return netAgorot;
-  return Math.max(0, netAgorot);
+  if (mode === 'positive-only') return Math.max(0, netAgorot);
+  return netAgorot;
 }
 
 export interface HouseholdTotals extends Totals {

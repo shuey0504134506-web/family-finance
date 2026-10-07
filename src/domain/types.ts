@@ -8,9 +8,9 @@ export type TitheStatus = 'liable' | 'exempt';
 
 /**
  * איך נטו העסק הופך להכנסה במשק הבית.
- * - positive-only: חודש הפסדי לא יוצר "הכנסה שלילית" במשק הבית (ברירת מחדל).
- * - allow-negative: גם הפסד עובר למשק הבית כהכנסה שלילית.
- * זו נקודת החלטה פתוחה, ולכן היא הגדרה ולא קוד קבוע.
+ * - allow-negative: גם הפסד עובר למשק הבית, כהכנסה שלילית (ברירת מחדל, לפי החלטת בעל האפליקציה).
+ * - positive-only: חודש הפסדי לא עובר למשק הבית.
+ * נשמר כהגדרה כדי שאפשר יהיה לשנות את הנוסחה בלי לגעת בקוד החישוב.
  */
 export type BusinessTransferMode = 'positive-only' | 'allow-negative';
 
@@ -61,7 +61,7 @@ export interface UserSettings {
 export const DEFAULT_SETTINGS: UserSettings = {
   titheBps: 1000,
   countBusinessTithePayments: true,
-  businessTransferMode: 'positive-only',
+  businessTransferMode: 'allow-negative',
   updatedAt: 0,
 };
 

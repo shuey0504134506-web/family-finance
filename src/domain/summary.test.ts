@@ -56,10 +56,31 @@ describe('נטו עסק והעברה למשק הבית (דוגמה מהמסמך)
     expect(household.balanceAgorot).toBe(1_100_000);
   });
 
-  it('חודש הפסדי: ברירת המחדל לא יוצרת הכנסה שלילית במשק הבית', () => {
+  it('חודש הפסדי בעסק יוצר הפסד במשק הבית (ברירת המחדל)', () => {
+    // עסק: הכנסות 1,000, הוצאות 4,000 -> הפסד של 3,000
     const loss = totalsOf([income(100_000), expense(400_000)]);
-    expect(businessTransferToHousehold(businessNet(loss))).toBe(0);
-    expect(businessTransferToHousehold(businessNet(loss), 'allow-negative')).toBe(-300_000);
+    expect(businessNet(loss)).toBe(-300_000);
+
+    const transfer = businessTransferToHousehold(businessNet(loss));
+    expect(transfer).toBe(-300_000);
+
+    // במשק הבית: הכנסה עצמית 5,000, הוצאות 1,000, והפסד העסק מקטין את ההכנסה
+    const household = householdTotals([income(500_000), expense(100_000)], transfer);
+    expect(household.fromBusinessAgorot).toBe(-300_000);
+    expect(household.incomeAgorot).toBe(200_000);
+    expect(household.balanceAgorot).toBe(100_000);
+  });
+
+  it('אפשר לעבור להגדרה שבה הפסד עסקי לא עובר למשק הבית', () => {
+    const loss = totalsOf([income(100_000), expense(400_000)]);
+    expect(businessTransferToHousehold(businessNet(loss), 'positive-only')).toBe(0);
+    expect(businessTransferToHousehold(1_800_000, 'positive-only')).toBe(1_800_000);
+  });
+
+  it('הפסד עסקי גדול מההכנסה במשק הבית מביא את משק הבית למינוס', () => {
+    const household = householdTotals([income(100_000)], -300_000);
+    expect(household.incomeAgorot).toBe(-200_000);
+    expect(household.balanceAgorot).toBe(-200_000);
   });
 });
 

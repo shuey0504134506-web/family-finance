@@ -113,15 +113,26 @@ export function HomeScreen({ scope }: { scope: Scope }) {
         />
 
         {!isBusiness && hasBusiness && !loading && (
-          <section className="card business-income-card" aria-label="הכנסה מהעסק">
+          <section
+            className="card business-income-card"
+            aria-label={householdSummary.fromBusinessAgorot < 0 ? 'הפסד מהעסק' : 'הכנסה מהעסק'}
+          >
             <div className="row-between">
               <span>
-                <span aria-hidden="true">💼</span> הכנסה מהעסק (נטו)
+                <span aria-hidden="true">💼</span>{' '}
+                {householdSummary.fromBusinessAgorot < 0
+                  ? 'הפסד מהעסק (נטו)'
+                  : 'הכנסה מהעסק (נטו)'}
               </span>
-              <Amount agorot={householdSummary.fromBusinessAgorot} className="tone-income" />
+              <Amount
+                agorot={Math.abs(householdSummary.fromBusinessAgorot)}
+                className={householdSummary.fromBusinessAgorot < 0 ? 'tone-expense' : 'tone-income'}
+              />
             </div>
             <p className="muted small">
-              רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים.
+              {householdSummary.fromBusinessAgorot < 0
+                ? 'העסק הפסיד החודש, וההפסד מקטין את הכנסות משק הבית.'
+                : 'רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים.'}
             </p>
           </section>
         )}
