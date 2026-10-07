@@ -12,7 +12,7 @@ import { SecuritySection } from './SecuritySection';
 
 /** מסך הגדרות: חשבון, קטגוריות, חישובים, אבטחה, גיבוי, יציאה ומחיקת חשבון. */
 export function SettingsScreen() {
-  const { profile, user } = useReadyAuth();
+  const { user } = useReadyAuth();
   const { signOutUser } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
