@@ -58,6 +58,13 @@ export function SettingsScreen() {
         </section>
 
         <section className="card">
+          <h2 className="card-title">ניהול</h2>
+          <Link className="btn btn-secondary" to="/categories">
+            קטגוריות
+          </Link>
+        </section>
+
+        <section className="card">
           {error && (
             <div className="form-error" role="alert">
               {error}

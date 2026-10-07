@@ -1002,3 +1002,136 @@ select.input {
   align-items: center;
   gap: 4px;
 }
+
+/* ---------- תקציב, קטגוריות, קישורים מהירים ---------- */
+
+.quick-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.quick-links .btn:only-child {
+  grid-column: 1 / -1;
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.segmented button {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.segmented button.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.budget-list,
+.category-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budget-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budget-bar {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.budget-bar > div {
+  height: 100%;
+  border-radius: 6px;
+}
+
+.budget-bar.budget-ok > div {
+  background: var(--income);
+}
+
+.budget-bar.budget-approaching > div {
+  background: #c99a06;
+}
+
+.budget-bar.budget-near > div {
+  background: var(--tithe);
+}
+
+.budget-bar.budget-over > div {
+  background: var(--expense);
+}
+
+.budget-status {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.budget-status.budget-ok {
+  color: var(--income);
+}
+
+.budget-status.budget-approaching {
+  color: #8a6a00;
+}
+
+.budget-status.budget-near {
+  color: var(--tithe);
+}
+
+.budget-status.budget-over {
+  color: var(--expense);
+}
+
+.budget-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.budget-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-row.is-inactive {
+  opacity: 0.7;
+}
+
+.category-actions {
+  display: flex;
+  gap: 4px;
+}

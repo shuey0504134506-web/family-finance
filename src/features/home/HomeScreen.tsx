@@ -157,10 +157,17 @@ export function HomeScreen({ scope }: { scope: Scope }) {
           </section>
         )}
 
-        {!isBusiness && month.status !== 'future' && (
-          <button type="button" className="btn btn-secondary tithe-link" onClick={() => navigate('/tithes')}>
-            🙏 מעשרות
-          </button>
+        {month.status !== 'future' && (
+          <div className="quick-links">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate(`/${scope}/budget`)}>
+              🎯 תקציב
+            </button>
+            {!isBusiness && (
+              <button type="button" className="btn btn-secondary tithe-link" onClick={() => navigate('/tithes')}>
+                🙏 מעשרות
+              </button>
+            )}
+          </div>
         )}
 
         {month.status !== 'future' && !active.error && !active.loading && (

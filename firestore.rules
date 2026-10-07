@@ -97,6 +97,26 @@ service cloud.firestore {
              && data.updatedAt is int;
     }
 
+    // ---------- תקציב: users/{uid}/budgets/{categoryId} ----------
+    // מזהה המסמך הוא מזהה הקטגוריה, לכן לכל קטגוריה יש תקציב אחד לכל היותר.
+
+    function validBudget(data, budgetId) {
+      return data.keys().hasOnly([
+               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt'
+             ])
+             && data.id == budgetId
+             && data.categoryId == budgetId
+             && data.scope in ['business', 'household']
+             && data.amountAgorot is int
+             && data.amountAgorot > 0
+             && data.amountAgorot <= 100000000000
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
     // ---------- פעולות כספיות (הכנסות והוצאות) ----------
     // זהה לעסק ולמשק בית. הסכום תמיד מספר שלם חיובי של אגורות.
 
@@ -197,14 +217,17 @@ service cloud.firestore {
         allow delete: if isOwner(uid);
       }
 
-      // budgets ו-titheRecords: המבנה המדויק ייקבע כשיבנו (שלבים 8 ו-9).
-      // עד אז הם פתוחים לבעלים בלבד, עם הגבלת גודל בסיסית.
       match /budgets/{budgetId} {
-        allow read, delete: if isOwner(uid);
-        allow create, update: if isOwner(uid)
-                              && request.resource.data.keys().size() <= 20;
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validBudget(request.resource.data, budgetId);
+        allow update: if isOwner(uid)
+                      && validBudget(request.resource.data, budgetId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
       }
 
+      // titheRecords: אינו בשימוש כרגע (המעשרות מחושבים מהפעולות). פתוח לבעלים בלבד,
+      // עם הגבלת גודל בסיסית, עד שיוגדר מבנה.
       match /titheRecords/{recordId} {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid)

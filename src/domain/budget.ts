@@ -44,3 +44,49 @@ export const BUDGET_STATUS_LABELS: Record<BudgetStatus, string> = {
   near: 'קרובים מאוד לתקרה',
   over: 'חריגה',
 };
+
+import type { Budget, Category } from './types';
+
+export interface BudgetRow {
+  categoryId: string;
+  categoryName: string;
+  /** null = לא הוגדר תקציב לקטגוריה */
+  usage: BudgetUsage | null;
+  usedAgorot: Agorot;
+}
+
+/**
+ * שורות מסך התקציב: כל קטגוריות ההוצאה הפעילות של התחום, עם התקציב (אם הוגדר) והניצול.
+ * קטגוריה שהושבתה מופיעה רק אם יש בה הוצאות או תקציב. קודם קטגוריות עם תקציב, לפי חומרת הסטטוס.
+ */
+export function buildBudgetRows(
+  categories: readonly Category[],
+  budgets: readonly Budget[],
+  usedByCategory: ReadonlyMap<string, Agorot>,
+): BudgetRow[] {
+  const budgetByCategory = new Map(budgets.map((b) => [b.categoryId, b.amountAgorot]));
+  const severity: Record<BudgetStatus, number> = { over: 0, near: 1, approaching: 2, ok: 3 };
+
+  const rows = categories
+    .filter((c) => c.type === 'expense')
+    .filter(
+      (c) => c.active || (usedByCategory.get(c.id) ?? 0) > 0 || budgetByCategory.has(c.id),
+    )
+    .map<BudgetRow>((c) => {
+      const used = usedByCategory.get(c.id) ?? 0;
+      const budget = budgetByCategory.get(c.id);
+      return {
+        categoryId: c.id,
+        categoryName: c.name,
+        usedAgorot: used,
+        usage: budget === undefined ? null : budgetUsage(budget, used),
+      };
+    });
+
+  return rows.sort((a, b) => {
+    if (!a.usage && !b.usage) return 0;
+    if (!a.usage) return 1;
+    if (!b.usage) return -1;
+    return severity[a.usage.status] - severity[b.usage.status];
+  });
+}

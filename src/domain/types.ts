@@ -106,3 +106,13 @@ export interface Category {
   createdAt: number;
   updatedAt: number;
 }
+
+/** תקציב חודשי לקטגוריית הוצאה. תקף לכל חודש. מזהה המסמך הוא מזהה הקטגוריה. */
+export interface Budget {
+  id: string;
+  scope: Scope;
+  categoryId: string;
+  amountAgorot: number;
+  createdAt: number;
+  updatedAt: number;
+}

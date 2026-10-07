@@ -207,3 +207,42 @@ describe('הגדרות וקטגוריות', () => {
     await assertFails(setDoc(doc(alice(), 'users/alice/categories/c1'), { ...category, scope: 'other' }));
   });
 });
+
+describe('תקציבים', () => {
+  const budget = {
+    id: 'household-expense-food',
+    scope: 'household',
+    categoryId: 'household-expense-food',
+    amountAgorot: 150000,
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const path = 'users/alice/budgets/household-expense-food';
+
+  it('תקציב תקין מתקבל', async () => {
+    await assertSucceeds(setDoc(doc(alice(), path), budget));
+  });
+
+  it('סכום אפס, שלילי, לא שלם או גדול מדי נדחה', async () => {
+    for (const amountAgorot of [0, -5, 10.5, 200000000000]) {
+      await assertFails(setDoc(doc(alice(), path), { ...budget, amountAgorot }));
+    }
+  });
+
+  it('מזהה שלא תואם לקטגוריה, או תחום לא מוכר, נדחה', async () => {
+    await assertFails(setDoc(doc(alice(), path), { ...budget, categoryId: 'other' }));
+    await assertFails(setDoc(doc(alice(), path), { ...budget, scope: 'x' }));
+  });
+
+  it('אי אפשר לשנות createdAt, אבל אפשר לשנות סכום', async () => {
+    await assertSucceeds(setDoc(doc(alice(), path), budget));
+    await assertFails(setDoc(doc(alice(), path), { ...budget, createdAt: 99 }));
+    await assertSucceeds(setDoc(doc(alice(), path), { ...budget, amountAgorot: 200000, updatedAt: 2 }));
+  });
+
+  it('משתמש אחר לא קורא ולא כותב תקציב', async () => {
+    await assertSucceeds(setDoc(doc(alice(), path), budget));
+    await assertFails(getDoc(doc(bob(), path)));
+    await assertFails(setDoc(doc(bob(), path), budget));
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { budgetStatus, budgetUsage } from './budget';
+import { buildBudgetRows, budgetStatus, budgetUsage } from './budget';
 
 describe('budgetUsage (דוגמת התקציב מהמסמך)', () => {
   it('12,000 תקציב, 8,000 נוצל -> נשאר 4,000, 66.7%', () => {
@@ -60,5 +60,52 @@ describe('budgetStatus - ספים', () => {
   it('תקציב אפס: חריגה רק אם נוצל משהו', () => {
     expect(budgetStatus(0, 0)).toBe('ok');
     expect(budgetStatus(0, 1)).toBe('over');
+  });
+});
+
+describe('buildBudgetRows', () => {
+  const category = (id: string, name: string, active = true, type: 'income' | 'expense' = 'expense') => ({
+    id,
+    scope: 'household' as const,
+    type,
+    name,
+    active,
+    isDefault: true,
+    sortOrder: 0,
+    createdAt: 0,
+    updatedAt: 0,
+  });
+  const budget = (categoryId: string, amountAgorot: number) => ({
+    id: categoryId,
+    scope: 'household' as const,
+    categoryId,
+    amountAgorot,
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
+  it('מציג רק קטגוריות הוצאה, וממיין קודם חריגות ואז קטגוריות בלי תקציב', () => {
+    const rows = buildBudgetRows(
+      [category('a', 'אחת'), category('b', 'שתיים'), category('c', 'שלוש'), category('i', 'הכנסה', true, 'income')],
+      [budget('a', 100_000), budget('b', 100_000)],
+      new Map([
+        ['a', 50_000],
+        ['b', 120_000],
+        ['c', 1],
+      ]),
+    );
+    expect(rows.map((r) => r.categoryId)).toEqual(['b', 'a', 'c']);
+    expect(rows[0].usage?.status).toBe('over');
+    expect(rows[1].usage?.status).toBe('ok');
+    expect(rows[2].usage).toBeNull();
+  });
+
+  it('קטגוריה מושבתת מוצגת רק אם יש בה הוצאות או תקציב', () => {
+    const rows = buildBudgetRows(
+      [category('a', 'אחת', false), category('b', 'שתיים', false), category('c', 'שלוש', false)],
+      [budget('a', 100)],
+      new Map([['b', 5]]),
+    );
+    expect(rows.map((r) => r.categoryId).sort()).toEqual(['a', 'b']);
   });
 });
