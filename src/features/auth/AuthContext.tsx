@@ -11,6 +11,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import type { UserProfile } from '../../domain/types';
 import { loginWithEmail, logout, registerAccount } from '../../services/authService';
+import { syncProfileEmail } from '../../services/accountService';
 import { saveDeviceUser } from '../../services/deviceUser';
 import {
   createUserRecords,
@@ -85,7 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // זוכרים במכשיר מי המשתמש, כדי שבכניסה הבאה יוצג שמו ויידרש רק סיסמה.
   useEffect(() => {
     if (state.status === 'ready') {
-      saveDeviceUser({ email: state.profile.email, firstName: state.profile.firstName });
+      saveDeviceUser({
+        email: state.user.email ?? state.profile.email,
+        firstName: state.profile.firstName,
+      });
+    }
+  }, [state]);
+
+  // אחרי שינוי מייל מאומת, הכתובת ב-Authentication משתנה. מעדכנים גם את הפרופיל.
+  useEffect(() => {
+    if (state.status !== 'ready') return;
+    const authEmail = state.user.email;
+    if (authEmail && authEmail !== state.profile.email) {
+      syncProfileEmail(state.user.uid, authEmail).catch(() => {
+        // לא קריטי: ננסה שוב בפתיחה הבאה.
+      });
     }
   }, [state]);
 

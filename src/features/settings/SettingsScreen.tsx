@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
-import { ACCOUNT_MODE_LABELS } from '../../domain/types';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth, useAuth } from '../auth/AuthContext';
+import { DataSection } from './DataSection';
+import { DeleteAccountSection } from './DeleteAccountSection';
+import { FormulasSection } from './FormulasSection';
+import { ProfileSection } from './ProfileSection';
+import { SecuritySection } from './SecuritySection';
 
-/**
- * מסך הגדרות. בשלב הזה: פרטי החשבון ויציאה.
- * שאר ההגדרות (סיסמה, קטגוריות, מעשרות, תקציב, ייצוא, מחיקת חשבון) יתווספו בשלב 13.
- */
+/** מסך הגדרות: חשבון, קטגוריות, חישובים, אבטחה, גיבוי, יציאה ומחיקת חשבון. */
 export function SettingsScreen() {
   const { profile, user } = useReadyAuth();
   const { signOutUser } = useAuth();
@@ -37,25 +38,14 @@ export function SettingsScreen() {
           </h2>
           <dl className="details">
             <div>
-              <dt>שם</dt>
-              <dd>
-                {profile.firstName} {profile.lastName}
-              </dd>
-            </div>
-            <div>
               <dt>כתובת מייל</dt>
               <dd dir="ltr">{user.email}</dd>
             </div>
-            <div>
-              <dt>שם העסק</dt>
-              <dd>{profile.businessName}</dd>
-            </div>
-            <div>
-              <dt>ייעוד האפליקציה</dt>
-              <dd>{ACCOUNT_MODE_LABELS[profile.accountMode]}</dd>
-            </div>
           </dl>
         </section>
+
+        <ProfileSection />
+        <FormulasSection />
 
         <section className="card">
           <h2 className="card-title">ניהול</h2>
@@ -63,6 +53,9 @@ export function SettingsScreen() {
             קטגוריות
           </Link>
         </section>
+
+        <SecuritySection />
+        <DataSection />
 
         <section className="card">
           {error && (
@@ -74,6 +67,8 @@ export function SettingsScreen() {
             {busy ? 'יוצא…' : 'יציאה מהחשבון'}
           </button>
         </section>
+
+        <DeleteAccountSection />
 
         <p className="auth-footer-link">
           <Link to="/privacy">מדיניות פרטיות</Link>

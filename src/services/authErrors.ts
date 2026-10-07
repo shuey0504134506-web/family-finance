@@ -10,6 +10,9 @@ const MESSAGES: Record<string, string> = {
   'auth/network-request-failed': 'אין חיבור לאינטרנט. יש לבדוק את החיבור ולנסות שוב.',
   'auth/user-disabled': 'החשבון הזה הושבת.',
   'auth/requires-recent-login': 'לצורך הפעולה הזאת יש להיכנס מחדש לחשבון.',
+  'app/offline': 'הפעולה דורשת חיבור לאינטרנט. יש להתחבר ולנסות שוב.',
+  'auth/missing-password': 'יש להזין סיסמה.',
+  'auth/operation-not-allowed': 'הפעולה אינה מופעלת בהגדרות Firebase.',
   'permission-denied': 'אין הרשאה לבצע את הפעולה.',
   unavailable: 'השרת אינו זמין כרגע. הנתונים נשמרים במכשיר ויסונכרנו כשהחיבור יחזור.',
 };

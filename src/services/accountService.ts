@@ -1,0 +1,160 @@
+import {
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  updatePassword,
+  verifyBeforeUpdateEmail,
+  type User,
+} from 'firebase/auth';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  getDocsFromServer,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
+import { buildBackup, type BackupFile, type ExportTransaction } from '../domain/export';
+import type { AccountMode, Category, Transaction, UserSettings } from '../domain/types';
+import { forgetDeviceUser } from './deviceUser';
+
+/** שגיאה עם קוד, כדי ש-describeError יציג הודעה בעברית. */
+function appError(code: string): Error {
+  return Object.assign(new Error(code), { code });
+}
+
+function requireOnline(): void {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw appError('app/offline');
+}
+
+async function reauthenticate(user: User, password: string): Promise<void> {
+  if (!user.email) throw appError('auth/invalid-credential');
+  if (!password) throw appError('auth/missing-password');
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+}
+
+// ---------- הגדרות ופרופיל ----------
+
+export function saveSettings(uid: string, settings: Omit<UserSettings, 'updatedAt'>): Promise<void> {
+  return setDoc(doc(db, 'users', uid, 'settings', 'main'), { ...settings, updatedAt: Date.now() });
+}
+
+export interface ProfileChanges {
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  accountMode: AccountMode;
+}
+
+export function saveProfile(uid: string, changes: ProfileChanges): Promise<void> {
+  return updateDoc(doc(db, 'users', uid), {
+    firstName: changes.firstName.trim(),
+    lastName: changes.lastName.trim(),
+    businessName: changes.businessName.trim(),
+    accountMode: changes.accountMode,
+    updatedAt: Date.now(),
+  });
+}
+
+/** מסנכרן את כתובת המייל בפרופיל לכתובת ב-Authentication (אחרי שינוי מייל מאומת). */
+export function syncProfileEmail(uid: string, email: string): Promise<void> {
+  return updateDoc(doc(db, 'users', uid), { email, updatedAt: Date.now() });
+}
+
+// ---------- אבטחה ----------
+
+export async function changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
+  requireOnline();
+  await reauthenticate(user, currentPassword);
+  await updatePassword(user, newPassword);
+}
+
+/**
+ * שינוי מייל: נשלח קישור אימות לכתובת החדשה. הכתובת מתחלפת רק אחרי שהמשתמש לוחץ עליו,
+ * ולכן טעות הקלדה אינה נועלת אותו מחוץ לחשבון.
+ */
+export async function requestEmailChange(user: User, currentPassword: string, newEmail: string): Promise<void> {
+  requireOnline();
+  await reauthenticate(user, currentPassword);
+  await verifyBeforeUpdateEmail(user, newEmail.trim());
+}
+
+// ---------- יצוא וגיבוי ----------
+
+export interface ExportResult {
+  backup: BackupFile;
+  transactions: ExportTransaction[];
+}
+
+/** קורא את כל נתוני המשתמש (מהשרת כשיש חיבור, אחרת מהמטמון המקומי). */
+export async function exportAllData(uid: string): Promise<ExportResult> {
+  const read = async <T>(name: string): Promise<T[]> => {
+    const ref = collection(db, 'users', uid, name);
+    const snapshot = await (navigator.onLine === false ? getDocs(ref) : getDocsFromServer(ref));
+    return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
+  };
+
+  const [businessTx, householdTx, categories, budgets, settingsDocs] = await Promise.all([
+    read<Transaction>('businessTransactions'),
+    read<Transaction>('householdTransactions'),
+    read<Category>('categories'),
+    read<object>('budgets'),
+    read<object>('settings'),
+  ]);
+
+  const transactions: ExportTransaction[] = [
+    ...businessTx.map((t) => ({ ...t, scope: 'business' as const })),
+    ...householdTx.map((t) => ({ ...t, scope: 'household' as const })),
+  ];
+
+  const backup = buildBackup({
+    uid,
+    settings: settingsDocs,
+    categories,
+    budgets,
+    businessTransactions: businessTx,
+    householdTransactions: householdTx,
+  });
+  return { backup, transactions };
+}
+
+// ---------- מחיקת חשבון ----------
+
+const USER_COLLECTIONS = [
+  'businessTransactions',
+  'householdTransactions',
+  'categories',
+  'budgets',
+  'titheRecords',
+  'settings',
+  'businessProfile',
+  'householdProfile',
+] as const;
+
+const BATCH_SIZE = 400;
+
+/**
+ * מוחק את כל נתוני המשתמש ואת החשבון עצמו, ללא אפשרות שחזור.
+ * דורש חיבור לאינטרנט וסיסמה. סדר הפעולות: אימות מחדש, מחיקת נתונים, מחיקת פרופיל, מחיקת
+ * ההתחברות. אם נכשל באמצע אפשר להריץ שוב: מחיקה חוזרת של מה שכבר נמחק אינה גורמת נזק.
+ */
+export async function deleteAccountAndData(user: User, password: string): Promise<void> {
+  requireOnline();
+  await reauthenticate(user, password);
+
+  const uid = user.uid;
+  for (const name of USER_COLLECTIONS) {
+    const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
+    for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      snapshot.docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await deleteDoc(doc(db, 'users', uid));
+  await deleteUser(auth.currentUser ?? user);
+  forgetDeviceUser();
+}
