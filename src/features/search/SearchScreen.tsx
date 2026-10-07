@@ -102,7 +102,7 @@ export function SearchScreen() {
           <div className="segmented" role="group" aria-label="תחום">
             {(
               [
-                ['all', 'עסק ומשק בית'],
+                ['all', 'הכול'],
                 ['business', 'עסק'],
                 ['household', 'משק בית'],
               ] as const

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ניהול כספים</string>
+    <string name="title_activity_main">ניהול כספים</string>
+    <string name="package_name">com.familyfinance.app</string>
+    <string name="custom_url_scheme">com.familyfinance.app</string>
+</resources>

@@ -1,0 +1,17 @@
+{
+  "appId": "com.familyfinance.app",
+  "appName": "ניהול כספים",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "LIGHT",
+      "insetsHandling": "css"
+    }
+  }
+}
