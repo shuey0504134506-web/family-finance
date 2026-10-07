@@ -129,3 +129,58 @@ export function titheByMonth(months: readonly TitheMonthInput[], bps: number): T
     };
   });
 }
+
+type TitheSourceTx = Pick<
+  Transaction,
+  'type' | 'amountAgorot' | 'titheStatus' | 'isTithePayment' | 'yearMonth'
+>;
+
+/**
+ * בונה את קלט חישוב המעשרות מרשימות הפעולות (כל ההיסטוריה עד החודש הנבחר).
+ * שורה לכל חודש שיש בו פעילות, ותמיד גם שורה לחודש האחרון שביקשו (גם אם ריק),
+ * כדי שהמצב המצטבר שלו יוצג.
+ *
+ * נטו העסק של כל חודש עובר לפי אותה הגדרה שמשמשת את מסך הבית (businessTransferMode),
+ * כך שהמעשר מתבסס על מה שבאמת עבר למשק הבית.
+ */
+export function buildTitheInputs(
+  household: readonly TitheSourceTx[],
+  business: readonly TitheSourceTx[],
+  options: {
+    lastYearMonth: string;
+    countBusinessTithePayments: boolean;
+    transferMode: 'positive-only' | 'allow-negative';
+  },
+): TitheMonthInput[] {
+  const byMonth = new Map<string, TitheMonthInput>();
+  const entry = (yearMonth: string): TitheMonthInput => {
+    let row = byMonth.get(yearMonth);
+    if (!row) {
+      row = { yearMonth, householdLiableIncomeAgorot: 0, businessNetAgorot: 0, paidAgorot: 0 };
+      byMonth.set(yearMonth, row);
+    }
+    return row;
+  };
+
+  const businessNetByMonth = new Map<string, number>();
+  for (const tx of business) {
+    const signed = tx.type === 'income' ? tx.amountAgorot : -tx.amountAgorot;
+    businessNetByMonth.set(tx.yearMonth, (businessNetByMonth.get(tx.yearMonth) ?? 0) + signed);
+    if (options.countBusinessTithePayments && tx.type === 'expense' && tx.isTithePayment) {
+      entry(tx.yearMonth).paidAgorot += tx.amountAgorot;
+    }
+  }
+  for (const [yearMonth, net] of businessNetByMonth) {
+    entry(yearMonth).businessNetAgorot =
+      options.transferMode === 'positive-only' ? Math.max(0, net) : net;
+  }
+
+  for (const tx of household) {
+    const row = entry(tx.yearMonth);
+    if (tx.type === 'income' && tx.titheStatus === 'liable') row.householdLiableIncomeAgorot += tx.amountAgorot;
+    if (tx.type === 'expense' && tx.isTithePayment) row.paidAgorot += tx.amountAgorot;
+  }
+
+  entry(options.lastYearMonth);
+  return [...byMonth.values()].filter((row) => row.yearMonth <= options.lastYearMonth);
+}

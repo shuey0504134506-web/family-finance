@@ -11,6 +11,7 @@ import { HomeScreen } from './features/home/HomeScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
+import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { readDeviceUser } from './services/deviceUser';
 
@@ -102,6 +103,7 @@ export function AppRoutes() {
         <Route path="/household" element={<ScopeRoute scope="household" />} />
         <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
         <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
+        <Route path="/tithes" element={<TitheScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Route>
 

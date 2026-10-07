@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTitheInputs,
   computeTitheBalance,
   householdTitheLiableIncome,
   titheByMonth,
@@ -154,5 +155,63 @@ describe('titheByMonth - דוגמת ינואר/פברואר מהמסמך', () =>
       1000,
     );
     expect(rows[2].cumulative.remainingAgorot).toBe(100_000);
+  });
+});
+
+describe('buildTitheInputs', () => {
+  const tx = (
+    yearMonth: string,
+    type: 'income' | 'expense',
+    amountAgorot: number,
+    extra: { titheStatus?: 'liable' | 'exempt'; isTithePayment?: boolean } = {},
+  ) => ({
+    yearMonth,
+    type,
+    amountAgorot,
+    titheStatus: extra.titheStatus ?? ('liable' as const),
+    isTithePayment: extra.isTithePayment ?? false,
+  });
+  const options = {
+    lastYearMonth: '2026-02',
+    countBusinessTithePayments: true,
+    transferMode: 'allow-negative' as const,
+  };
+
+  it('מסכם נטו עסק, הכנסה חייבת ומעשר ששולם לכל חודש, ומוסיף את החודש האחרון גם אם ריק', () => {
+    const rows = buildTitheInputs(
+      [tx('2026-01', 'income', 500_000), tx('2026-01', 'income', 200_000, { titheStatus: 'exempt' }), tx('2026-01', 'expense', 30_000, { isTithePayment: true })],
+      [tx('2026-01', 'income', 1_000_000), tx('2026-01', 'expense', 400_000), tx('2026-01', 'expense', 10_000, { isTithePayment: true })],
+      options,
+    );
+    const jan = rows.find((r) => r.yearMonth === '2026-01');
+    expect(jan).toEqual({
+      yearMonth: '2026-01',
+      householdLiableIncomeAgorot: 500_000,
+      // 1,000,000 - 400,000 - 10,000 (ההוצאה של המעשר היא גם הוצאה עסקית)
+      businessNetAgorot: 590_000,
+      paidAgorot: 40_000,
+    });
+    expect(rows.find((r) => r.yearMonth === '2026-02')).toBeDefined();
+  });
+
+  it('לא סופר מעשר שנתן העסק כשההגדרה כבויה', () => {
+    const rows = buildTitheInputs([], [tx('2026-01', 'expense', 10_000, { isTithePayment: true })], {
+      ...options,
+      countBusinessTithePayments: false,
+    });
+    expect(rows.find((r) => r.yearMonth === '2026-01')?.paidAgorot).toBe(0);
+  });
+
+  it('במצב positive-only חודש הפסדי לא מקטין את בסיס המעשר', () => {
+    const rows = buildTitheInputs([], [tx('2026-01', 'expense', 300_000)], {
+      ...options,
+      transferMode: 'positive-only',
+    });
+    expect(rows.find((r) => r.yearMonth === '2026-01')?.businessNetAgorot).toBe(0);
+  });
+
+  it('מתעלם מחודשים אחרי החודש המבוקש', () => {
+    const rows = buildTitheInputs([tx('2026-05', 'income', 100_000)], [], options);
+    expect(rows.map((r) => r.yearMonth)).toEqual(['2026-02']);
   });
 });

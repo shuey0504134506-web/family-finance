@@ -157,6 +157,12 @@ export function HomeScreen({ scope }: { scope: Scope }) {
           </section>
         )}
 
+        {!isBusiness && month.status !== 'future' && (
+          <button type="button" className="btn btn-secondary tithe-link" onClick={() => navigate('/tithes')}>
+            🙏 מעשרות
+          </button>
+        )}
+
         {month.status !== 'future' && !active.error && !active.loading && (
           <TransactionList scope={scope} items={active.items} />
         )}

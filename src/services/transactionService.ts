@@ -86,3 +86,31 @@ export async function getTransaction(
   const snapshot = await getDoc(doc(transactionsCollection(uid, scope), id));
   return snapshot.exists() ? { ...(snapshot.data() as Transaction), id: snapshot.id } : null;
 }
+
+/**
+ * כל הפעולות מתחילת הנתונים ועד סוף חודש מסוים. נדרש לחישובים מצטברים (מעשרות).
+ * שאילתת טווח על שדה אחד, ולכן לא נדרש אינדקס.
+ */
+export function subscribeTransactionsUpTo(
+  uid: string,
+  scope: Scope,
+  yearMonth: YearMonth,
+  onChange: (records: TransactionRecord[]) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  const { end } = monthDateRange(yearMonth);
+  const q = query(transactionsCollection(uid, scope), where('date', '<=', end), orderBy('date', 'desc'));
+  return onSnapshot(
+    q,
+    { includeMetadataChanges: true },
+    (snapshot) =>
+      onChange(
+        snapshot.docs.map((document) => ({
+          ...(document.data() as Transaction),
+          id: document.id,
+          pendingSync: document.metadata.hasPendingWrites,
+        })),
+      ),
+    onError,
+  );
+}

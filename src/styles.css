@@ -937,3 +937,68 @@ select.input {
   color: #fff;
   text-decoration: underline;
 }
+
+/* ---------- מעשרות ---------- */
+
+.tone-tithe {
+  color: var(--tithe);
+}
+
+.tithe-hero {
+  text-align: center;
+}
+
+.tithe-label {
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.tithe-big {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 800;
+}
+
+.tithe-link {
+  margin: 16px 0;
+  color: var(--tithe);
+  border-color: var(--tithe);
+}
+
+.detail-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-list > div,
+.tithe-months li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-list dt {
+  color: var(--text-muted);
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.tithe-months {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
