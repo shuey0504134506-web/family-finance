@@ -1,0 +1,78 @@
+name: בדיקות ופריסה ל-GitHub Pages
+
+# בכל שינוי בענף main: מריץ בדיקות, בונה את האפליקציה ומפרסם אותה באתר.
+# אפשר גם להריץ ידנית: לשונית Actions ← שם ה-workflow ← Run workflow.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: הורדת הקוד
+        uses: actions/checkout@v4
+
+      - name: התקנת Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: התקנת חבילות
+        run: npm ci
+
+      - name: בדיקות (TypeScript, ESLint, בדיקות יחידה)
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run test
+
+      - name: בדיקה שפרטי Firebase הוגדרו
+        env:
+          API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        run: |
+          if [ -z "$API_KEY" ] || [ -z "$PROJECT_ID" ]; then
+            echo "::error::חסרים פרטי Firebase. יש להוסיף את ה-Secrets: Settings ← Secrets and variables ← Actions. ההוראות ב-README."
+            exit 1
+          fi
+
+      - name: בניית האפליקציה
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_PRIVACY_CONTACT_EMAIL: ${{ secrets.VITE_PRIVACY_CONTACT_EMAIL }}
+
+      - name: הכנת האתר לפרסום
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: פרסום באתר
+        id: deployment
+        uses: actions/deploy-pages@v4
