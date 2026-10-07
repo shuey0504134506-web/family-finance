@@ -27,6 +27,8 @@
 הכול נעשה דרך הדפדפן. GitHub מריץ את הבדיקות וה-Build בענן ומפרסם את האפליקציה בכתובת אינטרנט,
 שאפשר לפתוח גם מהטלפון.
 
+> מדריך מפורט יותר, כולל פעולות עתידיות ופתרון בעיות: [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md).
+
 ### שלב 1: יצירת פרויקט Firebase
 
 1. נכנסים ל-https://console.firebase.google.com עם חשבון Google.
