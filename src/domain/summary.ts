@@ -1,4 +1,5 @@
 import { sumAgorot, type Agorot } from './money';
+import { businessIdOf } from './spaces';
 import type { BusinessTransferMode, Transaction } from './types';
 
 type AmountOnly = Pick<Transaction, 'type' | 'amountAgorot'>;
@@ -37,6 +38,27 @@ export function businessTransferToHousehold(
 ): Agorot {
   if (mode === 'positive-only') return Math.max(0, netAgorot);
   return netAgorot;
+}
+
+/**
+ * ההעברה לבית מכמה עסקים: לכל עסק מחושב נטו משלו, חוק ההעברה (הפסד עובר או לא)
+ * חל על כל עסק בנפרד, והתוצאות מתחברות. כך הפסד בעסק אחד מקטין את ההכנסה מהבית
+ * רק אם ההגדרה מאפשרת זאת, ולעולם אינו "נבלע" בתוך רווח של עסק אחר בלי שההגדרה קבעה זאת.
+ * מקבל רק פעולות של עסקים שנספרים (הסינון נעשה אצל הקורא).
+ */
+export function transferFromBusinesses(
+  businessTransactions: readonly (AmountOnly & { businessId?: string })[],
+  mode: BusinessTransferMode = 'allow-negative',
+): Agorot {
+  const nets = new Map<string, Agorot>();
+  for (const t of businessTransactions) {
+    const id = businessIdOf(t);
+    const signed = t.type === 'income' ? t.amountAgorot : -t.amountAgorot;
+    nets.set(id, (nets.get(id) ?? 0) + signed);
+  }
+  let sum = 0;
+  for (const net of nets.values()) sum += businessTransferToHousehold(net, mode);
+  return sum;
 }
 
 export interface HouseholdTotals extends Totals {

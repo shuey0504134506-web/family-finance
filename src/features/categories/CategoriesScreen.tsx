@@ -1,9 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { scopesForMode, type Category, type Scope, type TransactionType } from '../../domain/types';
+import { inSpace } from '../../domain/spaces';
+import type { Category, TransactionType } from '../../domain/types';
 import { useCategories } from '../../hooks/useCategories';
 import { createCategory, deleteCategory, updateCategory } from '../../services/categoryService';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { Icon } from '../../components/Icon';
 
@@ -11,11 +13,13 @@ const MAX_NAME = 60;
 
 /** ניהול קטגוריות: הוספה, שינוי שם והשבתה. קטגוריה לא נמחקת, כדי לא לאבד היסטוריה. */
 export function CategoriesScreen() {
-  const { user, profile } = useReadyAuth();
+  const { user } = useReadyAuth();
   const { reportFailure } = useSyncNotice();
   const { categories, loading } = useCategories(user.uid);
-  const scopes = scopesForMode(profile.accountMode);
-  const [scope, setScope] = useState<Scope>(scopes[0]);
+  const { spaces, nameOf } = useSpaces();
+  const [chosenKey, setChosenKey] = useState<string | null>(null);
+  const space = spaces.find((s) => s.key === chosenKey) ?? spaces[0];
+  const scope = space.scope;
   const [type, setType] = useState<TransactionType>('expense');
   const [newName, setNewName] = useState('');
   const [error, setError] = useState('');
@@ -23,8 +27,8 @@ export function CategoriesScreen() {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const visible = useMemo(
-    () => categories.filter((c) => c.scope === scope && c.type === type),
-    [categories, scope, type],
+    () => categories.filter((c) => inSpace(c, space) && c.type === type),
+    [categories, space, type],
   );
 
   const nameTaken = (name: string, exceptId?: string) =>
@@ -39,7 +43,7 @@ export function CategoriesScreen() {
     if (name.length > MAX_NAME) return setError(`השם ארוך מדי (עד ${MAX_NAME} תווים).`);
     if (nameTaken(name)) return setError('כבר קיימת קטגוריה בשם הזה.');
     const sortOrder = Math.max(-1, ...visible.map((c) => c.sortOrder)) + 1;
-    createCategory(user.uid, scope, type, name, sortOrder).saved.catch(fail);
+    createCategory(user.uid, scope, type, name, sortOrder, space.businessId).saved.catch(fail);
     setNewName('');
     setError('');
   };
@@ -58,17 +62,17 @@ export function CategoriesScreen() {
     <div className={`app-shell scope-${scope}`}>
       <ScreenHeader title="קטגוריות" />
       <main className="content">
-        {scopes.length > 1 && (
-          <div className="segmented" role="group" aria-label="תחום">
-            {scopes.map((s) => (
+        {spaces.length > 1 && (
+          <div className="segmented" role="group" aria-label="מרחב">
+            {spaces.map((s) => (
               <button
-                key={s}
+                key={s.key}
                 type="button"
-                className={s === scope ? 'is-active' : ''}
-                aria-pressed={s === scope}
-                onClick={() => setScope(s)}
+                className={s.key === space.key ? 'is-active' : ''}
+                aria-pressed={s.key === space.key}
+                onClick={() => setChosenKey(s.key)}
               >
-                <Icon name={s} /> {s === 'business' ? 'עסק' : 'משק בית'}
+                <Icon name={s.scope} /> {nameOf(s)}
               </button>
             ))}
           </div>

@@ -5,7 +5,9 @@ import { Capacitor } from '@capacitor/core';
 const ROOT_ROUTES = new Set(['', '/', '/business', '/household', '/welcome', '/login']);
 
 export function isRootRoute(hash: string): boolean {
-  return ROOT_ROUTES.has(hash.replace(/^#/, '').split('?')[0]);
+  const path = hash.replace(/^#/, '').split('?')[0];
+  // מסך הבית של עסק נוסף: /business.<מזהה>
+  return ROOT_ROUTES.has(path) || /^\/business\.[^/]+$/.test(path);
 }
 
 /**

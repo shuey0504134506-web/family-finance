@@ -502,7 +502,9 @@ code {
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(104px, 1fr);
+  overflow-x: auto;
   gap: 8px;
   padding: 8px calc(12px + var(--safe-right)) calc(8px + var(--safe-bottom))
     calc(12px + var(--safe-left));
@@ -519,6 +521,15 @@ code {
   font-size: 1.0625rem;
   font-weight: 700;
   color: var(--text-muted);
+}
+
+.scope-tab-name {
+  display: inline-block;
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .scope-tab-business.is-active {
@@ -1017,6 +1028,7 @@ select.input {
 
 .segmented {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
   margin-bottom: 12px;
@@ -1026,7 +1038,7 @@ select.input {
 }
 
 .segmented button {
-  flex: 1;
+  flex: 1 1 40%;
   min-height: 44px;
   border: 0;
   border-radius: 8px;

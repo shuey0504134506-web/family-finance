@@ -1,5 +1,4 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -14,13 +13,15 @@ import {
 import { formatMonthYear } from '../../domain/dates';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from '../../domain/money';
 import { totalsByCategory } from '../../domain/summary';
-import { scopesForMode, type Scope } from '../../domain/types';
+import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
 import { useBudgets } from '../../hooks/useBudgets';
 import { useCategories } from '../../hooks/useCategories';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { deleteBudget, saveBudget } from '../../services/budgetService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
+import { useSpace } from '../spaces/SpaceRoute';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 
 /**
@@ -28,33 +29,33 @@ import { useSyncNotice } from '../sync/SyncNotice';
  * והניצול מחושב מהוצאות החודש הנבחר.
  */
 export function BudgetScreen() {
-  const params = useParams();
-  const { profile } = useReadyAuth();
-  const scope = params.scope as Scope;
-  if (
-    (scope !== 'business' && scope !== 'household') ||
-    !scopesForMode(profile.accountMode).includes(scope)
-  ) {
-    return <Navigate to="/" replace />;
-  }
-  return <BudgetContent scope={scope} />;
+  return <BudgetContent space={useSpace()} />;
 }
 
-function BudgetContent({ scope }: { scope: Scope }) {
+function BudgetContent({ space }: { space: Space }) {
+  const scope = space.scope;
+  const { nameOf } = useSpaces();
   const { user } = useReadyAuth();
   const month = useMonth();
   const { reportFailure } = useSyncNotice();
   const { categories } = useCategories(user.uid);
   const { budgets, loading: budgetsLoading, error: budgetsError } = useBudgets(user.uid);
-  const transactions = useMonthTransactions(user.uid, scope, month.selected, true);
+  const allTransactions = useMonthTransactions(user.uid, scope, month.selected, true);
+  const transactions = useMemo(
+    () => ({
+      ...allTransactions,
+      items: allTransactions.items.filter((t) => scope === 'household' || businessIdOf(t) === space.businessId),
+    }),
+    [allTransactions, scope, space.businessId],
+  );
   const [editing, setEditing] = useState<string | null>(null);
 
-  const split = useMemo(() => splitBudgets(budgets, scope), [budgets, scope]);
-  const overallId = overallBudgetId(scope);
+  const split = useMemo(() => splitBudgets(budgets, scope, space.businessId), [budgets, scope, space.businessId]);
+  const overallId = overallBudgetId(scope, space.businessId);
   // מסמכי התקציב הפרטניים בלבד (בלי התקציב הכללי)
   const scopeBudgets = useMemo(
-    () => budgets.filter((b) => b.scope === scope && b.id !== overallId),
-    [budgets, scope, overallId],
+    () => budgets.filter((b) => inSpace(b, space) && b.id !== overallId),
+    [budgets, space, overallId],
   );
   const expenseByCategory = useMemo(() => totalsByCategory(transactions.items, 'expense'), [transactions.items]);
   const totalExpenses = useMemo(
@@ -64,11 +65,11 @@ function BudgetContent({ scope }: { scope: Scope }) {
   const rows = useMemo(
     () =>
       buildBudgetRows(
-        categories.filter((c) => c.scope === scope),
+        categories.filter((c) => inSpace(c, space)),
         scopeBudgets,
         expenseByCategory,
       ),
-    [categories, scope, scopeBudgets, expenseByCategory],
+    [categories, space, scopeBudgets, expenseByCategory],
   );
 
   const totals = useMemo(() => {
@@ -87,7 +88,7 @@ function BudgetContent({ scope }: { scope: Scope }) {
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <ScreenHeader title={`תקציב · ${scope === 'business' ? 'עסק' : 'משק בית'}`} />
+      <ScreenHeader title={`תקציב · ${nameOf(space)}`} />
       <main className="content" aria-busy={loading}>
         <MonthSwitcher label={formatMonthYear(month.selected)} />
         <p className="muted small">תקציב חודשי לכל קטגוריית הוצאה. הניצול מחושב מהוצאות החודש שנבחר.</p>
@@ -109,7 +110,7 @@ function BudgetContent({ scope }: { scope: Scope }) {
               categoriesUsedAgorot={totals.used}
               onSave={(amountAgorot) => {
                 const existing = budgets.find((b) => b.id === overallId);
-                saveBudget(user.uid, scope, overallId, amountAgorot, existing?.createdAt).catch(() =>
+                saveBudget(user.uid, scope, overallId, amountAgorot, existing?.createdAt, space.businessId).catch(() =>
                   reportFailure('לא הצלחנו לסנכרן את התקציב. יש לנסות שוב.'),
                 );
               }}
@@ -132,7 +133,7 @@ function BudgetContent({ scope }: { scope: Scope }) {
                     onCancel={() => setEditing(null)}
                     onSave={(amountAgorot) => {
                       const existing = scopeBudgets.find((b) => b.categoryId === row.categoryId);
-                      saveBudget(user.uid, scope, row.categoryId, amountAgorot, existing?.createdAt).catch(
+                      saveBudget(user.uid, scope, row.categoryId, amountAgorot, existing?.createdAt, space.businessId).catch(
                         () => reportFailure('לא הצלחנו לסנכרן את התקציב. יש לנסות שוב.'),
                       );
                       setEditing(null);

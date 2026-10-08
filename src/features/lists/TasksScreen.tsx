@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { Modal } from '../../components/Modal';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -13,10 +12,11 @@ import {
   type Task,
   type TaskDraft,
 } from '../../domain/tasks';
-import { scopesForMode, type Scope } from '../../domain/types';
+import { inSpace, type Space } from '../../domain/spaces';
 import { deleteTask, saveTask } from '../../services/listService';
 import { newId } from '../../services/ids';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSpace } from '../spaces/SpaceRoute';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { useLists } from './ListsContext';
 import { ScopeSwitch } from './ScopeSwitch';
@@ -31,16 +31,12 @@ function describeReminder(task: Task): string {
 
 /** רשימת משימות לעסק או למשק בית, עם תזכורות. "בוצע" מסמן ומעביר לרשימת הבוצעו. */
 export function TasksScreen() {
-  const params = useParams();
-  const { user, profile } = useReadyAuth();
-  const scope = params.scope as Scope;
-  if ((scope !== 'business' && scope !== 'household') || !scopesForMode(profile.accountMode).includes(scope)) {
-    return <Navigate to="/" replace />;
-  }
-  return <TasksBody scope={scope} uid={user.uid} />;
+  const { user } = useReadyAuth();
+  const space = useSpace();
+  return <TasksBody space={space} uid={user.uid} />;
 }
 
-function TasksBody({ scope, uid }: { scope: Scope; uid: string }) {
+function TasksBody({ space, uid }: { space: Space; uid: string }) {
   const { tasks, loading, error } = useLists();
   const { reportFailure } = useSyncNotice();
   const [draft, setDraft] = useState<TaskDraft>(EMPTY_DRAFT);
@@ -48,7 +44,7 @@ function TasksBody({ scope, uid }: { scope: Scope; uid: string }) {
   const [editing, setEditing] = useState<Task | null>(null);
   const [showDone, setShowDone] = useState(false);
 
-  const mine = sortTasks(tasks.filter((t) => t.scope === scope));
+  const mine = sortTasks(tasks.filter((t) => inSpace(t, space)));
   const open = mine.filter((t) => !t.done);
   const done = mine.filter((t) => t.done);
 
@@ -60,7 +56,7 @@ function TasksBody({ scope, uid }: { scope: Scope; uid: string }) {
     const found = validateTaskDraft(draft);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    void persist(buildTask(draft, { id: newId(), scope, now: Date.now() }));
+    void persist(buildTask(draft, { id: newId(), scope: space.scope, businessId: space.businessId, now: Date.now() }));
     setDraft(EMPTY_DRAFT);
   };
 
@@ -70,7 +66,7 @@ function TasksBody({ scope, uid }: { scope: Scope; uid: string }) {
     <div className="app-shell">
       <ScreenHeader title="רשימת משימות" />
       <main className="content" aria-busy={loading}>
-        <ScopeSwitch scope={scope} page="tasks" />
+        <ScopeSwitch space={space} page="tasks" />
 
         <form className="card settings-form" onSubmit={onAdd} noValidate>
           <Field
@@ -215,7 +211,7 @@ function EditTaskDialog({
     const found = validateTaskDraft(draft);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    onSave(buildTask(draft, { id: task.id, scope: task.scope, now: Date.now(), createdAt: task.createdAt, done: task.done }));
+    onSave(buildTask(draft, { id: task.id, scope: task.scope, businessId: task.businessId, now: Date.now(), createdAt: task.createdAt, done: task.done }));
   };
 
   return (

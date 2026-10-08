@@ -142,6 +142,24 @@ describe('תקציב כללי ופרטני', () => {
     expect([...split.byCategory.keys()].sort()).toEqual(['bills', 'food']);
   });
 
+  it('לכל עסק תקציב כללי וקטגוריות משלו', () => {
+    expect(overallBudgetId('business')).toBe('overall-business');
+    expect(overallBudgetId('business', 'main')).toBe('overall-business');
+    expect(overallBudgetId('business', 'b2')).toBe('overall-business-b2');
+    const budgets = [
+      doc('overall-business', 'business', 100),
+      { ...doc('overall-business-b2', 'business', 200), businessId: 'b2' },
+      doc('fuel', 'business', 10),
+      { ...doc('rent', 'business', 20), businessId: 'b2' },
+    ];
+    const main = splitBudgets(budgets, 'business');
+    expect(main.overallAgorot).toBe(100);
+    expect([...main.byCategory.keys()]).toEqual(['fuel']);
+    const second = splitBudgets(budgets, 'business', 'b2');
+    expect(second.overallAgorot).toBe(200);
+    expect([...second.byCategory.keys()]).toEqual(['rent']);
+  });
+
   it('בלי שום תקציב: none', () => {
     expect(summarizeBudget(splitBudgets([], 'household'), new Map([['a', 5]]))).toEqual({ kind: 'none' });
   });

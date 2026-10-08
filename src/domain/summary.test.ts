@@ -5,6 +5,7 @@ import {
   householdTotals,
   totalsByCategory,
   totalsOf,
+  transferFromBusinesses,
 } from './summary';
 
 const income = (amountAgorot: number) => ({ type: 'income' as const, amountAgorot });
@@ -98,5 +99,31 @@ describe('totalsByCategory', () => {
     expect(result.get('food')).toBe(350);
     expect(result.get('car')).toBe(70);
     expect(result.size).toBe(2);
+  });
+});
+
+describe('transferFromBusinesses', () => {
+  const tx = (businessId: string | undefined, type: 'income' | 'expense', amountAgorot: number) => ({ businessId, type, amountAgorot });
+
+  it('מחבר את נטו כל העסקים', () => {
+    expect(transferFromBusinesses([tx('main', 'income', 1000), tx('b2', 'income', 500), tx('b2', 'expense', 200)])).toBe(1300);
+  });
+
+  it('פעולה בלי מזהה עסק שייכת לעסק הראשון', () => {
+    expect(transferFromBusinesses([tx(undefined, 'income', 1000), tx('main', 'expense', 400)])).toBe(600);
+  });
+
+  it('הפסד בעסק אחד עובר כשלילי כשמותר', () => {
+    const list = [tx('main', 'income', 1000), tx('b2', 'expense', 300)];
+    expect(transferFromBusinesses(list, 'allow-negative')).toBe(700);
+  });
+
+  it('במצב "רק רווח" הפסד של עסק אחד לא מקזז רווח של עסק אחר', () => {
+    const list = [tx('main', 'income', 1000), tx('b2', 'expense', 300)];
+    expect(transferFromBusinesses(list, 'positive-only')).toBe(1000);
+  });
+
+  it('ללא פעולות: אפס', () => {
+    expect(transferFromBusinesses([])).toBe(0);
   });
 });

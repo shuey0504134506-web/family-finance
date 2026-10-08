@@ -101,3 +101,31 @@ describe('parseBackup', () => {
     expect(r.plan.invalid).toBe(1);
   });
 });
+
+describe('parseBackup: כמה עסקים', () => {
+  const biz = { id: 'b2', name: 'עסק שני', sortOrder: 1, createdAt: 1, updatedAt: 1 };
+
+  it('קורא עסקים ומשמר מזהה עסק בפעולות, בקטגוריות ובתקציבים', () => {
+    const r = parseBackup(
+      file({
+        businesses: [biz],
+        businessTransactions: [tx({ businessId: 'b2' }), tx({ id: 't2' })],
+        categories: [{ ...cat, businessId: 'b2' }],
+        budgets: [{ ...budget, businessId: 'b2' }],
+      }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.businesses).toHaveLength(1);
+    expect(r.plan.businessTransactions[0].data.businessId).toBe('b2');
+    expect(r.plan.businessTransactions[1].data).not.toHaveProperty('businessId');
+    expect(r.plan.categories[0].data.businessId).toBe('b2');
+    expect(r.plan.budgets[0].data.businessId).toBe('b2');
+  });
+
+  it('דוחה מזהה עסק לא תקין ועסק בלי שם', () => {
+    const r = parseBackup(
+      file({ businesses: [{ ...biz, name: '' }], businessTransactions: [tx({ businessId: '' }), tx({ id: 't3', businessId: 5 })] }),
+    );
+    expect(r.ok).toBe(false);
+  });
+});

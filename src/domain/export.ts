@@ -1,6 +1,7 @@
 import { PAYMENT_METHOD_LABELS, type Scope, type Transaction } from './types';
 
-export type ExportTransaction = Transaction & { scope: Scope };
+/** businessName: שם העסק (בפעולות עסק בלבד), כדי שבקובץ יהיה ברור לאיזה עסק הפעולה שייכת. */
+export type ExportTransaction = Transaction & { scope: Scope; businessName?: string };
 
 /**
  * תא CSV בטוח. טקסט שמתחיל ב-= + - @ (או בתו בקרה) נפתח באקסל כנוסחה, ולכן מקדימים לו גרש.
@@ -30,7 +31,7 @@ export function transactionsToCsv(transactions: readonly ExportTransaction[]): s
     const tithe = t.type === 'expense' ? (t.isTithePayment ? 'תשלום מעשר' : '') : t.titheStatus === 'exempt' ? 'פטור' : '';
     lines.push(
       [
-        csvCell(t.scope === 'business' ? 'עסק' : 'משק בית'),
+        csvCell(t.scope === 'business' ? t.businessName || 'עסק' : 'משק בית'),
         csvCell(t.type === 'income' ? 'הכנסה' : 'הוצאה'),
         t.date,
         agorotToPlain(t.amountAgorot),

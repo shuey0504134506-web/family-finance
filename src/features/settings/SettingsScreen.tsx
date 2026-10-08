@@ -7,7 +7,7 @@ import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
-import { ModeSection } from './ModeSection';
+import { PurposeSection } from './PurposeSection';
 import { PasswordForm } from './SecuritySection';
 
 /**
@@ -28,7 +28,7 @@ export function SettingsScreen() {
           </AccordionItem>
 
           <AccordionItem id="mode" title="ייעוד האפליקציה" open={openId === 'mode'} onToggle={toggle}>
-            <ModeSection />
+            <PurposeSection />
           </AccordionItem>
 
           <AccordionItem id="manage" title="ניהול האפליקציה" open={openId === 'manage'} onToggle={toggle}>

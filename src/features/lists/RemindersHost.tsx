@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../components/Modal';
 import { todayIso } from '../../domain/dates';
 import { dueReminders, markShown, parseShownMap, saveShownKey, type Task } from '../../domain/tasks';
-import { scopesForMode } from '../../domain/types';
+import { spaceOfItem } from '../../domain/spaces';
 import { saveTask } from '../../services/listService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useLock } from '../lock/LockContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { useLists } from './ListsContext';
 
@@ -33,7 +34,8 @@ function storeShown(uid: string, shown: Record<string, string>) {
  * נבדק: בפתיחה, אחרי פתיחת נעילה, וכשחוזרים לאפליקציה אחרי יותר מדקה בחוץ.
  */
 export function RemindersHost() {
-  const { user, profile } = useReadyAuth();
+  const { user } = useReadyAuth();
+  const { spaces, nameOf } = useSpaces();
   const { locked } = useLock();
   const lists = useLists();
   const navigate = useNavigate();
@@ -66,15 +68,14 @@ export function RemindersHost() {
   useEffect(() => {
     if (locked || lists.loading || handled.current === trigger) return;
     handled.current = trigger;
-    const scopes = scopesForMode(profile.accountMode);
-    const relevant = lists.tasks.filter((t) => scopes.includes(t.scope));
+    const relevant = lists.tasks.filter((t) => spaceOfItem(t, spaces));
     const today = todayIso();
     const shown = loadShown(user.uid);
     const due = dueReminders(relevant, today, shown);
     if (due.length === 0) return;
     storeShown(user.uid, markShown(shown, due, relevant, today));
     setShownIds(due.map((t) => t.id));
-  }, [trigger, locked, lists.loading, lists.tasks, profile.accountMode, user.uid]);
+  }, [trigger, locked, lists.loading, lists.tasks, spaces, user.uid]);
 
   const visible: Task[] = lists.tasks.filter((t) => shownIds.includes(t.id) && !t.done);
   if (visible.length === 0) return null;
@@ -84,7 +85,7 @@ export function RemindersHost() {
       reportFailure('לא הצלחנו לסנכרן את המשימה. יש לנסות שוב.'),
     );
 
-  const both = scopesForMode(profile.accountMode).length > 1;
+  const several = spaces.length > 1;
 
   return (
     <Modal title="תזכורות" onClose={() => setShownIds([])}>
@@ -92,7 +93,7 @@ export function RemindersHost() {
         {visible.map((task) => (
           <li key={task.id} className="reminder-item">
             <span className="reminder-text">
-              {both && <span className="chip-label">{task.scope === 'business' ? 'עסק' : 'משק בית'}</span>}
+              {several && <span className="chip-label">{nameOf(spaceOfItem(task, spaces) ?? spaces[0])}</span>}
               {task.title}
             </span>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => void markDone(task)}>
@@ -106,9 +107,9 @@ export function RemindersHost() {
           type="button"
           className="btn btn-primary"
           onClick={() => {
-            const scope = visible[0].scope;
+            const target = spaceOfItem(visible[0], spaces) ?? spaces[0];
             setShownIds([]);
-            navigate(`/${scope}/tasks`);
+            navigate(`/${target.key}/tasks`);
           }}
         >
           פתיחת רשימת המשימות

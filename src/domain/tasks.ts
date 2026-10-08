@@ -20,6 +20,8 @@ export interface Task {
   remindDate: string;
   createdAt: number;
   updatedAt: number;
+  /** רק למשימות עסק. חסר = העסק הראשון. */
+  businessId?: string;
 }
 
 export interface ShoppingItem {
@@ -29,6 +31,8 @@ export interface ShoppingItem {
   bought: boolean;
   createdAt: number;
   updatedAt: number;
+  /** רק לפריטי עסק. חסר = העסק הראשון. */
+  businessId?: string;
 }
 
 export const MAX_TASK_TITLE = 200;
@@ -51,7 +55,7 @@ export function validateTaskDraft(draft: TaskDraft): Partial<Record<'title' | 'r
 
 export function buildTask(
   draft: TaskDraft,
-  context: { id: string; scope: Scope; now: number; createdAt?: number; done?: boolean },
+  context: { id: string; scope: Scope; businessId?: string; now: number; createdAt?: number; done?: boolean },
 ): Task {
   return {
     id: context.id,
@@ -62,6 +66,7 @@ export function buildTask(
     remindDate: draft.remind === 'date' ? draft.remindDate : '',
     createdAt: context.createdAt ?? context.now,
     updatedAt: context.now,
+    ...(context.scope === 'business' && context.businessId ? { businessId: context.businessId } : {}),
   };
 }
 
@@ -74,7 +79,7 @@ export function validateItemName(name: string): string | null {
 
 export function buildShoppingItem(
   name: string,
-  context: { id: string; scope: Scope; now: number; createdAt?: number; bought?: boolean },
+  context: { id: string; scope: Scope; businessId?: string; now: number; createdAt?: number; bought?: boolean },
 ): ShoppingItem {
   return {
     id: context.id,
@@ -83,6 +88,7 @@ export function buildShoppingItem(
     bought: context.bought ?? false,
     createdAt: context.createdAt ?? context.now,
     updatedAt: context.now,
+    ...(context.scope === 'business' && context.businessId ? { businessId: context.businessId } : {}),
   };
 }
 

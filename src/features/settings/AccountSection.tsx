@@ -35,7 +35,6 @@ export function AccountSection() {
       <Field label="שם פרטי" value={profile.firstName} readOnly />
       <Field label="שם משפחה" value={profile.lastName} readOnly />
       <Field label="כתובת מייל" value={user.email ?? ''} dir="ltr" readOnly />
-      <Field label="שם העסק" value={profile.businessName} readOnly />
 
       <button type="button" className="btn btn-primary" onClick={() => { setSentTo(''); setEditing(true); }}>
         עדכון פרטים
@@ -79,7 +78,6 @@ function EditDetailsDialog({
   const [firstName, setFirstName] = useState(profile.firstName);
   const [lastName, setLastName] = useState(profile.lastName);
   const [email, setEmail] = useState(user.email ?? '');
-  const [businessName, setBusinessName] = useState(profile.businessName);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -90,8 +88,7 @@ function EditDetailsDialog({
     event.preventDefault();
     if (busy) return;
     if (!firstName.trim() || !lastName.trim()) return setError('יש להזין שם פרטי ושם משפחה.');
-    if (profile.accountMode !== 'household' && !businessName.trim()) return setError('יש להזין שם עסק.');
-    if (firstName.length > 60 || lastName.length > 60 || businessName.length > 120) return setError('אחד השדות ארוך מדי.');
+    if (firstName.length > 60 || lastName.length > 60) return setError('אחד השדות ארוך מדי.');
     if (emailChanged && !isValidEmail(email)) return setError('יש להזין כתובת מייל תקינה.');
     if (emailChanged && !password) return setError('להחלפת כתובת מייל יש להזין את הסיסמה הנוכחית.');
 
@@ -105,10 +102,9 @@ function EditDetailsDialog({
       }
       const unchanged =
         firstName.trim() === profile.firstName &&
-        lastName.trim() === profile.lastName &&
-        businessName.trim() === profile.businessName;
+        lastName.trim() === profile.lastName;
       if (!unchanged) {
-        saveProfile(user.uid, { firstName, lastName, businessName, accountMode: profile.accountMode }).catch(() =>
+        saveProfile(user.uid, { firstName, lastName, businessName: profile.businessName, accountMode: profile.accountMode }).catch(() =>
           reportFailure('לא הצלחנו לסנכרן את פרטי החשבון. יש לנסות שוב.'),
         );
       }
@@ -125,7 +121,6 @@ function EditDetailsDialog({
         <Field label="שם פרטי" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
         <Field label="שם משפחה" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
         <Field label="כתובת מייל" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        <Field label="שם העסק" value={businessName} onChange={(e) => setBusinessName(e.target.value)} autoComplete="organization" />
         {emailChanged && (
           <Field
             label="סיסמה נוכחית (נדרשת להחלפת מייל)"

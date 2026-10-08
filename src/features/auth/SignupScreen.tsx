@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { describeError } from '../../services/authErrors';
 import { useAuth } from './AuthContext';
+import { BusinessesFields } from './BusinessesFields';
 import { validateSignup, type SignupValues } from './validation';
 import { Icon } from '../../components/Icon';
 
@@ -17,6 +18,8 @@ export function SignupScreen() {
     password: '',
     confirmPassword: '',
   });
+  const [extraBusinesses, setExtraBusinesses] = useState<string[]>([]);
+  const [householdName, setHouseholdName] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof SignupValues, string>>>({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -45,6 +48,8 @@ export function SignupScreen() {
           businessName: values.businessName,
           email: values.email,
           accountMode: 'both',
+          extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
+          householdName: householdName.trim(),
         },
         values.password,
       );
@@ -108,11 +113,17 @@ export function SignupScreen() {
             error={errors.lastName}
           />
           <Field
-            label="שם העסק"
+            label="שם העסק (הראשון)"
             autoComplete="organization"
             value={values.businessName}
             onChange={update('businessName')}
             error={errors.businessName}
+          />
+          <BusinessesFields
+            householdName={householdName}
+            onHouseholdName={setHouseholdName}
+            extras={extraBusinesses}
+            onExtras={setExtraBusinesses}
           />
           <Field
             label="כתובת מייל"

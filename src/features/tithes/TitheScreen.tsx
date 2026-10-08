@@ -30,7 +30,7 @@ export function TitheScreen() {
     <div className="app-shell scope-household">
       <AppHeader />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to="/household" label="חזרה למשק הבית" />
+        <ScreenBack to="/household" label="חזרה" />
         <h1 className="scope-title">
           <Icon name="tithe" /> מעשרות
         </h1>

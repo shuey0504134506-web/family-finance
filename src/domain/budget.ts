@@ -1,4 +1,5 @@
 import { mulDivRound, type Agorot } from './money';
+import { DEFAULT_BUSINESS_ID, inSpace } from './spaces';
 
 /**
  * ניצול תקציב וסטטוס התראה.
@@ -94,7 +95,11 @@ export function buildBudgetRows(
 // ---------- תקציב כללי + תקציבים פרטניים ----------
 
 /** מזהה מסמך התקציב הכללי של תחום. אינו מתנגש עם מזהי קטגוריות. */
-export function overallBudgetId(scope: Scope): string {
+export function overallBudgetId(scope: Scope, businessId?: string): string {
+  // העסק הראשון (וכל נתון ישן) שומר על המזהה המקורי.
+  if (scope === 'business' && businessId && businessId !== DEFAULT_BUSINESS_ID) {
+    return `overall-business-${businessId}`;
+  }
   return `overall-${scope}`;
 }
 
@@ -108,13 +113,14 @@ export interface SplitBudgets {
 }
 
 /** מפריד את מסמכי התקציב של תחום לתקציב כללי ולתקציבים פרטניים. */
-export function splitBudgets(budgets: readonly Budget[], scope: Scope): SplitBudgets {
-  const overallId = overallBudgetId(scope);
+export function splitBudgets(budgets: readonly Budget[], scope: Scope, businessId?: string): SplitBudgets {
+  const overallId = overallBudgetId(scope, businessId);
+  const space = { key: '', scope, businessId: scope === 'business' ? businessId || DEFAULT_BUSINESS_ID : '' };
   let overallAgorot: Agorot | null = null;
   const byCategory = new Map<string, Agorot>();
   let total = 0;
   for (const b of budgets) {
-    if (b.scope !== scope) continue;
+    if (!inSpace(b, space)) continue;
     if (b.id === overallId) {
       overallAgorot = b.amountAgorot;
     } else {

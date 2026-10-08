@@ -11,11 +11,10 @@ import {
   type DraftErrors,
   type TransactionDraft,
 } from '../../domain/transactionInput';
+import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
 import {
   PAYMENT_METHOD_LABELS,
-  scopesForMode,
   type PaymentMethod,
-  type Scope,
   type Transaction,
   type TransactionType,
 } from '../../domain/types';
@@ -29,30 +28,26 @@ import {
 } from '../../services/transactionService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
+import { useSpace } from '../spaces/SpaceRoute';
 import { useSyncNotice } from '../sync/SyncNotice';
 
-const isScope = (value: string | undefined): value is Scope =>
-  value === 'business' || value === 'household';
 const isType = (value: string | undefined): value is TransactionType =>
   value === 'income' || value === 'expense';
 
 /** הוספה: /:scope/add/:type  |  עריכה: /:scope/edit/:id */
 export function TransactionFormScreen({ mode }: { mode: 'add' | 'edit' }) {
   const params = useParams();
-  const { profile } = useReadyAuth();
+  const space = useSpace();
 
-  if (!isScope(params.scope) || !scopesForMode(profile.accountMode).includes(params.scope)) {
-    return <Navigate to="/" replace />;
-  }
   if (mode === 'add') {
-    if (!isType(params.type)) return <Navigate to={`/${params.scope}`} replace />;
-    return <AddLoader scope={params.scope} type={params.type} />;
+    if (!isType(params.type)) return <Navigate to={`/${space.key}`} replace />;
+    return <AddLoader space={space} type={params.type} />;
   }
-  if (!params.id) return <Navigate to={`/${params.scope}`} replace />;
-  return <EditLoader scope={params.scope} id={params.id} />;
+  if (!params.id) return <Navigate to={`/${space.key}`} replace />;
+  return <EditLoader space={space} id={params.id} />;
 }
 
-function AddLoader({ scope, type }: { scope: Scope; type: TransactionType }) {
+function AddLoader({ space, type }: { space: Space; type: TransactionType }) {
   const month = useMonth();
   // המזהה נוצר פעם אחת בפתיחת הטופס: לחיצה כפולה או ניסיון חוזר לא יוצרים כפילות.
   const [id] = useState(newId);
@@ -72,10 +67,10 @@ function AddLoader({ scope, type }: { scope: Scope; type: TransactionType }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-  return <TransactionForm scope={scope} id={id} initial={initial} existing={null} />;
+  return <TransactionForm space={space} id={id} initial={initial} existing={null} />;
 }
 
-function EditLoader({ scope, id }: { scope: Scope; id: string }) {
+function EditLoader({ space, id }: { space: Space; id: string }) {
   const { user } = useReadyAuth();
   const [state, setState] = useState<
     { kind: 'loading' } | { kind: 'missing' } | { kind: 'error' } | { kind: 'ready'; tx: Transaction }
@@ -83,9 +78,11 @@ function EditLoader({ scope, id }: { scope: Scope; id: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    getTransaction(user.uid, scope, id)
+    getTransaction(user.uid, space.scope, id)
       .then((tx) => {
-        if (!cancelled) setState(tx ? { kind: 'ready', tx } : { kind: 'missing' });
+        // פעולה של עסק אחר אינה נפתחת מתוך עסק זה (היא הייתה "עוברת" אליו בשמירה).
+        const mine = tx && (space.scope === 'household' || businessIdOf(tx) === space.businessId);
+        if (!cancelled) setState(tx && mine ? { kind: 'ready', tx } : { kind: 'missing' });
       })
       .catch(() => {
         if (!cancelled) setState({ kind: 'error' });
@@ -93,7 +90,7 @@ function EditLoader({ scope, id }: { scope: Scope; id: string }) {
     return () => {
       cancelled = true;
     };
-  }, [user.uid, scope, id]);
+  }, [user.uid, space.scope, space.businessId, id]);
 
   if (state.kind === 'loading') {
     return (
@@ -123,7 +120,7 @@ function EditLoader({ scope, id }: { scope: Scope; id: string }) {
   }
   return (
     <TransactionForm
-      scope={scope}
+      space={space}
       id={state.tx.id}
       initial={draftFromTransaction(state.tx)}
       existing={state.tx}
@@ -132,12 +129,12 @@ function EditLoader({ scope, id }: { scope: Scope; id: string }) {
 }
 
 function TransactionForm({
-  scope,
+  space,
   id,
   initial,
   existing,
 }: {
-  scope: Scope;
+  space: Space;
   id: string;
   initial: TransactionDraft;
   existing: Transaction | null;
@@ -145,6 +142,7 @@ function TransactionForm({
   const navigate = useNavigate();
   const { user } = useReadyAuth();
   const month = useMonth();
+  const scope = space.scope;
   const { reportFailure } = useSyncNotice();
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
 
@@ -164,7 +162,7 @@ function TransactionForm({
     const base = categories
       .filter(
         (c) =>
-          c.scope === scope &&
+          inSpace(c, space) &&
           c.type === draft.type &&
           // קטגוריה שהושבתה נשארת זמינה לפעולה שכבר משתמשת בה
           (c.active || c.id === existing?.categoryId),
@@ -172,7 +170,7 @@ function TransactionForm({
       .map((c) => ({ id: c.id, name: c.name }));
     const known = new Set(base.map((c) => c.id));
     return [...base, ...added.filter((c) => !known.has(c.id))];
-  }, [categories, scope, draft.type, existing?.categoryId, added]);
+  }, [categories, space, draft.type, existing?.categoryId, added]);
 
   const onAddCategory = () => {
     const name = newCategoryName.trim();
@@ -184,8 +182,8 @@ function TransactionForm({
       update('categoryId', same.id);
     } else {
       const sortOrder =
-        Math.max(-1, ...categories.filter((c) => c.scope === scope && c.type === draft.type).map((c) => c.sortOrder)) + 1;
-      const { id, saved } = createCategory(user.uid, scope, draft.type, name, sortOrder);
+        Math.max(-1, ...categories.filter((c) => inSpace(c, space) && c.type === draft.type).map((c) => c.sortOrder)) + 1;
+      const { id, saved } = createCategory(user.uid, scope, draft.type, name, sortOrder, space.businessId);
       saved.catch(() => reportFailure('לא הצלחנו לסנכרן את הקטגוריה החדשה. יש לנסות שוב.'));
       setAdded((previous) => [...previous, { id, name }]);
       update('categoryId', id);
@@ -205,7 +203,7 @@ function TransactionForm({
   const leave = (targetMonth?: string) => {
     if (targetMonth) month.setMonth(targetMonth);
     if (window.history.length > 1) navigate(-1);
-    else navigate(`/${scope}`, { replace: true });
+    else navigate(`/${space.key}`, { replace: true });
   };
 
   const onSubmit = (event: FormEvent) => {
@@ -224,6 +222,7 @@ function TransactionForm({
       categoryName: category.name,
       now: Date.now(),
       createdAt: existing?.createdAt,
+      businessId: space.businessId,
     });
 
     submitted.current = true;

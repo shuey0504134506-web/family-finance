@@ -4,17 +4,19 @@ import { Amount } from '../../components/Amount';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { formatMonthYear } from '../../domain/dates';
 import { searchTransactions } from '../../domain/search';
-import { scopesForMode, type Scope, type TransactionRecord } from '../../domain/types';
+import { HOUSEHOLD_SPACE, businessSpace } from '../../domain/spaces';
+import type { Scope, TransactionRecord } from '../../domain/types';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { Icon } from '../../components/Icon';
 
 const MAX_RESULTS = 200;
 // החיפוש טוען את כל ההיסטוריה (עד חודש רחוק בעתיד).
 const FAR_FUTURE = '9999-12';
 
-type ScopedTx = TransactionRecord & { scope: Scope };
+type ScopedTx = TransactionRecord & { scope: Scope; spaceKey: string };
 
 /**
  * חיפוש בכל הפעולות, בעסק ובמשק הבית. לחיצה על תוצאה מעבירה לחודש שבו הפעולה נמצאת.
@@ -23,29 +25,34 @@ type ScopedTx = TransactionRecord & { scope: Scope };
 export function SearchScreen() {
   const navigate = useNavigate();
   const month = useMonth();
-  const { user, profile } = useReadyAuth();
-  const scopes = scopesForMode(profile.accountMode);
+  const { user } = useReadyAuth();
+  const { spaces, nameOf } = useSpaces();
 
-  const business = useTransactionsUpTo(user.uid, 'business', FAR_FUTURE, scopes.includes('business'));
-  const household = useTransactionsUpTo(user.uid, 'household', FAR_FUTURE, scopes.includes('household'));
+  const business = useTransactionsUpTo(user.uid, 'business', FAR_FUTURE, spaces.some((s) => s.scope === 'business'));
+  const household = useTransactionsUpTo(user.uid, 'household', FAR_FUTURE, spaces.some((s) => s.scope === 'household'));
 
   const [text, setText] = useState('');
   const [type, setType] = useState<'all' | 'income' | 'expense'>('all');
-  const [scopeFilter, setScopeFilter] = useState<'all' | Scope>('all');
+  const [scopeFilter, setScopeFilter] = useState<string>('all');
   const deferred = useDeferredValue(text);
 
-  const all = useMemo<ScopedTx[]>(
-    () => [
-      ...business.items.map((t) => ({ ...t, scope: 'business' as const })),
-      ...household.items.map((t) => ({ ...t, scope: 'household' as const })),
-    ],
-    [business.items, household.items],
-  );
+  // רק פעולות של מרחבים שמוצגים במכשיר הזה.
+  const all = useMemo<ScopedTx[]>(() => {
+    const visible = new Set(spaces.map((s) => s.key));
+    return [
+      ...business.items.map((t) => ({
+        ...t,
+        scope: 'business' as const,
+        spaceKey: businessSpace(t.businessId ?? '').key,
+      })),
+      ...household.items.map((t) => ({ ...t, scope: 'household' as const, spaceKey: HOUSEHOLD_SPACE.key })),
+    ].filter((t) => visible.has(t.spaceKey));
+  }, [business.items, household.items, spaces]);
 
   const results = useMemo(
     () =>
       searchTransactions(
-        all.filter((t) => scopeFilter === 'all' || t.scope === scopeFilter),
+        all.filter((t) => scopeFilter === 'all' || t.spaceKey === scopeFilter),
         { text: deferred, type },
       ),
     [all, deferred, type, scopeFilter],
@@ -58,7 +65,7 @@ export function SearchScreen() {
   const open = (item: ScopedTx) => {
     // עוברים לרשימה של אותו חודש וסוג, והפעולה מוגללת ומודגשת לכמה רגעים.
     month.setMonth(item.yearMonth);
-    navigate(`/${item.scope}/list/${item.type}`, { state: { highlightId: item.id } });
+    navigate(`/${item.spaceKey}/list/${item.type}`, { state: { highlightId: item.id } });
   };
 
   return (
@@ -98,30 +105,26 @@ export function SearchScreen() {
           ))}
         </div>
 
-        {scopes.length > 1 && (
-          <div className="segmented" role="group" aria-label="תחום">
-            {(
-              [
-                ['all', 'הכול'],
-                ['business', 'עסק'],
-                ['household', 'משק בית'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                className={scopeFilter === value ? 'is-active' : ''}
-                aria-pressed={scopeFilter === value}
-                onClick={() => setScopeFilter(value)}
-              >
-                {value !== 'all' && (
-                  <>
-                    <Icon name={value} />{' '}
-                  </>
-                )}
-                {label}
-              </button>
-            ))}
+        {spaces.length > 1 && (
+          <div className="segmented" role="group" aria-label="מרחב">
+            {[{ key: 'all', label: 'הכול', icon: null as Scope | null }, ...spaces.map((sp) => ({ key: sp.key, label: nameOf(sp), icon: sp.scope as Scope | null }))].map(
+              ({ key, label, icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={scopeFilter === key ? 'is-active' : ''}
+                  aria-pressed={scopeFilter === key}
+                  onClick={() => setScopeFilter(key)}
+                >
+                  {icon && (
+                    <>
+                      <Icon name={icon} />{' '}
+                    </>
+                  )}
+                  {label}
+                </button>
+              ),
+            )}
           </div>
         )}
 
@@ -147,7 +150,7 @@ export function SearchScreen() {
               {shown.map((item) => {
                 const isIncome = item.type === 'income';
                 return (
-                  <li key={`${item.scope}-${item.id}`}>
+                  <li key={`${item.spaceKey}-${item.id}`}>
                     <button
                       type="button"
                       className="tx-row"
@@ -162,7 +165,7 @@ export function SearchScreen() {
                       <span className="tx-main">
                         <span className="tx-title">{item.counterparty || item.categoryName}</span>
                         <span className="tx-sub">
-                          {scopes.length > 1 && (<><Icon name={item.scope} />{' '}</>)}
+                          {spaces.length > 1 && (<><Icon name={item.scope} />{' '}</>)}
                           {item.categoryName}
                           {item.note ? ` · ${item.note}` : ''}
                         </span>

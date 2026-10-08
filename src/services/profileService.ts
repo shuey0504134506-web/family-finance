@@ -1,6 +1,7 @@
 import { doc, onSnapshot, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { buildDefaultCategories } from '../data/defaultCategories';
+import { buildBusinessCategories, buildDefaultCategories } from '../data/defaultCategories';
+import { DEFAULT_BUSINESS_ID } from '../domain/spaces';
 import {
   DEFAULT_SETTINGS,
   type AccountMode,
@@ -14,6 +15,10 @@ export interface NewAccountInput {
   email: string;
   businessName: string;
   accountMode: AccountMode;
+  /** עסקים נוספים (מעבר לראשון), בשמות שהוזנו. */
+  extraBusinessNames?: string[];
+  /** שם משק הבית. ריק = "משק הבית של <שם> <משפחה>". */
+  householdName?: string;
 }
 
 /**
@@ -42,13 +47,35 @@ export async function createUserRecords(uid: string, input: NewAccountInput): Pr
     updatedAt: now,
   });
   batch.set(doc(db, 'users', uid, 'householdProfile', 'main'), {
-    name: `משק הבית של ${input.firstName.trim()} ${input.lastName.trim()}`,
+    name: input.householdName?.trim() || `משק הבית של ${input.firstName.trim()} ${input.lastName.trim()}`,
     createdAt: now,
     updatedAt: now,
   });
   for (const category of buildDefaultCategories(now)) {
     batch.set(doc(db, 'users', uid, 'categories', category.id), category);
   }
+
+  // העסק הראשון נשמר גם כרשומת עסק (מזהה main), ועסקים נוספים מקבלים מזהה קבוע לפי מיקומם,
+  // כך שניסיון חוזר של הרשמה שנקטעה אינו יוצר עסקים כפולים.
+  const businessNames = [input.businessName, ...(input.extraBusinessNames ?? [])]
+    .map((name) => name.trim())
+    .filter((name, index) => index === 0 || name.length > 0);
+  businessNames.forEach((name, index) => {
+    if (index === 0 && !name) return;
+    const id = index === 0 ? DEFAULT_BUSINESS_ID : `b${index + 1}`;
+    batch.set(doc(db, 'users', uid, 'businesses', id), {
+      id,
+      name,
+      sortOrder: index,
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (index > 0) {
+      for (const category of buildBusinessCategories(now, id)) {
+        batch.set(doc(db, 'users', uid, 'categories', category.id), category);
+      }
+    }
+  });
 
   await batch.commit();
 }

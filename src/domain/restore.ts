@@ -7,6 +7,7 @@ export interface RestoreDoc {
 }
 
 export interface RestorePlan {
+  businesses: RestoreDoc[];
   categories: RestoreDoc[];
   budgets: RestoreDoc[];
   tasks: RestoreDoc[];
@@ -30,12 +31,20 @@ const isStr = (v: unknown, max: number): v is string => typeof v === 'string' &&
 const isNonEmpty = (v: unknown, max: number): v is string => isStr(v, max) && v.length > 0;
 const MAX_AGOROT = 100_000_000_000;
 
-/** משאיר רק את המפתחות שחוקי האבטחה מתירים. מחזיר null אם חסר מפתח. */
-function pick(source: Obj, keys: readonly string[]): Obj | null {
+/**
+ * משאיר רק את המפתחות שחוקי האבטחה מתירים. מחזיר null אם חסר מפתח חובה.
+ * מזהה עסק (businessId) הוא אופציונלי: אם קיים הוא חייב להיות תקין, ואם חסר הוא נשאר חסר
+ * (פריט ישן שייך לעסק הראשון).
+ */
+function pick(source: Obj, keys: readonly string[], withBusinessId = true): Obj | null {
   const out: Obj = {};
   for (const key of keys) {
     if (!(key in source) || source[key] === undefined) return null;
     out[key] = source[key];
+  }
+  if (withBusinessId && 'businessId' in source && source.businessId !== undefined) {
+    if (!isNonEmpty(source.businessId, 100)) return null;
+    out.businessId = source.businessId;
   }
   return out;
 }
@@ -65,6 +74,14 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     (d.titheStatus === 'liable' || d.titheStatus === 'exempt') &&
     typeof d.isTithePayment === 'boolean' &&
     isInt(d.createdAt) && isInt(d.updatedAt);
+  return ok ? { id: d.id as string, data: d } : null;
+}
+
+function cleanBusiness(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw)) return null;
+  const d = pick(raw, ['id', 'name', 'sortOrder', 'createdAt', 'updatedAt'], false);
+  if (!d) return null;
+  const ok = isNonEmpty(d.id, 100) && isNonEmpty(d.name, 60) && isInt(d.sortOrder) && isInt(d.createdAt) && isInt(d.updatedAt);
   return ok ? { id: d.id as string, data: d } : null;
 }
 
@@ -168,6 +185,7 @@ export function parseBackup(text: string): ParseResult {
     return { ok: false, error: 'גרסת הגיבוי אינה נתמכת. יש לעדכן את האפליקציה.' };
   }
   const data = parsed.data;
+  const businesses = cleanList(data.businesses, cleanBusiness);
   const categories = cleanList(data.categories, cleanCategory);
   const budgets = cleanList(data.budgets, cleanBudget);
   const tasks = cleanList(data.tasks, cleanTask);
@@ -180,6 +198,7 @@ export function parseBackup(text: string): ParseResult {
   const settings = settingsDoc === undefined ? null : cleanSettings(settingsDoc);
 
   const plan: RestorePlan = {
+    businesses: businesses.docs,
     categories: categories.docs,
     budgets: budgets.docs,
     tasks: tasks.docs,
@@ -188,11 +207,11 @@ export function parseBackup(text: string): ParseResult {
     householdTransactions: household.docs,
     settings,
     invalid:
-      categories.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
+      businesses.invalid + categories.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
       (settingsDoc !== undefined && settings === null ? 1 : 0),
   };
   const total =
-    plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+    plan.businesses.length + plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
     plan.businessTransactions.length + plan.householdTransactions.length;
   if (total === 0 && !plan.settings) return { ok: false, error: 'בקובץ אין נתונים לשחזור.' };
   return { ok: true, plan };

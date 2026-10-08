@@ -1,6 +1,7 @@
 import { collection, deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Category, Scope, TransactionType } from '../domain/types';
+import { DEFAULT_BUSINESS_ID } from '../domain/spaces';
 import { newId } from './ids';
 
 /** כל הקטגוריות של המשתמש (עשרות בודדות), ממוינות לפי סדר התצוגה. */
@@ -26,6 +27,7 @@ export function createCategory(
   type: TransactionType,
   name: string,
   sortOrder: number,
+  businessId?: string,
 ): { id: string; saved: Promise<void> } {
   const now = Date.now();
   const id = newId();
@@ -39,6 +41,7 @@ export function createCategory(
     sortOrder,
     createdAt: now,
     updatedAt: now,
+    ...(scope === 'business' && businessId && businessId !== DEFAULT_BUSINESS_ID ? { businessId } : {}),
   };
   return { id, saved: setDoc(doc(db, 'users', uid, 'categories', id), category) };
 }

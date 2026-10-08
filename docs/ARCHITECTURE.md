@@ -39,7 +39,8 @@ React 18 + TypeScript + Vite. Firebase Authentication ו-Cloud Firestore. בדי
 users/{uid}                          פרופיל: שם, מייל, שם עסק, ייעוד חשבון
 users/{uid}/settings/main            הגדרות: אחוז מעשר, נוסחאות
 users/{uid}/businessProfile/main     פרופיל עסק
-users/{uid}/householdProfile/main    פרופיל משק בית
+users/{uid}/householdProfile/main    פרופיל משק בית (השם שמוצג במסך)
+users/{uid}/businesses/{id}          עסקים (שם וסדר). העסק הראשון: id = main
 users/{uid}/categories/{id}          קטגוריות (scope: business | household, type: income | expense)
 users/{uid}/businessTransactions/{id}    פעולות עסק
 users/{uid}/householdTransactions/{id}   פעולות משק בית
@@ -49,6 +50,17 @@ users/{uid}/titheRecords/{id}        שמור לעתיד (המעשרות מחו�
 
 עסק ומשק בית נשמרים באוספים נפרדים. אין הכנסה "מהעסק" שנשמרת במשק הבית: היא נגזרת בכל פעם
 מנתוני העסק, ולכן אי אפשר לספור אותה פעמיים.
+
+### כמה עסקים
+
+כל הפעולות של כל העסקים נשמרות באוסף `businessTransactions`, ולכל פעולה (וקטגוריה, תקציב, משימה
+ופריט קניות של עסק) יש שדה אופציונלי `businessId`. שדה חסר = העסק הראשון (`main`), כך שנתונים שנשמרו
+לפני התמיכה בכמה עסקים ממשיכים לעבוד בלי מעבר נתונים. לכל עסק קטגוריות ותקציב משלו.
+
+"מרחב" (`src/domain/spaces.ts`) הוא עסק מסוים או משק הבית, ומופיע בכתובת: `household`, `business`
+(הראשון) או `business.<מזהה>`. מה מוצג במכשיר נשמר מקומית בלבד (`src/domain/display.ts`), כך שאפשר
+לנהל עסק במכשיר אחד ובית במכשיר אחר. עסקים שאינם מוצגים אינם נספרים בהכנסות משק הבית, אלא אם סומן
+"להכניס את כל העסקים". חוק ההעברה (הפסד עובר או לא) חל על כל עסק בנפרד (`transferFromBusinesses`).
 
 ### פעולה (Transaction)
 

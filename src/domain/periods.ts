@@ -1,9 +1,9 @@
 import type { Agorot } from './money';
 import { toYearMonth } from './dates';
-import { businessNet, businessTransferToHousehold, totalsByCategory, totalsOf } from './summary';
+import { totalsByCategory, totalsOf, transferFromBusinesses } from './summary';
 import type { BusinessTransferMode, Scope, Transaction } from './types';
 
-type Tx = Pick<Transaction, 'type' | 'amountAgorot' | 'categoryId' | 'yearMonth'>;
+type Tx = Pick<Transaction, 'type' | 'amountAgorot' | 'categoryId' | 'yearMonth' | 'businessId'>;
 
 export interface PeriodTotals {
   incomeAgorot: Agorot;
@@ -52,8 +52,10 @@ export function periodTotals(
   }
   let fromBusiness = 0;
   for (const ym of yearMonths) {
-    const net = businessNet(totalsOf(business.filter((t) => t.yearMonth === ym)));
-    fromBusiness += businessTransferToHousehold(net, mode);
+    fromBusiness += transferFromBusinesses(
+      business.filter((t) => t.yearMonth === ym),
+      mode,
+    );
   }
   const own = totalsOf(inMonths(household, new Set(yearMonths)));
   const income = own.incomeAgorot + fromBusiness;

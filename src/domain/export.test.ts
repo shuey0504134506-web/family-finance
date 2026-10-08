@@ -22,6 +22,20 @@ const tx = (over: Partial<ExportTransaction> = {}): ExportTransaction => ({
   ...over,
 });
 
+describe('transactionsToCsv: שם העסק', () => {
+  it('בפעולת עסק מופיע שם העסק, ובלי שם מופיע "עסק"', () => {
+    const csv = transactionsToCsv([
+      tx({ scope: 'business', businessName: 'נגרות כהן', date: '2026-10-01' }),
+      tx({ scope: 'business', id: '2', date: '2026-10-02' }),
+      tx({ scope: 'household', id: '3', date: '2026-10-03' }),
+    ]);
+    const rows = csv.split('\r\n');
+    expect(rows[1].startsWith('נגרות כהן,')).toBe(true);
+    expect(rows[2].startsWith('עסק,')).toBe(true);
+    expect(rows[3].startsWith('משק בית,')).toBe(true);
+  });
+});
+
 describe('csvCell', () => {
   it('עוטף במרכאות כשיש פסיק, מרכאות או שורה חדשה', () => {
     expect(csvCell('a,b')).toBe('"a,b"');

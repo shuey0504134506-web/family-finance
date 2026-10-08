@@ -1,5 +1,6 @@
 import { collection, deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { DEFAULT_BUSINESS_ID } from '../domain/spaces';
 import type { Budget, Scope } from '../domain/types';
 
 export function subscribeBudgets(
@@ -21,6 +22,7 @@ export function saveBudget(
   categoryId: string,
   amountAgorot: number,
   existingCreatedAt?: number,
+  businessId?: string,
 ): Promise<void> {
   const now = Date.now();
   const budget: Budget = {
@@ -30,6 +32,7 @@ export function saveBudget(
     amountAgorot,
     createdAt: existingCreatedAt ?? now,
     updatedAt: now,
+    ...(scope === 'business' && businessId && businessId !== DEFAULT_BUSINESS_ID ? { businessId } : {}),
   };
   return setDoc(doc(db, 'users', uid, 'budgets', categoryId), budget);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
-import type { Scope, TransactionRecord } from '../../domain/types';
+import type { TransactionRecord } from '../../domain/types';
 
 /** "2026-10-07" -> "07/10" */
 function shortDate(date: string): string {
@@ -17,11 +17,11 @@ const HIGHLIGHT_MS = 3500;
  * ו"נשמר וסונכרן" לכמה שניות מרגע שהשרת אישר.
  */
 export function TransactionList({
-  scope,
+  spaceKey,
   items,
   highlightId,
 }: {
-  scope: Scope;
+  spaceKey: string;
   items: readonly TransactionRecord[];
   /** פעולה להבלטה לכמה רגעים (למשל אחרי מעבר מהחיפוש) */
   highlightId?: string;
@@ -79,7 +79,7 @@ export function TransactionList({
             <button
               type="button"
               className={`tx-row${flashId === item.id ? ' is-highlight' : ''}`}
-              onClick={() => navigate(`/${scope}/edit/${item.id}`)}
+              onClick={() => navigate(`/${spaceKey}/edit/${item.id}`)}
               aria-label={`${isIncome ? 'הכנסה' : 'הוצאה'}, ${title}, לעריכה`}
             >
               <span className="tx-date">{shortDate(item.date)}</span>

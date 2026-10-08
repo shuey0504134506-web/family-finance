@@ -19,6 +19,7 @@ export function validateSignup(values: SignupValues): Partial<Record<keyof Signu
   if (!values.firstName.trim()) errors.firstName = 'יש להזין שם פרטי';
   if (!values.lastName.trim()) errors.lastName = 'יש להזין שם משפחה';
   if (!values.businessName.trim()) errors.businessName = 'יש להזין שם עסק';
+  else if (values.businessName.trim().length > 60) errors.businessName = 'שם העסק ארוך מדי (עד 60 תווים)';
   if (!values.email.trim()) errors.email = 'יש להזין כתובת מייל';
   else if (!isValidEmail(values.email)) errors.email = 'כתובת המייל אינה תקינה';
   if (values.password.length < MIN_PASSWORD_LENGTH) {

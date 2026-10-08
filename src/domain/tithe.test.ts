@@ -214,4 +214,15 @@ describe('buildTitheInputs', () => {
     const rows = buildTitheInputs([tx('2026-05', 'income', 100_000)], [], options);
     expect(rows.map((r) => r.yearMonth)).toEqual(['2026-02']);
   });
+
+  it('כמה עסקים: חוק ההעברה חל על כל עסק בנפרד', () => {
+    const list = [
+      { ...tx('2026-02', 'income', 500_000), businessId: 'main' },
+      { ...tx('2026-02', 'expense', 200_000), businessId: 'b2' },
+    ];
+    const allow = buildTitheInputs([], list, options);
+    expect(allow.find((r) => r.yearMonth === '2026-02')?.businessNetAgorot).toBe(300_000);
+    const positive = buildTitheInputs([], list, { ...options, transferMode: 'positive-only' });
+    expect(positive.find((r) => r.yearMonth === '2026-02')?.businessNetAgorot).toBe(500_000);
+  });
 });

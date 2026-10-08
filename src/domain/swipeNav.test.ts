@@ -16,12 +16,12 @@ describe('classifySwipe', () => {
 
 describe('isSwipeNavigationRoute', () => {
   it('לא פעיל בבית, בכניסה ובטפסים', () => {
-    for (const p of ['/', '/business', '/household', '/login', '/welcome', '/business/add/income', '/household/edit/abc']) {
+    for (const p of ['/', '/business', '/household', '/login', '/welcome', '/business/add/income', '/household/edit/abc', '/business.b2', '/business.b2/add/expense', '/business.b2/edit/x']) {
       expect(isSwipeNavigationRoute(p), p).toBe(false);
     }
   });
   it('פעיל ברשימות, בהגדרות ובשאר המסכים', () => {
-    for (const p of ['/business/list/income', '/household/budget', '/settings', '/search', '/summary', '/tithes', '/categories', '/privacy']) {
+    for (const p of ['/business/list/income', '/business.b2/list/income', '/household/budget', '/settings', '/search', '/summary', '/tithes', '/categories', '/privacy']) {
       expect(isSwipeNavigationRoute(p), p).toBe(true);
     }
   });

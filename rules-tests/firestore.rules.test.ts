@@ -291,3 +291,57 @@ describe('משימות ורשימת קניות', () => {
     await assertFails(setDoc(doc(bob(), 'users/alice/shoppingItems/i1'), item));
   });
 });
+
+describe('כמה עסקים', () => {
+  const now = 1_790_000_000_000;
+  const business = { id: 'b2', name: 'עסק שני', sortOrder: 1, createdAt: now, updatedAt: now };
+
+  it('עסק תקין מתקבל, ולא תקין נדחה', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businesses/b2'), business));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businesses/b3'), { ...business, id: 'b3', name: '' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businesses/b4'), { ...business, id: 'wrong' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businesses/b5'), { ...business, id: 'b5', extra: 1 }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businesses/b6'), { ...business, id: 'b6', sortOrder: 'x' }));
+  });
+
+  it('אפשר לשנות שם עסק, אבל לא createdAt', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businesses/b2'), business));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businesses/b2'), { ...business, name: 'שם חדש', updatedAt: now + 1 }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businesses/b2'), { ...business, createdAt: 5 }));
+  });
+
+  it('משתמש אחר לא קורא ולא כותב עסקים', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businesses/b2'), business));
+    await assertFails(getDoc(doc(bob(), 'users/alice/businesses/b2')));
+    await assertFails(setDoc(doc(bob(), 'users/alice/businesses/b9'), { ...business, id: 'b9' }));
+  });
+
+  it('מזהה עסק אופציונלי בפעולה, בקטגוריה, בתקציב, במשימה ובפריט קניות', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businessTransactions/tx1'), transaction({ businessId: 'b2' })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businessTransactions/tx2'), transaction({ businessId: '' }, 'tx2')));
+    await assertFails(setDoc(doc(alice(), 'users/alice/businessTransactions/tx3'), transaction({ businessId: 5 }, 'tx3')));
+
+    const category = {
+      id: 'business-b2-expense-fuel', scope: 'business', type: 'expense', name: 'דלק', active: true,
+      isDefault: true, sortOrder: 0, createdAt: now, updatedAt: now,
+    };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/categories/business-b2-expense-fuel'), { ...category, businessId: 'b2' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/categories/c2'), { ...category, id: 'c2', businessId: '' }));
+
+    const budget = { id: 'overall-business-b2', scope: 'business', categoryId: 'overall-business-b2', amountAgorot: 1000, createdAt: now, updatedAt: now };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/budgets/overall-business-b2'), { ...budget, businessId: 'b2' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/budgets/x1'), { ...budget, id: 'x1', categoryId: 'x1', businessId: 7 }));
+
+    const task = { id: 't1', scope: 'business', title: 'לשלם', done: false, remind: 'none', remindDate: '', createdAt: now, updatedAt: now };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t1'), { ...task, businessId: 'b2' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t2'), { ...task, id: 't2', businessId: '' }));
+
+    const item = { id: 'i1', scope: 'business', name: 'נייר', bought: false, createdAt: now, updatedAt: now };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/shoppingItems/i1'), { ...item, businessId: 'b2' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/shoppingItems/i2'), { ...item, id: 'i2', businessId: '' }));
+  });
+
+  it('פעולה בלי מזהה עסק (נתון ישן) עדיין מתקבלת', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/businessTransactions/old'), transaction({}, 'old')));
+  });
+});

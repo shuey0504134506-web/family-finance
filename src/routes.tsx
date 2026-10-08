@@ -1,6 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { FullScreenMessage } from './components/FullScreenMessage';
-import { scopesForMode, type AccountMode, type Scope } from './domain/types';
 import { useAuth } from './features/auth/AuthContext';
 import { CompleteSetupScreen } from './features/auth/CompleteSetupScreen';
 import { ForgotPasswordScreen } from './features/auth/ForgotPasswordScreen';
@@ -26,15 +25,12 @@ import { SummaryScreen } from './features/summary/SummaryScreen';
 import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
+import { SpaceRoute } from './features/spaces/SpaceRoute';
+import { SpacesProvider, useSpaces } from './features/spaces/SpacesContext';
 import { readDeviceUser } from './services/deviceUser';
 
 function LoadingScreen() {
   return <FullScreenMessage title="טוען…" />;
-}
-
-/** בכניסה ברירת המחדל היא העסק, ואם החשבון הוא "משק בית בלבד" אז משק הבית. */
-function defaultScope(mode: AccountMode): Scope {
-  return scopesForMode(mode)[0];
 }
 
 /** מסכים שדורשים משתמש מחובר עם חשבון שהושלם. */
@@ -65,12 +61,14 @@ function RequireAccount() {
       return (
         <SettingsProvider uid={state.user.uid}>
           <LockProvider user={state.user}>
-            <ListsProvider uid={state.user.uid}>
-              <LockGate>
-                <RemindersHost />
-                <Outlet />
-              </LockGate>
-            </ListsProvider>
+            <SpacesProvider uid={state.user.uid} profile={state.profile}>
+              <ListsProvider uid={state.user.uid}>
+                <LockGate>
+                  <RemindersHost />
+                  <Outlet />
+                </LockGate>
+              </ListsProvider>
+            </SpacesProvider>
           </LockProvider>
         </SettingsProvider>
       );
@@ -88,20 +86,11 @@ function PublicOnly() {
   return <Outlet />;
 }
 
+/** בכניסה פותחים את המרחב הראשון שמוצג במכשיר (עסק, ואחריו משק הבית). */
 function HomeRedirect() {
-  const { state } = useAuth();
-  if (state.status !== 'ready') return null;
-  return <Navigate to={`/${defaultScope(state.profile.accountMode)}`} replace />;
-}
-
-/** נתיב עסק/משק בית. אם התחום אינו חלק מייעוד החשבון, חוזרים לברירת המחדל. */
-function ScopeRoute({ scope }: { scope: Scope }) {
-  const { state } = useAuth();
-  if (state.status !== 'ready') return null;
-  if (!scopesForMode(state.profile.accountMode).includes(scope)) {
-    return <Navigate to={`/${defaultScope(state.profile.accountMode)}`} replace />;
-  }
-  return <HomeScreen scope={scope} />;
+  const { ready, defaultSpace } = useSpaces();
+  if (!ready) return <LoadingScreen />;
+  return <Navigate to={`/${defaultSpace.key}`} replace />;
 }
 
 export function AppRoutes() {
@@ -121,15 +110,16 @@ export function AppRoutes() {
 
       <Route element={<RequireAccount />}>
         <Route index element={<HomeRedirect />} />
-        <Route path="/business" element={<ScopeRoute scope="business" />} />
-        <Route path="/household" element={<ScopeRoute scope="household" />} />
- <Route path="/:scope/list/:type" element={<TransactionListScreen />} />
-        <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
-        <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
-        <Route path="/:scope/budget" element={<BudgetScreen />} />
-        <Route path="/:scope/menu" element={<MenuScreen />} />
-        <Route path="/:scope/tasks" element={<TasksScreen />} />
-        <Route path="/:scope/shopping" element={<ShoppingScreen />} />
+        <Route element={<SpaceRoute />}>
+          <Route path="/:scope" element={<HomeScreen />} />
+          <Route path="/:scope/list/:type" element={<TransactionListScreen />} />
+          <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
+          <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
+          <Route path="/:scope/budget" element={<BudgetScreen />} />
+          <Route path="/:scope/menu" element={<MenuScreen />} />
+          <Route path="/:scope/tasks" element={<TasksScreen />} />
+          <Route path="/:scope/shopping" element={<ShoppingScreen />} />
+        </Route>
         <Route path="/categories" element={<CategoriesScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />

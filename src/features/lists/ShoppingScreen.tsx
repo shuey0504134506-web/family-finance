@@ -1,35 +1,31 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { buildShoppingItem, sortItems, validateItemName, type ShoppingItem } from '../../domain/tasks';
-import { scopesForMode, type Scope } from '../../domain/types';
+import { inSpace, type Space } from '../../domain/spaces';
 import { deleteBoughtItems, deleteShoppingItem, saveShoppingItem } from '../../services/listService';
 import { newId } from '../../services/ids';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSpace } from '../spaces/SpaceRoute';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { useLists } from './ListsContext';
 import { ScopeSwitch } from './ScopeSwitch';
 
 /** רשימת קניות לעסק או למשק בית. "נקנה" מסמן ומעביר לתחתית הרשימה. */
 export function ShoppingScreen() {
-  const params = useParams();
-  const { user, profile } = useReadyAuth();
-  const scope = params.scope as Scope;
-  if ((scope !== 'business' && scope !== 'household') || !scopesForMode(profile.accountMode).includes(scope)) {
-    return <Navigate to="/" replace />;
-  }
-  return <ShoppingBody scope={scope} uid={user.uid} />;
+  const { user } = useReadyAuth();
+  const space = useSpace();
+  return <ShoppingBody space={space} uid={user.uid} />;
 }
 
-function ShoppingBody({ scope, uid }: { scope: Scope; uid: string }) {
+function ShoppingBody({ space, uid }: { space: Space; uid: string }) {
   const { items, loading, error } = useLists();
   const { reportFailure } = useSyncNotice();
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const mine = sortItems(items.filter((i) => i.scope === scope));
+  const mine = sortItems(items.filter((i) => inSpace(i, space)));
   const toBuy = mine.filter((i) => !i.bought);
   const bought = mine.filter((i) => i.bought);
 
@@ -41,7 +37,7 @@ function ShoppingBody({ scope, uid }: { scope: Scope; uid: string }) {
     const problem = validateItemName(name);
     setNameError(problem ?? '');
     if (problem) return;
-    void persist(buildShoppingItem(name, { id: newId(), scope, now: Date.now() }));
+    void persist(buildShoppingItem(name, { id: newId(), scope: space.scope, businessId: space.businessId, now: Date.now() }));
     setName('');
   };
 
@@ -51,7 +47,7 @@ function ShoppingBody({ scope, uid }: { scope: Scope; uid: string }) {
     <div className="app-shell">
       <ScreenHeader title="רשימת קניות" />
       <main className="content" aria-busy={loading}>
-        <ScopeSwitch scope={scope} page="shopping" />
+        <ScopeSwitch space={space} page="shopping" />
 
         <form className="card settings-form" onSubmit={onAdd} noValidate>
           <Field label="פריט חדש" value={name} onChange={(e) => setName(e.target.value)} error={nameError || undefined} autoComplete="off" />

@@ -1,25 +1,24 @@
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
-import { scopesForMode, type Scope } from '../../domain/types';
-import { useReadyAuth } from '../auth/AuthContext';
+import type { Space } from '../../domain/spaces';
+import { useSpaces } from '../spaces/SpacesContext';
 
-/** מעבר בין עסק למשק בית בתוך מסך רשימה. מוצג רק לחשבון שמשתמש בשניהם. */
-export function ScopeSwitch({ scope, page }: { scope: Scope; page: 'tasks' | 'shopping' }) {
+/** מעבר בין העסקים למשק הבית בתוך מסך רשימה. מוצג רק כשיש יותר ממרחב אחד במכשיר. */
+export function ScopeSwitch({ space, page }: { space: Space; page: 'tasks' | 'shopping' }) {
   const navigate = useNavigate();
-  const { profile } = useReadyAuth();
-  const scopes = scopesForMode(profile.accountMode);
-  if (scopes.length < 2) return null;
+  const { spaces, nameOf } = useSpaces();
+  if (spaces.length < 2) return null;
   return (
-    <div className="segmented" role="group" aria-label="תחום">
-      {scopes.map((s) => (
+    <div className="segmented" role="group" aria-label="מרחב">
+      {spaces.map((s) => (
         <button
-          key={s}
+          key={s.key}
           type="button"
-          className={scope === s ? 'is-active' : ''}
-          aria-pressed={scope === s}
-          onClick={() => scope !== s && navigate(`/${s}/${page}`, { replace: true })}
+          className={space.key === s.key ? 'is-active' : ''}
+          aria-pressed={space.key === s.key}
+          onClick={() => space.key !== s.key && navigate(`/${s.key}/${page}`, { replace: true })}
         >
-          <Icon name={s} /> {s === 'business' ? 'עסק' : 'משק בית'}
+          <Icon name={s.scope} /> {nameOf(s)}
         </button>
       ))}
     </div>

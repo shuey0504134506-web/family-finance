@@ -1,25 +1,20 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronLeft } from '../../components/icons';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { scopesForMode, type Scope } from '../../domain/types';
-import { useReadyAuth } from '../auth/AuthContext';
+import { useSpace } from '../spaces/SpaceRoute';
 
 /** תפריט ראשי: מסך מלא עם אותה כותרת וחזרה כמו בהגדרות ובחיפוש. */
 export function MenuScreen() {
-  const params = useParams();
-  const { profile } = useReadyAuth();
-  const scope = params.scope as Scope;
-  if ((scope !== 'business' && scope !== 'household') || !scopesForMode(profile.accountMode).includes(scope)) {
-    return <Navigate to="/" replace />;
-  }
+  const space = useSpace();
+  const key = space.key;
 
   const rows = [
-    { to: `/${scope}/list/income`, label: 'הכנסות' },
-    { to: `/${scope}/list/expense`, label: 'הוצאות' },
-    { to: `/${scope}/budget`, label: 'תקציב' },
-    { to: '/summary', label: 'סיכומים', state: { scope } },
-    { to: `/${scope}/tasks`, label: 'רשימת משימות' },
-    { to: `/${scope}/shopping`, label: 'רשימת קניות' },
+    { to: `/${key}/list/income`, label: 'הכנסות' },
+    { to: `/${key}/list/expense`, label: 'הוצאות' },
+    { to: `/${key}/budget`, label: 'תקציב' },
+    { to: '/summary', label: 'סיכומים', state: { spaceKey: key } },
+    { to: `/${key}/tasks`, label: 'רשימת משימות' },
+    { to: `/${key}/shopping`, label: 'רשימת קניות' },
   ];
 
   return (

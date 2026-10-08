@@ -22,23 +22,6 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   transfer: 'העברה בנקאית',
 };
 
-export const ACCOUNT_MODE_LABELS: Record<AccountMode, string> = {
-  both: 'עסק + משק בית',
-  business: 'עסק בלבד',
-  household: 'משק בית בלבד',
-};
-
-export function scopesForMode(mode: AccountMode): Scope[] {
-  switch (mode) {
-    case 'both':
-      return ['business', 'household'];
-    case 'business':
-      return ['business'];
-    case 'household':
-      return ['household'];
-  }
-}
-
 export interface UserProfile {
   firstName: string;
   lastName: string;
@@ -87,6 +70,8 @@ export interface Transaction {
   isTithePayment: boolean;
   createdAt: number;
   updatedAt: number;
+  /** באיזה עסק נרשמה הפעולה. חסר = העסק הראשון (נתונים שנשמרו לפני שנוספה תמיכה בכמה עסקים). */
+  businessId?: string;
 }
 
 /** פעולה כפי שמגיעה מ-Firestore, עם מידע על מצב הסנכרון שלה. */
@@ -105,6 +90,8 @@ export interface Category {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+  /** רק לקטגוריות עסק. חסר = העסק הראשון. */
+  businessId?: string;
 }
 
 /** תקציב חודשי לקטגוריית הוצאה. תקף לכל חודש. מזהה המסמך הוא מזהה הקטגוריה. */
@@ -115,4 +102,6 @@ export interface Budget {
   amountAgorot: number;
   createdAt: number;
   updatedAt: number;
+  /** רק לתקציבי עסק. חסר = העסק הראשון. */
+  businessId?: string;
 }

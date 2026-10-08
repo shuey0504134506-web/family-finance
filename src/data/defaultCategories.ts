@@ -1,3 +1,4 @@
+import { DEFAULT_BUSINESS_ID } from '../domain/spaces';
 import type { Category, Scope, TransactionType } from '../domain/types';
 
 /**
@@ -49,18 +50,40 @@ const DEFINITIONS: Record<Scope, Record<TransactionType, Array<[string, string]>
   },
 };
 
-export function categoryDocId(scope: Scope, type: TransactionType, key: string): string {
+/**
+ * מזהה קטגוריית ברירת מחדל. לעסק הראשון נשמר המזהה המקורי (`business-expense-fuel`),
+ * ולעסקים נוספים נוסף מזהה העסק, כדי שלכל עסק יהיו קטגוריות משלו.
+ */
+export function categoryDocId(
+  scope: Scope,
+  type: TransactionType,
+  key: string,
+  businessId: string = DEFAULT_BUSINESS_ID,
+): string {
+  if (scope === 'business' && businessId !== DEFAULT_BUSINESS_ID) {
+    return `business-${businessId}-${type}-${key}`;
+  }
   return `${scope}-${type}-${key}`;
 }
 
+/** קטגוריות ברירת מחדל של עסק אחד. */
+export function buildBusinessCategories(now: number, businessId: string = DEFAULT_BUSINESS_ID): Category[] {
+  return buildDefaults(now, ['business'], businessId);
+}
+
 export function buildDefaultCategories(now: number): Category[] {
+  return buildDefaults(now, ['business', 'household'], DEFAULT_BUSINESS_ID);
+}
+
+function buildDefaults(now: number, scopes: readonly Scope[], businessId: string): Category[] {
   const result: Category[] = [];
-  for (const scope of ['business', 'household'] as const) {
+  for (const scope of scopes) {
     for (const type of ['income', 'expense'] as const) {
       DEFINITIONS[scope][type].forEach(([key, name], index) => {
         result.push({
-          id: categoryDocId(scope, type, key),
+          id: categoryDocId(scope, type, key, businessId),
           scope,
+          ...(scope === 'business' && businessId !== DEFAULT_BUSINESS_ID ? { businessId } : {}),
           type,
           name,
           active: true,

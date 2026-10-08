@@ -3,70 +3,74 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Amount } from '../../components/Amount';
 import { AppHeader } from '../../components/AppHeader';
 import { Icon } from '../../components/Icon';
-import { businessNet, businessTransferToHousehold, totalsOf } from '../../domain/summary';
-import { scopesForMode, type Scope, type TransactionType } from '../../domain/types';
+import { businessIdOf } from '../../domain/spaces';
+import { totalsOf, transferFromBusinesses } from '../../domain/summary';
+import type { TransactionType } from '../../domain/types';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { notStartedText } from '../home/homeText';
+import { useSpace } from '../spaces/SpaceRoute';
+import { useSpaces } from '../spaces/SpacesContext';
 import { ScreenBack } from '../tithes/ScreenBack';
 import { TransactionList } from './TransactionList';
 
 /**
  * רשימת ההכנסות או ההוצאות של החודש הנבחר, לעסק או למשק הבית.
  * נפתחת בלחיצה על משבצת הסכום במסך הבית, ובמעבר מתוצאת חיפוש.
- * במשק הבית, ההכנסה מהעסק (נטו) מוצגת בראש רשימת ההכנסות כשורה נגזרת.
+ * במשק הבית, ההכנסה מהעסקים (נטו) מוצגת בראש רשימת ההכנסות כשורה נגזרת.
  */
 export function TransactionListScreen() {
   const params = useParams();
-  const { profile } = useReadyAuth();
-  const scope = params.scope as Scope;
   const type = params.type as TransactionType;
-  if (
-    (scope !== 'business' && scope !== 'household') ||
-    (type !== 'income' && type !== 'expense') ||
-    !scopesForMode(profile.accountMode).includes(scope)
-  ) {
-    return <Navigate to="/" replace />;
-  }
-  return <Content scope={scope} type={type} />;
+  if (type !== 'income' && type !== 'expense') return <Navigate to="/" replace />;
+  return <Content type={type} />;
 }
 
-function Content({ scope, type }: { scope: Scope; type: TransactionType }) {
+function Content({ type }: { type: TransactionType }) {
   const navigate = useNavigate();
   const location = useLocation();
   const highlightId = (location.state as { highlightId?: string } | null)?.highlightId;
-  const { user, profile } = useReadyAuth();
+  const { user } = useReadyAuth();
   const settings = useSettings();
   const month = useMonth();
+  const space = useSpace();
+  const scope = space.scope;
+  const { countedIds, nameOf } = useSpaces();
 
-  const hasBusiness = scopesForMode(profile.accountMode).includes('business');
-  const needsBusinessNet = scope === 'household' && type === 'income' && hasBusiness;
+  const needsBusinessNet = scope === 'household' && type === 'income' && countedIds.length > 0;
 
   const main = useMonthTransactions(user.uid, scope, month.selected, true);
   const business = useMonthTransactions(user.uid, 'business', month.selected, needsBusinessNet);
 
-  const items = useMemo(() => main.items.filter((t) => t.type === type), [main.items, type]);
-  const ownTotal = useMemo(() => totalsOf(items), [items]);
-  const fromBusiness = useMemo(
+  const items = useMemo(
     () =>
-      needsBusinessNet
-        ? businessTransferToHousehold(businessNet(totalsOf(business.items)), settings.businessTransferMode)
-        : 0,
-    [needsBusinessNet, business.items, settings.businessTransferMode],
+      main.items.filter(
+        (t) => t.type === type && (scope === 'household' || businessIdOf(t) === space.businessId),
+      ),
+    [main.items, type, scope, space.businessId],
   );
+  const ownTotal = useMemo(() => totalsOf(items), [items]);
+  const fromBusiness = useMemo(() => {
+    if (!needsBusinessNet) return 0;
+    const counted = new Set(countedIds);
+    return transferFromBusinesses(
+      business.items.filter((t) => counted.has(businessIdOf(t))),
+      settings.businessTransferMode,
+    );
+  }, [needsBusinessNet, business.items, countedIds, settings.businessTransferMode]);
 
   const isIncome = type === 'income';
   const total = (isIncome ? ownTotal.incomeAgorot : ownTotal.expenseAgorot) + fromBusiness;
   const loading = main.loading || (needsBusinessNet && business.loading);
-  const scopeName = scope === 'business' ? profile.businessName : 'משק הבית';
+  const scopeName = nameOf(space);
 
   return (
     <div className={`app-shell scope-${scope}`}>
       <AppHeader />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to={`/${scope}`} label="חזרה" />
+        <ScreenBack to={`/${space.key}`} label="חזרה" />
         <h1 className="scope-title">
           <Icon name={isIncome ? 'income' : 'expense'} /> {isIncome ? 'הכנסות' : 'הוצאות'} · {scopeName}
         </h1>
@@ -98,7 +102,7 @@ function Content({ scope, type }: { scope: Scope; type: TransactionType }) {
             <button
               type="button"
               className={`btn btn-add ${isIncome ? 'btn-income' : 'btn-expense'}`}
-              onClick={() => navigate(`/${scope}/add/${type}`)}
+              onClick={() => navigate(`/${space.key}/add/${type}`)}
             >
               <Icon name="plus" /> {isIncome ? 'הוספת הכנסה' : 'הוספת הוצאה'}
             </button>
@@ -107,7 +111,7 @@ function Content({ scope, type }: { scope: Scope; type: TransactionType }) {
               <section className="card business-income-card">
                 <div className="row-between">
                   <span>
-                    <Icon name="business" /> {fromBusiness < 0 ? 'הפסד מהעסק (נטו)' : 'הכנסה מהעסק (נטו)'}
+                    <Icon name="business" /> {fromBusiness < 0 ? 'הפסד מהעסקים (נטו)' : 'הכנסה מהעסקים (נטו)'}
                   </span>
                   <Amount agorot={Math.abs(fromBusiness)} className={fromBusiness < 0 ? 'tone-expense' : 'tone-income'} />
                 </div>
@@ -115,7 +119,7 @@ function Content({ scope, type }: { scope: Scope; type: TransactionType }) {
               </section>
             )}
 
-            <TransactionList scope={scope} items={items} highlightId={highlightId} />
+            <TransactionList spaceKey={space.key} items={items} highlightId={highlightId} />
           </>
         )}
       </main>

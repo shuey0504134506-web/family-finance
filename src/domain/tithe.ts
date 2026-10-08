@@ -1,4 +1,5 @@
 import { applyBasisPoints, sumAgorot, type Agorot } from './money';
+import { businessIdOf } from './spaces';
 import type { Transaction } from './types';
 
 /**
@@ -132,7 +133,7 @@ export function titheByMonth(months: readonly TitheMonthInput[], bps: number): T
 
 type TitheSourceTx = Pick<
   Transaction,
-  'type' | 'amountAgorot' | 'titheStatus' | 'isTithePayment' | 'yearMonth'
+  'type' | 'amountAgorot' | 'titheStatus' | 'isTithePayment' | 'yearMonth' | 'businessId'
 >;
 
 /**
@@ -162,17 +163,20 @@ export function buildTitheInputs(
     return row;
   };
 
-  const businessNetByMonth = new Map<string, number>();
+  // נטו לכל עסק בכל חודש בנפרד: חוק ההעברה חל על כל עסק לחוד, כמו במסך הבית.
+  const businessNetByMonth = new Map<string, { yearMonth: string; net: number }>();
   for (const tx of business) {
     const signed = tx.type === 'income' ? tx.amountAgorot : -tx.amountAgorot;
-    businessNetByMonth.set(tx.yearMonth, (businessNetByMonth.get(tx.yearMonth) ?? 0) + signed);
+    const key = `${businessIdOf(tx)}|${tx.yearMonth}`;
+    const current = businessNetByMonth.get(key) ?? { yearMonth: tx.yearMonth, net: 0 };
+    current.net += signed;
+    businessNetByMonth.set(key, current);
     if (options.countBusinessTithePayments && tx.type === 'expense' && tx.isTithePayment) {
       entry(tx.yearMonth).paidAgorot += tx.amountAgorot;
     }
   }
-  for (const [yearMonth, net] of businessNetByMonth) {
-    entry(yearMonth).businessNetAgorot =
-      options.transferMode === 'positive-only' ? Math.max(0, net) : net;
+  for (const { yearMonth, net } of businessNetByMonth.values()) {
+    entry(yearMonth).businessNetAgorot += options.transferMode === 'positive-only' ? Math.max(0, net) : net;
   }
 
   for (const tx of household) {

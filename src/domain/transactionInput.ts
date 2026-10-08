@@ -1,4 +1,5 @@
 import { isValidIsoDate, parseYearMonth, yearMonthOfDate } from './dates';
+import { DEFAULT_BUSINESS_ID } from './spaces';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from './money';
 import {
   PAYMENT_METHOD_LABELS,
@@ -77,6 +78,8 @@ export interface BuildContext {
   now: number;
   /** בעריכה: זמן היצירה המקורי. הוא אינו משתנה לעולם. */
   createdAt?: number;
+  /** באיזה עסק נרשמת הפעולה (רק בעסק). */
+  businessId?: string;
 }
 
 /** בונה פעולה מוכנה לשמירה. מניח שהטיוטה עברה validateDraft בהצלחה. */
@@ -106,6 +109,8 @@ export function buildTransaction(draft: TransactionDraft, context: BuildContext)
     isTithePayment: draft.type === 'expense' ? draft.isTithePayment : false,
     createdAt: context.createdAt ?? context.now,
     updatedAt: context.now,
+    // העסק הראשון נשמר בלי מזהה (כמו נתונים ישנים). עסק נוסף נשמר עם מזהה.
+    ...(context.businessId && context.businessId !== DEFAULT_BUSINESS_ID ? { businessId: context.businessId } : {}),
   };
 }
 

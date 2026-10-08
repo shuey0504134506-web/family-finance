@@ -10,6 +10,8 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
+  getDocFromServer,
   getDocs,
   getDocsFromServer,
   setDoc,
@@ -104,9 +106,10 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
   };
 
-  const [businessTx, householdTx, categories, budgets, tasks, shoppingItems, settingsDocs] = await Promise.all([
+  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs] = await Promise.all([
     read<Transaction>('businessTransactions'),
     read<Transaction>('householdTransactions'),
+    read<{ id: string; name?: string }>('businesses'),
     read<Category>('categories'),
     read<object>('budgets'),
     read<object>('tasks'),
@@ -114,14 +117,19 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     read<object>('settings'),
   ]);
 
+  const businessNames = new Map(businesses.map((b) => [b.id, (b as { name?: string }).name ?? '']));
+  const legacyName = (await readLegacyBusinessName(uid)) ?? '';
+  const nameOfBusiness = (t: Transaction) => businessNames.get(t.businessId || 'main') || (t.businessId ? '' : legacyName);
+
   const transactions: ExportTransaction[] = [
-    ...businessTx.map((t) => ({ ...t, scope: 'business' as const })),
+    ...businessTx.map((t) => ({ ...t, scope: 'business' as const, businessName: nameOfBusiness(t) })),
     ...householdTx.map((t) => ({ ...t, scope: 'household' as const })),
   ];
 
   const backup = buildBackup({
     uid,
     settings: settingsDocs,
+    businesses,
     categories,
     budgets,
     tasks,
@@ -132,11 +140,23 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
   return { backup, transactions };
 }
 
+/** שם העסק הראשון מהפרופיל, לנתונים ישנים שאין להם רשומת עסק. */
+async function readLegacyBusinessName(uid: string): Promise<string | null> {
+  try {
+    const snapshot = await (navigator.onLine === false ? getDoc(doc(db, 'users', uid)) : getDocFromServer(doc(db, 'users', uid)));
+    const name = (snapshot.data() as { businessName?: unknown } | undefined)?.businessName;
+    return typeof name === 'string' ? name : null;
+  } catch {
+    return null;
+  }
+}
+
 const BATCH_SIZE = 400;
 
 // ---------- שחזור מקובץ גיבוי ----------
 
 const RESTORE_COLLECTIONS = [
+  ['businesses', 'businesses'],
   ['categories', 'categories'],
   ['budgets', 'budgets'],
   ['tasks', 'tasks'],
@@ -157,7 +177,7 @@ export interface NewDataPlan {
  */
 export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
   requireOnline();
-  const result: RestorePlan = { ...plan, categories: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
+  const result: RestorePlan = { ...plan, businesses: [], categories: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
   let alreadyExisting = 0;
   for (const [key, name] of RESTORE_COLLECTIONS) {
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
@@ -190,6 +210,7 @@ export async function applyRestore(uid: string, plan: RestorePlan, replaceSettin
 const USER_COLLECTIONS = [
   'businessTransactions',
   'householdTransactions',
+  'businesses',
   'categories',
   'budgets',
   'tasks',

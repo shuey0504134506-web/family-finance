@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { clearLockConfig } from '../../services/appLockStorage';
+import { clearDisplayPrefs } from '../../services/displayStorage';
 import { deleteAccountAndData } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
@@ -23,6 +24,7 @@ export function DeleteAccountSection() {
     try {
       await deleteAccountAndData(user, password);
       clearLockConfig(user.uid);
+      clearDisplayPrefs(user.uid);
       // אחרי המחיקה המשתמש מנותק אוטומטית וחוזר למסך הפתיחה.
     } catch (caught) {
       setError(describeError(caught));

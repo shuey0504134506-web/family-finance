@@ -1,8 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { formatMonthYear } from '../domain/dates';
 import { useMonth } from '../features/month/MonthContext';
-import { scopesForMode, type Scope } from '../domain/types';
-import { useReadyAuth } from '../features/auth/AuthContext';
+import { useOptionalSpace } from '../features/spaces/SpaceRoute';
+import { useSpaces } from '../features/spaces/SpacesContext';
 import { ChevronLeft, ChevronRight, GearIcon, MenuIcon, SearchIcon } from './icons';
 
 /**
@@ -15,11 +15,10 @@ import { ChevronLeft, ChevronRight, GearIcon, MenuIcon, SearchIcon } from './ico
  */
 export function AppHeader() {
   const navigate = useNavigate();
-  const params = useParams();
-  const { profile } = useReadyAuth();
-  const scopes = scopesForMode(profile.accountMode);
-  // המשימות והקניות שייכות לתחום שבו נמצאים. במסך בלי תחום (סיכומים) משתמשים בברירת המחדל.
-  const scope: Scope = scopes.includes(params.scope as Scope) ? (params.scope as Scope) : scopes[0];
+  const current = useOptionalSpace();
+  const { defaultSpace } = useSpaces();
+  // התפריט שייך למרחב שבו נמצאים. במסך בלי מרחב (סיכומים, חיפוש) משתמשים בברירת המחדל.
+  const spaceKey = (current ?? defaultSpace).key;
   const { selected, status, goPrevious, goNext, backToCurrent } = useMonth();
 
   return (
@@ -53,7 +52,7 @@ export function AppHeader() {
             type="button"
             className="icon-btn"
             aria-label="תפריט"
-            onClick={() => navigate(`/${scope}/menu`)}
+            onClick={() => navigate(`/${spaceKey}/menu`)}
           >
             <MenuIcon />
           </button>

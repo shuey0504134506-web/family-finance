@@ -6,12 +6,13 @@ import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { addMonths, formatMonthYear, parseYearMonth } from '../../domain/dates';
 import { formatPercentChange, percentChange } from '../../domain/compare';
 import { categoryBreakdown, monthsOfYear, periodTotals, type PeriodTotals } from '../../domain/periods';
-import { scopesForMode, type Scope } from '../../domain/types';
+import { businessIdOf } from '../../domain/spaces';
 import { useCategories } from '../../hooks/useCategories';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { IncomeExpenseChart } from './IncomeExpenseChart';
 import { Icon } from '../../components/Icon';
 
@@ -23,20 +24,25 @@ type Period = 'month' | 'year';
  * כל החישובים נעשים ב-src/domain/periods.ts ונבדקים שם.
  */
 export function SummaryScreen() {
-  const { user, profile } = useReadyAuth();
+  const { user } = useReadyAuth();
   const settings = useSettings();
   const month = useMonth();
-  const scopes = scopesForMode(profile.accountMode);
-  const fromState = (useLocation().state as { scope?: Scope } | null)?.scope;
-  const [scope, setScope] = useState<Scope>(fromState && scopes.includes(fromState) ? fromState : scopes[0]);
+  const { spaces, countedIds, nameOf: spaceLabel } = useSpaces();
+  const fromState = (useLocation().state as { spaceKey?: string } | null)?.spaceKey;
+  const [chosenKey, setChosenKey] = useState<string | null>(
+    fromState && spaces.some((s) => s.key === fromState) ? fromState : null,
+  );
+  const space = spaces.find((s) => s.key === chosenKey) ?? spaces[0];
+  const scope = space.scope;
   const [period, setPeriod] = useState<Period>('month');
   const { categories } = useCategories(user.uid);
 
   const { year } = parseYearMonth(month.selected);
   // נטענת ההיסטוריה עד סוף השנה הנבחרת: מספיקה לחודש, לחודש הקודם, לשנה ולשנה הקודמת.
   const upTo = `${year}-12`;
-  const business = useTransactionsUpTo(user.uid, 'business', upTo, scopes.includes('business'));
-  const household = useTransactionsUpTo(user.uid, 'household', upTo, scopes.includes('household'));
+  const hasBusinessSpace = spaces.some((s) => s.scope === 'business');
+  const business = useTransactionsUpTo(user.uid, 'business', upTo, hasBusinessSpace || countedIds.length > 0);
+  const household = useTransactionsUpTo(user.uid, 'household', upTo, spaces.some((s) => s.scope === 'household'));
   const loading = business.loading || household.loading;
   const error = business.error ?? household.error;
 
@@ -50,27 +56,34 @@ export function SummaryScreen() {
     [period, month.selected, year],
   );
 
+  // בעסק: רק הפעולות של העסק הנבחר. בבית: רק העסקים שנספרים במכשיר הזה.
+  const businessForCalc = useMemo(() => {
+    if (scope === 'business') return business.items.filter((t) => businessIdOf(t) === space.businessId);
+    const counted = new Set(countedIds);
+    return business.items.filter((t) => counted.has(businessIdOf(t)));
+  }, [scope, space.businessId, business.items, countedIds]);
+
   const totals = useMemo(
-    () => periodTotals(scope, household.items, business.items, currentMonths, mode),
-    [scope, household.items, business.items, currentMonths, mode],
+    () => periodTotals(scope, household.items, businessForCalc, currentMonths, mode),
+    [scope, household.items, businessForCalc, currentMonths, mode],
   );
   const previous = useMemo(
-    () => periodTotals(scope, household.items, business.items, previousMonths, mode),
-    [scope, household.items, business.items, previousMonths, mode],
+    () => periodTotals(scope, household.items, businessForCalc, previousMonths, mode),
+    [scope, household.items, businessForCalc, previousMonths, mode],
   );
 
   const chartMonths = useMemo(
     () =>
       monthsOfYear(year).map((ym) => {
-        const t = periodTotals(scope, household.items, business.items, [ym], mode);
+        const t = periodTotals(scope, household.items, businessForCalc, [ym], mode);
         return { label: String(Number(ym.slice(5))), incomeAgorot: t.incomeAgorot, expenseAgorot: t.expenseAgorot };
       }),
-    [scope, household.items, business.items, mode, year],
+    [scope, household.items, businessForCalc, mode, year],
   );
 
-  const scopeItems = scope === 'business' ? business.items : household.items;
+  const scopeItems = scope === 'business' ? businessForCalc : household.items;
   const names = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
-  const nameOf = (id: string) => names.get(id) ?? scopeItems.find((t) => t.categoryId === id)?.categoryName ?? 'אחר';
+  const categoryName = (id: string) => names.get(id) ?? scopeItems.find((t) => t.categoryId === id)?.categoryName ?? 'אחר';
   const expenseShares = useMemo(
     () => categoryBreakdown(scopeItems, currentMonths, 'expense'),
     [scopeItems, currentMonths],
@@ -89,11 +102,11 @@ export function SummaryScreen() {
       <main className="content" aria-busy={loading}>
         <MonthSwitcher label={periodLabel} stepMonths={period === 'month' ? 1 : 12} unit={period === 'month' ? 'חודש' : 'שנה'} />
 
-        {scopes.length > 1 && (
-          <div className="segmented" role="group" aria-label="תחום">
-            {scopes.map((s) => (
-              <button key={s} type="button" className={s === scope ? 'is-active' : ''} aria-pressed={s === scope} onClick={() => setScope(s)}>
-                <Icon name={s} /> {s === 'business' ? 'עסק' : 'משק בית'}
+        {spaces.length > 1 && (
+          <div className="segmented" role="group" aria-label="מרחב">
+            {spaces.map((s) => (
+              <button key={s.key} type="button" className={s.key === space.key ? 'is-active' : ''} aria-pressed={s.key === space.key} onClick={() => setChosenKey(s.key)}>
+                <Icon name={s.scope} /> {spaceLabel(s)}
               </button>
             ))}
           </div>
@@ -130,9 +143,9 @@ export function SummaryScreen() {
                     <Amount agorot={totals.incomeAgorot} className="tone-income" />
                   </dd>
                 </div>
-                {scope === 'household' && scopes.includes('business') && totals.fromBusinessAgorot !== 0 && (
+                {scope === 'household' && countedIds.length > 0 && totals.fromBusinessAgorot !== 0 && (
                   <div>
-                    <dt className="small">מתוכן: {totals.fromBusinessAgorot < 0 ? 'הפסד' : 'נטו'} מהעסק</dt>
+                    <dt className="small">מתוכן: {totals.fromBusinessAgorot < 0 ? 'הפסד' : 'נטו'} {countedIds.length > 1 ? 'מהעסקים' : 'מהעסק'}</dt>
                     <dd className="small">
                       <Amount agorot={totals.fromBusinessAgorot} className={totals.fromBusinessAgorot < 0 ? 'tone-expense' : undefined} />
                     </dd>
@@ -160,8 +173,8 @@ export function SummaryScreen() {
               <IncomeExpenseChart months={chartMonths} title={`הכנסות והוצאות לפי חודש בשנת ${year}`} />
             </section>
 
-            <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={nameOf} tone="expense" />
-            <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={nameOf} tone="income" />
+            <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />
+            <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={categoryName} tone="income" />
           </>
         )}
       </main>

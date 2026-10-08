@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { describeError } from '../../services/authErrors';
+import { BusinessesFields } from './BusinessesFields';
 import { useAuth } from './AuthContext';
 
 /**
@@ -12,6 +13,8 @@ export function CompleteSetupScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [extraBusinesses, setExtraBusinesses] = useState<string[]>([]);
+  const [householdName, setHouseholdName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
@@ -20,14 +23,25 @@ export function CompleteSetupScreen() {
     event.preventDefault();
     if (submitting.current) return;
     if (!firstName.trim() || !lastName.trim() || !businessName.trim()) {
-      setError('יש למלא את כל השדות');
+      setError('יש למלא את השם הפרטי, שם המשפחה ושם העסק');
+      return;
+    }
+    if ([businessName, householdName, ...extraBusinesses].some((n) => n.trim().length > 60)) {
+      setError('אחד השמות ארוך מדי (עד 60 תווים)');
       return;
     }
     submitting.current = true;
     setBusy(true);
     setError('');
     try {
-      await completeSetup({ firstName, lastName, businessName, accountMode: 'both' });
+      await completeSetup({
+        firstName,
+        lastName,
+        businessName,
+        accountMode: 'both',
+        extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
+        householdName: householdName.trim(),
+      });
     } catch (caught) {
       setError(describeError(caught));
     } finally {
@@ -62,6 +76,12 @@ export function CompleteSetupScreen() {
             label="שם העסק"
             value={businessName}
             onChange={(event) => setBusinessName(event.target.value)}
+          />
+          <BusinessesFields
+            householdName={householdName}
+            onHouseholdName={setHouseholdName}
+            extras={extraBusinesses}
+            onExtras={setExtraBusinesses}
           />
           {error && (
             <div className="form-error" role="alert">
