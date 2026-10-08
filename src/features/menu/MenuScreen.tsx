@@ -14,6 +14,9 @@ export function MenuScreen() {
   }
 
   const rows = [
+    { to: `/${scope}/list/income`, label: 'הכנסות' },
+    { to: `/${scope}/list/expense`, label: 'הוצאות' },
+    { to: `/${scope}/budget`, label: 'תקציב' },
     { to: '/summary', label: 'סיכומים', state: { scope } },
     { to: `/${scope}/tasks`, label: 'רשימת משימות' },
     { to: `/${scope}/shopping`, label: 'רשימת קניות' },

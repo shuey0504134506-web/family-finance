@@ -1,7 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
-import { AppHeader } from '../../components/AppHeader';
+import { MonthSwitcher } from '../../components/MonthSwitcher';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import {
   BUDGET_STATUS_LABELS,
   budgetUsage,
@@ -21,8 +22,6 @@ import { deleteBudget, saveBudget } from '../../services/budgetService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSyncNotice } from '../sync/SyncNotice';
-import { ScreenBack } from '../tithes/ScreenBack';
-import { Icon } from '../../components/Icon';
 
 /**
  * תקציב חודשי לפי קטגוריית הוצאה (נפרד לעסק ולמשק בית). התקציב קבוע ותקף לכל חודש,
@@ -88,15 +87,10 @@ function BudgetContent({ scope }: { scope: Scope }) {
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <AppHeader />
+      <ScreenHeader title={`תקציב · ${scope === 'business' ? 'עסק' : 'משק בית'}`} />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to={`/${scope}`} label="חזרה" />
-        <h1 className="scope-title">
-          <Icon name="budget" /> תקציב · {scope === 'business' ? 'עסק' : 'משק בית'}
-        </h1>
-        <p className="muted small">
-          תקציב חודשי לכל קטגוריית הוצאה. הניצול מחושב מהוצאות {formatMonthYear(month.selected)}.
-        </p>
+        <MonthSwitcher label={formatMonthYear(month.selected)} />
+        <p className="muted small">תקציב חודשי לכל קטגוריית הוצאה. הניצול מחושב מהוצאות החודש שנבחר.</p>
 
         {budgetsError || transactions.error ? (
           <div className="card error-card" role="alert">

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Amount } from '../../components/Amount';
 import { useLocation } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { ChevronLeft, ChevronRight } from '../../components/icons';
+import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { addMonths, formatMonthYear, parseYearMonth } from '../../domain/dates';
 import { formatPercentChange, percentChange } from '../../domain/compare';
 import { categoryBreakdown, monthsOfYear, periodTotals, type PeriodTotals } from '../../domain/periods';
@@ -87,24 +87,7 @@ export function SummaryScreen() {
     <div className={`app-shell scope-${scope}`}>
       <ScreenHeader title="סיכומים" />
       <main className="content" aria-busy={loading}>
-        <div className="period-nav">
-          <div className="month-nav">
-            <button type="button" className="icon-btn" aria-label={period === 'month' ? 'לחודש הבא' : 'לשנה הבאה'} onClick={() => month.setMonth(addMonths(month.selected, period === 'month' ? 1 : 12))}>
-              <ChevronLeft />
-            </button>
-            <div className="month-label" aria-live="polite">
-              {periodLabel}
-            </div>
-            <button type="button" className="icon-btn" aria-label={period === 'month' ? 'לחודש הקודם' : 'לשנה הקודמת'} onClick={() => month.setMonth(addMonths(month.selected, period === 'month' ? -1 : -12))}>
-              <ChevronRight />
-            </button>
-          </div>
-          {month.status !== 'current' && (
-            <button type="button" className="chip-btn" onClick={month.backToCurrent}>
-              חזרה לחודש הנוכחי
-            </button>
-          )}
-        </div>
+        <MonthSwitcher label={periodLabel} stepMonths={period === 'month' ? 1 : 12} unit={period === 'month' ? 'חודש' : 'שנה'} />
 
         {scopes.length > 1 && (
           <div className="segmented" role="group" aria-label="תחום">
