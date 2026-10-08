@@ -2144,3 +2144,287 @@ html[dir='ltr'] .chev {
 html[dir='ltr'] .acc-item.is-open .acc-chevron {
   transform: rotate(90deg);
 }
+
+/* ==========================================================================
+   עיצוב: נייבי קלאסי
+   נייבי כצבע ראשי, קרם כרקע, כרטיסים לבנים עם מסגרת דקה, ירוק ואדום רכים
+   להכנסות והוצאות, וזהב עדין לדגשים. נוף הרים בפתיחה ובראש מסך הבית.
+   ========================================================================== */
+
+:root {
+  --navy: #0f2a47;
+  --bg: #f7f3ea;
+  --text: #14233a;
+  --text-muted: #6f7a8a;
+  --border: #e8e2d4;
+
+  --business: #1f6f66;
+  --business-soft: #e3f0ee;
+  --household: #4f56b3;
+  --household-soft: #ecedf8;
+
+  --income: #26784a;
+  --income-soft: #e6f2ea;
+  --expense: #b8442f;
+  --expense-soft: #faebe7;
+  --tithe: #9a7440;
+  --budget: #1f6f66;
+  --gold: #b8955a;
+
+  --radius: 24px;
+  --radius-sm: 18px;
+  --shadow: 0 1px 2px rgba(15, 42, 71, 0.04), 0 8px 24px rgba(15, 42, 71, 0.05);
+}
+
+.btn-primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  box-shadow: 0 10px 22px rgba(15, 42, 71, 0.22);
+}
+
+.btn-secondary {
+  border-color: #d8d1c0;
+}
+
+.btn-income {
+  background: var(--income);
+  border-color: var(--income);
+  color: #fff;
+}
+
+.btn-expense {
+  background: var(--expense);
+  border-color: var(--expense);
+  color: #fff;
+}
+
+.chip-btn {
+  background: #eef3f7;
+}
+
+.icon-btn {
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.input {
+  border-color: #e1dacb;
+  background: #fbf9f3;
+}
+
+.card,
+.tile,
+.quick-link,
+.acc-list,
+.feature-list {
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.tile-income,
+.tile-expense {
+  border: 1px solid var(--border);
+}
+
+/* יתרת החודש: כרטיס נייבי */
+.balance-frame,
+.balance-frame.tone-plus,
+.balance-frame.tone-minus {
+  background: var(--navy);
+  border: 0;
+  box-shadow: 0 14px 28px rgba(15, 42, 71, 0.22);
+}
+
+.balance-text,
+.tone-plus .balance-text,
+.tone-minus .balance-text {
+  color: #c9d5e4;
+  font-weight: 500;
+}
+
+.balance-amount {
+  display: block;
+  font-size: 2.75rem;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+
+.tone-plus .balance-amount {
+  color: #9ad8b5;
+}
+
+.tone-minus .balance-amount {
+  color: #f2b1a6;
+}
+
+.balance-hint {
+  color: #8fa2ba;
+}
+
+.balance-details {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.balance-details dt {
+  color: #b9c6d8;
+}
+
+.balance-details dd {
+  color: #fff;
+}
+
+.balance-frame .tone-income {
+  color: #9ad8b5;
+}
+
+.balance-frame .tone-expense {
+  color: #f2b1a6;
+}
+
+.balance-total {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.balance-total dt {
+  color: #fff;
+}
+
+/* מעבר עסק / משק בית */
+.scope-tabs {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(15, 42, 71, 0.12);
+}
+
+.scope-tab-business.is-active,
+.scope-tab-household.is-active,
+.scope-tab.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: none;
+}
+
+.scope-tab-business.is-active .icon,
+.scope-tab-household.is-active .icon,
+.scope-tab.is-active .icon {
+  color: #fff;
+}
+
+.segmented {
+  background: #ebe5d6;
+}
+
+.segmented button.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: none;
+}
+
+.app-header {
+  background: var(--bg);
+}
+
+/* נוף הרים בראש מסך הבית */
+.app-shell.has-hero {
+  position: relative;
+}
+
+.home-hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  z-index: 0;
+  pointer-events: none;
+  background: #f1d3b2 url('./assets/mountains-home.jpg') center top / cover no-repeat;
+}
+
+.home-hero::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 90px;
+  background: linear-gradient(to bottom, rgba(247, 243, 234, 0), var(--bg));
+}
+
+.has-hero .app-header {
+  position: relative;
+  background: transparent;
+}
+
+.has-hero .content {
+  position: relative;
+  z-index: 1;
+}
+
+.has-hero .icon-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  box-shadow: 0 2px 8px rgba(15, 42, 71, 0.1);
+}
+
+.has-hero .month-label {
+  color: var(--navy);
+}
+
+.has-hero .scope-title {
+  width: fit-content;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 10px rgba(15, 42, 71, 0.12);
+  color: var(--navy);
+  font-weight: 700;
+}
+
+/* מסך פתיחה על רקע הרים */
+.welcome-screen {
+  background: #f7e9d6 url('./assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+  align-items: stretch;
+}
+
+.welcome-screen .auth-column {
+  justify-content: space-between;
+  min-height: calc(100dvh - 48px - var(--safe-top) - var(--safe-bottom));
+}
+
+.welcome-screen .welcome-hero {
+  padding-top: 6vh;
+}
+
+.welcome-screen .welcome-hero h1 {
+  color: var(--navy);
+}
+
+.welcome-screen .welcome-hero p {
+  color: #2a3a52;
+}
+
+.welcome-screen .welcome-logo {
+  border: 0;
+  color: var(--navy);
+  box-shadow: 0 10px 24px rgba(15, 42, 71, 0.16);
+}
+
+.welcome-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcome-screen .btn-primary {
+  box-shadow: 0 12px 26px rgba(8, 25, 43, 0.4);
+}
+
+.welcome-screen .btn-secondary {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.75);
+  color: #fff;
+}
+
+.welcome-screen .auth-footer-link a {
+  color: rgba(255, 255, 255, 0.9);
+}

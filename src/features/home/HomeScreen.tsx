@@ -109,7 +109,8 @@ export function HomeScreen() {
   const businessLossLabel = manyBusinesses ? 'הפסד מהעסקים' : 'הפסד מהעסק';
 
   return (
-    <div className={`app-shell scope-${scope}`} {...swipe}>
+    <div className={`app-shell has-hero scope-${scope}`} {...swipe}>
+      <div className="home-hero" aria-hidden="true" />
       <AppHeader />
 
       <main className="content" aria-busy={loading}>
