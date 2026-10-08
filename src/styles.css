@@ -2642,13 +2642,17 @@ body::before {
   -webkit-box-orient: vertical;
 }
 
-/* "לחץ לעריכה": שורה במרכז תחתית המסגרת */
-.tx-row {
-  flex-wrap: wrap;
+/* "לחץ לעריכה": באותה שורה של הסכום, מימינו, כדי שלא יגדיל את המסגרת */
+.tx-side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.tx-row .tx-hint {
-  flex: 0 0 100%;
-  margin-top: 0;
-  text-align: center;
+.tx-side .tx-hint {
+  display: inline;
+  margin: 0;
+  font-size: 0.68rem;
 }

@@ -96,8 +96,10 @@ export function TransactionList({
                   <span className="tx-sync tx-sync-done">נשמר וסונכרן</span>
                 ) : null}
               </span>
-              <Amount agorot={item.amountAgorot} className={isIncome ? 'tone-income' : 'tone-expense'} />
-              <span className="tx-hint">לחץ לעריכה</span>
+              <span className="tx-side">
+                <span className="tx-hint">לחץ לעריכה</span>
+                <Amount agorot={item.amountAgorot} className={isIncome ? 'tone-income' : 'tone-expense'} />
+              </span>
             </button>
           </li>
         );
