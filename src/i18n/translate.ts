@@ -42,7 +42,30 @@ function lookup(core: string): string {
     });
     return p.english.replace(/\{(\d)\}/g, (_, d) => values[Number(d)] ?? '');
   }
-  return core;
+  return segment(core) ?? core;
+}
+
+/**
+ * ביטוי שהורכב מכמה מחרוזות מוכרות (למשל "החודש אנחנו" + "בפלוס"):
+ * מתרגם רק אם כל המילים מכוסות, כדי לא לערבב עברית ואנגלית בטקסט של המשתמש.
+ */
+function segment(core: string): string | null {
+  const words = core.split(' ');
+  if (words.length < 2) return null;
+  const out: string[] = [];
+  let i = 0;
+  while (i < words.length) {
+    let hit: string | undefined;
+    let len = Math.min(8, words.length - i);
+    for (; len > 0; len--) {
+      hit = EN[words.slice(i, i + len).join(' ')];
+      if (hit !== undefined) break;
+    }
+    if (hit === undefined) return null;
+    out.push(hit);
+    i += len;
+  }
+  return out.join(' ');
 }
 
 /** מתרגמת טקסט עברי לאנגלית (כשהשפה אנגלית). טקסט לא מוכר מוחזר כמות שהוא. */

@@ -23,6 +23,12 @@ describe('תרגום לאנגלית', () => {
     expect(translateText('סכום (€)')).toBe('Amount (€)');
   });
 
+  it('ביטוי שהורכב ממחרוזות מוכרות מתורגם, אבל רק אם כולו מוכר', () => {
+    setLangForTest('en');
+    expect(translateText('החודש אנחנו בפלוס')).toBe('This month we are in the black');
+    expect(translateText('החודש אנחנו בשם כלשהו')).toBe('החודש אנחנו בשם כלשהו');
+  });
+
   it('טקסט לא מוכר ללא עברית או עם עברית נשאר כמות שהוא', () => {
     setLangForTest('en');
     expect(translateText('Hello')).toBe('Hello');
