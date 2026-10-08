@@ -1774,3 +1774,8 @@ button.task-main {
   align-items: center;
   gap: 8px;
 }
+
+/* סדר פיזי קבוע, כמו בשורת הכותרת: חודש קודם מימין, חודש הבא משמאל */
+.period-nav .month-nav {
+  direction: ltr;
+}
