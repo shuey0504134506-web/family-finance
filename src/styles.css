@@ -2517,3 +2517,12 @@ body::before {
 .segmented-spaces button svg {
   flex: 0 0 auto;
 }
+
+/* כפתור שמירה בטפסים: מרווח מאוזן מהשדה שמעליו ומשפת הכרטיס */
+.form-card > button[type='submit'] {
+  margin-top: 16px;
+}
+
+.form-card > button[type='submit']:last-child {
+  margin-bottom: 4px;
+}
