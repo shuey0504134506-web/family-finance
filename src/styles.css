@@ -2479,3 +2479,7 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
 .login-screen .auth-plain a {
   color: rgba(255, 255, 255, 0.92);
 }
+
+.login-screen .auth-header {
+  text-align: center;
+}
