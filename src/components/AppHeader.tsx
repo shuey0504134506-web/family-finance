@@ -80,7 +80,7 @@ export function AppHeader() {
         </div>
       )}
       {menuOpen && (
-        <Modal title="תפריט" onClose={() => setMenuOpen(false)}>
+        <Modal title="תפריט" placement="top" onClose={() => setMenuOpen(false)}>
           <nav className="menu-list" aria-label="תפריט">
             {(
               [
