@@ -48,7 +48,13 @@ export async function verifyAccountPassword(user: User, password: string): Promi
 // ---------- הגדרות ופרופיל ----------
 
 export function saveSettings(uid: string, settings: Omit<UserSettings, 'updatedAt'>): Promise<void> {
-  return setDoc(doc(db, 'users', uid, 'settings', 'main'), { ...settings, updatedAt: Date.now() });
+  // ברירת המחדל (קלנדרי) לא נכתבת למסמך: חסר = קלנדרי. כך שמירת הגדרות רגילות לא תלויה בכך שהכללים החדשים כבר פורסמו.
+  const { annualMode, ...rest } = settings;
+  return setDoc(doc(db, 'users', uid, 'settings', 'main'), {
+    ...rest,
+    ...(annualMode === 'calendar' ? {} : { annualMode }),
+    updatedAt: Date.now(),
+  });
 }
 
 export interface ProfileChanges {
