@@ -1038,7 +1038,8 @@ select.input {
 }
 
 .segmented button {
-  flex: 1 1 40%;
+  flex: 1 1 auto;
+  min-width: 30%;
   min-height: 44px;
   border: 0;
   border-radius: 8px;
@@ -2133,4 +2134,9 @@ h3 {
 
 .divider {
   border-top-color: #ecefed;
+}
+
+/* אנגלית (שמאל לימין): חיצי הניווט מתהפכים כדי שיצביעו לכיוון הנכון */
+html[dir='ltr'] .chev {
+  transform: scaleX(-1);
 }

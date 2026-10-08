@@ -15,7 +15,7 @@ const base = {
 /** חץ שמצביע שמאלה */
 export function ChevronLeft() {
   return (
-    <svg {...base}>
+    <svg {...base} className="chev">
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -24,7 +24,7 @@ export function ChevronLeft() {
 /** חץ שמצביע ימינה */
 export function ChevronRight() {
   return (
-    <svg {...base}>
+    <svg {...base} className="chev">
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
