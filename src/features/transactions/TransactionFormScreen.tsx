@@ -173,6 +173,19 @@ function TransactionForm({
     return [...base, ...added.filter((c) => !known.has(c.id))];
   }, [categories, space, draft.type, existing?.categoryId, added]);
 
+  // הקטגוריה האחרונה שבה השתמשו בסוג הזה מופיעה ראשונה (בלי לבחור אותה מראש)
+  const lastKey = `ff.lastCategory.v1.${space.key}.${draft.type}`;
+  const orderedOptions = useMemo(() => {
+    let last: string | null = null;
+    try {
+      last = localStorage.getItem(lastKey);
+    } catch {
+      last = null;
+    }
+    const first = options.find((c) => c.id === last);
+    return first ? [first, ...options.filter((c) => c.id !== first.id)] : options;
+  }, [options, lastKey]);
+
   const onAddCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return setCategoryError('יש להזין שם לקטגוריה.');
@@ -226,6 +239,11 @@ function TransactionForm({
       businessId: space.businessId,
     });
 
+    try {
+      localStorage.setItem(lastKey, category.id);
+    } catch {
+      // אחסון חסום: רק הסדר לא ייזכר
+    }
     submitted.current = true;
     // לא ממתינים לשרת: בלי אינטרנט ההבטחה מתממשת רק בסנכרון. הפעולה נשמרת במכשיר
     // ומופיעה מיד ברשימה כ"ממתין לסנכרון". אם השרת דוחה אותה, מציגים הודעה.
@@ -277,21 +295,29 @@ function TransactionForm({
           />
 
           <div className="field">
-            <label htmlFor="tx-category">קטגוריה</label>
-            <select
-              id="tx-category"
-              className={`input${errors.category ? ' input-error' : ''}`}
-              value={draft.categoryId}
-              onChange={(e) => update('categoryId', e.target.value)}
+            <span className="field-label" id="tx-category-label">
+              קטגוריה
+            </span>
+            <div
+              className={`chip-group${errors.category ? ' chip-group-error' : ''}`}
+              role="radiogroup"
+              aria-labelledby="tx-category-label"
               aria-invalid={errors.category ? true : undefined}
             >
-              <option value="">{categoriesLoading ? 'טוען…' : 'בחירת קטגוריה'}</option>
-              {options.map((c) => (
-                <option key={c.id} value={c.id}>
+              {categoriesLoading && options.length === 0 && <span className="muted small">טוען…</span>}
+              {orderedOptions.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.categoryId === c.id}
+                  className={`chip-option${draft.categoryId === c.id ? ' is-active' : ''}`}
+                  onClick={() => update('categoryId', c.id)}
+                >
                   {c.name}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
             {errors.category && <div className="field-error">{errors.category}</div>}
             {addingCategory ? (
               <div className="inline-add">
@@ -333,19 +359,23 @@ function TransactionForm({
           </div>
 
           <div className="field">
-            <label htmlFor="tx-payment">אמצעי תשלום</label>
-            <select
-              id="tx-payment"
-              className="input"
-              value={draft.paymentMethod}
-              onChange={(e) => update('paymentMethod', e.target.value as PaymentMethod)}
-            >
+            <span className="field-label" id="tx-payment-label">
+              אמצעי תשלום
+            </span>
+            <div className="chip-group" role="radiogroup" aria-labelledby="tx-payment-label">
               {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((method) => (
-                <option key={method} value={method}>
+                <button
+                  key={method}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.paymentMethod === method}
+                  className={`chip-option${draft.paymentMethod === method ? ' is-active' : ''}`}
+                  onClick={() => update('paymentMethod', method)}
+                >
                   {PAYMENT_METHOD_LABELS[method]}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {isIncome && scope === 'household' && (
