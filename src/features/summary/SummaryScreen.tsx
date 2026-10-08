@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Amount } from '../../components/Amount';
-import { AppHeader } from '../../components/AppHeader';
-import { ScreenBack } from '../tithes/ScreenBack';
+import { useLocation } from 'react-router-dom';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { addMonths, formatMonthYear, parseYearMonth } from '../../domain/dates';
 import { formatPercentChange, percentChange } from '../../domain/compare';
 import { categoryBreakdown, monthsOfYear, periodTotals, type PeriodTotals } from '../../domain/periods';
@@ -26,7 +27,8 @@ export function SummaryScreen() {
   const settings = useSettings();
   const month = useMonth();
   const scopes = scopesForMode(profile.accountMode);
-  const [scope, setScope] = useState<Scope>(scopes[0]);
+  const fromState = (useLocation().state as { scope?: Scope } | null)?.scope;
+  const [scope, setScope] = useState<Scope>(fromState && scopes.includes(fromState) ? fromState : scopes[0]);
   const [period, setPeriod] = useState<Period>('month');
   const { categories } = useCategories(user.uid);
 
@@ -83,12 +85,26 @@ export function SummaryScreen() {
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <AppHeader />
+      <ScreenHeader title="סיכומים" />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to="/" label="חזרה" />
-        <h1 className="scope-title">
-          <Icon name="chart" /> סיכומים
-        </h1>
+        <div className="period-nav">
+          <div className="month-nav">
+            <button type="button" className="icon-btn" aria-label={period === 'month' ? 'לחודש הבא' : 'לשנה הבאה'} onClick={() => month.setMonth(addMonths(month.selected, period === 'month' ? 1 : 12))}>
+              <ChevronLeft />
+            </button>
+            <div className="month-label" aria-live="polite">
+              {periodLabel}
+            </div>
+            <button type="button" className="icon-btn" aria-label={period === 'month' ? 'לחודש הקודם' : 'לשנה הקודמת'} onClick={() => month.setMonth(addMonths(month.selected, period === 'month' ? -1 : -12))}>
+              <ChevronRight />
+            </button>
+          </div>
+          {month.status !== 'current' && (
+            <button type="button" className="chip-btn" onClick={month.backToCurrent}>
+              חזרה לחודש הנוכחי
+            </button>
+          )}
+        </div>
 
         {scopes.length > 1 && (
           <div className="segmented" role="group" aria-label="תחום">

@@ -1688,35 +1688,6 @@ select.input {
 }
 
 /* תפריט, משימות וקניות */
-.menu-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 56px;
-  padding: 0 4px;
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-  text-align: start;
-  cursor: pointer;
-}
-
-.menu-item:last-child {
-  border-bottom: 0;
-}
-
-.menu-item:active {
-  background: var(--accent-soft);
-}
-
 .task-list,
 .reminder-list {
   list-style: none;
@@ -1796,30 +1767,10 @@ button.task-main {
   font-weight: 600;
 }
 
-/* תפריט שנפתח מלמעלה */
-.modal-backdrop.is-top {
-  align-items: flex-start;
-}
-
-.modal-backdrop.is-top .modal {
-  padding: calc(16px + var(--safe-top)) 16px 16px;
-  border-radius: 0 0 var(--radius) var(--radius);
-  animation: menu-drop 0.18s ease-out;
-}
-
-@keyframes menu-drop {
-  from {
-    transform: translateY(-24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .modal-backdrop.is-top .modal {
-    animation: none;
-  }
+/* מעבר בין חודשים מתחת לכותרת מסך הסיכומים */
+.period-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }

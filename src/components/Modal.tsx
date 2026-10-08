@@ -4,13 +4,10 @@ import { useEffect, useRef, type ReactNode } from 'react';
 export function Modal({
   title,
   onClose,
-  placement = 'bottom',
   children,
 }: {
   title: string;
   onClose: () => void;
-  /** top: נפתח מלמעלה (תפריט). bottom: נפתח מלמטה. */
-  placement?: 'top' | 'bottom';
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,7 +22,7 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div className={`modal-backdrop${placement === 'top' ? ' is-top' : ''}`} onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose}>
       <div
         ref={ref}
         className="modal"

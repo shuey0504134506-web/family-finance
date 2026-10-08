@@ -9,6 +9,7 @@ import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
 import { SwipeHistory } from './features/navigation/SwipeHistory';
+import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
 import { RemindersHost } from './features/lists/RemindersHost';
 import { ShoppingScreen } from './features/lists/ShoppingScreen';
@@ -126,6 +127,7 @@ export function AppRoutes() {
         <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
         <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
         <Route path="/:scope/budget" element={<BudgetScreen />} />
+        <Route path="/:scope/menu" element={<MenuScreen />} />
         <Route path="/:scope/tasks" element={<TasksScreen />} />
         <Route path="/:scope/shopping" element={<ShoppingScreen />} />
         <Route path="/categories" element={<CategoriesScreen />} />

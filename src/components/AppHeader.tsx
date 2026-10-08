@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { formatMonthYear } from '../domain/dates';
 import { useMonth } from '../features/month/MonthContext';
 import { scopesForMode, type Scope } from '../domain/types';
 import { useReadyAuth } from '../features/auth/AuthContext';
-import { Modal } from './Modal';
 import { ChevronLeft, ChevronRight, GearIcon, MenuIcon, SearchIcon } from './icons';
 
 /**
@@ -19,7 +17,6 @@ export function AppHeader() {
   const navigate = useNavigate();
   const params = useParams();
   const { profile } = useReadyAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
   const scopes = scopesForMode(profile.accountMode);
   // המשימות והקניות שייכות לתחום שבו נמצאים. במסך בלי תחום (סיכומים) משתמשים בברירת המחדל.
   const scope: Scope = scopes.includes(params.scope as Scope) ? (params.scope as Scope) : scopes[0];
@@ -56,8 +53,7 @@ export function AppHeader() {
             type="button"
             className="icon-btn"
             aria-label="תפריט"
-            aria-haspopup="dialog"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => navigate(`/${scope}/menu`)}
           >
             <MenuIcon />
           </button>
@@ -78,32 +74,6 @@ export function AppHeader() {
             חזרה לחודש הנוכחי
           </button>
         </div>
-      )}
-      {menuOpen && (
-        <Modal title="תפריט" placement="top" onClose={() => setMenuOpen(false)}>
-          <nav className="menu-list" aria-label="תפריט">
-            {(
-              [
-                ['/summary', 'סיכומים'],
-                [`/${scope}/tasks`, 'רשימת משימות'],
-                [`/${scope}/shopping`, 'רשימת קניות'],
-              ] as const
-            ).map(([to, label]) => (
-              <button
-                key={to}
-                type="button"
-                className="menu-item"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate(to);
-                }}
-              >
-                <span>{label}</span>
-                <ChevronLeft />
-              </button>
-            ))}
-          </nav>
-        </Modal>
       )}
     </header>
   );
