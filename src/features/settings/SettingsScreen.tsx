@@ -5,6 +5,8 @@ import { APP_NAME, APP_VERSION } from '../../config/appInfo';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth, useAuth } from '../auth/AuthContext';
 import { DataSection } from './DataSection';
+import { AccordionItem } from './Accordion';
+import { ChevronLeft } from '../../components/icons';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { FormulasSection } from './FormulasSection';
 import { ProfileSection } from './ProfileSection';
@@ -16,6 +18,8 @@ export function SettingsScreen() {
   const { signOutUser } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
 
   async function onSignOut() {
     setBusy(true);
@@ -32,30 +36,43 @@ export function SettingsScreen() {
     <div className="app-shell">
       <ScreenHeader title="הגדרות" />
       <main className="content">
-        <section className="card" aria-labelledby="account-title">
-          <h2 id="account-title" className="card-title">
-            החשבון שלי
-          </h2>
-          <dl className="details">
-            <div>
-              <dt>כתובת מייל</dt>
-              <dd dir="ltr">{user.email}</dd>
-            </div>
-          </dl>
-        </section>
+        <div className="acc-list">
+          <AccordionItem id="account" title="החשבון שלי" open={openId === 'account'} onToggle={toggle}>
+            <dl className="details">
+              <div>
+                <dt>כתובת מייל</dt>
+                <dd dir="ltr">{user.email}</dd>
+              </div>
+            </dl>
+          </AccordionItem>
 
-        <ProfileSection />
-        <FormulasSection />
+          <AccordionItem id="profile" title="פרטים ושימוש" open={openId === 'profile'} onToggle={toggle}>
+            <ProfileSection />
+          </AccordionItem>
 
-        <section className="card">
-          <h2 className="card-title">ניהול</h2>
-          <Link className="btn btn-secondary" to="/categories">
-            קטגוריות
+          <AccordionItem id="formulas" title="מעשרות וחישובים" open={openId === 'formulas'} onToggle={toggle}>
+            <FormulasSection />
+          </AccordionItem>
+
+          <Link className="acc-trigger acc-link" to="/categories">
+            <span>קטגוריות</span>
+            <span className="acc-chevron" aria-hidden="true">
+              <ChevronLeft />
+            </span>
           </Link>
-        </section>
 
-        <SecuritySection />
-        <DataSection />
+          <AccordionItem id="security" title="אבטחה" open={openId === 'security'} onToggle={toggle}>
+            <SecuritySection />
+          </AccordionItem>
+
+          <AccordionItem id="data" title="גיבוי ויצוא" open={openId === 'data'} onToggle={toggle}>
+            <DataSection />
+          </AccordionItem>
+
+          <AccordionItem id="delete" title="מחיקת חשבון" open={openId === 'delete'} onToggle={toggle} danger>
+            <DeleteAccountSection />
+          </AccordionItem>
+        </div>
 
         <section className="card">
           {error && (
@@ -67,8 +84,6 @@ export function SettingsScreen() {
             {busy ? 'יוצא…' : 'יציאה מהחשבון'}
           </button>
         </section>
-
-        <DeleteAccountSection />
 
         <p className="auth-footer-link">
           <Link to="/privacy">מדיניות פרטיות</Link>

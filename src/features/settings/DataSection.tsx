@@ -45,11 +45,7 @@ export function DataSection() {
   };
 
   return (
-    <section className="card" aria-labelledby="data-title">
-      <h2 id="data-title" className="card-title">
-        גיבוי ויצוא
-      </h2>
-      <div className="stack">
+    <div className="stack">
         <button type="button" className="btn btn-secondary" disabled={busy !== null} onClick={() => void run('json')}>
           {busy === 'json' ? 'מכין…' : 'הורדת גיבוי מלא (JSON)'}
         </button>
@@ -67,7 +63,6 @@ export function DataSection() {
           </div>
         )}
         <p className="muted small">הקבצים נשמרים במכשיר בלבד. כדאי לשמור גיבוי במקום בטוח מדי פעם.</p>
-      </div>
-    </section>
+    </div>
   );
 }

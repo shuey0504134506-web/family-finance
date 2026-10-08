@@ -1505,3 +1505,68 @@ select.input {
   white-space: nowrap;
   font-size: 0.95rem;
 }
+
+/* הגדרות: רשימת כותרות מתקפלות */
+.acc-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.acc-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.acc-list > :last-child {
+  border-bottom: 0;
+}
+
+.acc-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.acc-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.acc-link {
+  border-bottom: 1px solid var(--border);
+}
+
+.acc-trigger:active {
+  background: var(--accent-soft);
+}
+
+.acc-chevron {
+  display: inline-flex;
+  color: #000;
+  transition: transform 0.15s;
+}
+
+.acc-item.is-open .acc-chevron {
+  transform: rotate(-90deg);
+}
+
+.acc-item.is-danger .acc-trigger {
+  color: var(--danger, #b42318);
+}
+
+.acc-body {
+  padding: 4px 16px 18px;
+}

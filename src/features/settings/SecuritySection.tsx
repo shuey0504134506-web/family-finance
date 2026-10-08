@@ -8,14 +8,11 @@ import { MIN_PASSWORD_LENGTH, isValidEmail } from '../auth/validation';
 /** שינוי סיסמה ושינוי מייל. שניהם דורשים להקליד שוב את הסיסמה הנוכחית. */
 export function SecuritySection() {
   return (
-    <section className="card" aria-labelledby="security-title">
-      <h2 id="security-title" className="card-title">
-        אבטחה
-      </h2>
+    <>
       <PasswordForm />
       <hr className="divider" />
       <EmailForm />
-    </section>
+    </>
   );
 }
 

@@ -29,10 +29,7 @@ export function DeleteAccountSection() {
   };
 
   return (
-    <section className="card danger-zone" aria-labelledby="delete-title">
-      <h2 id="delete-title" className="card-title">
-        מחיקת חשבון
-      </h2>
+    <>
       {!open ? (
         <>
           <p className="muted small">מוחקת לצמיתות את כל ההכנסות, ההוצאות, הקטגוריות וההגדרות, ואת ההתחברות עצמה.</p>
@@ -63,6 +60,6 @@ export function DeleteAccountSection() {
           </button>
         </form>
       )}
-    </section>
+    </>
   );
 }
