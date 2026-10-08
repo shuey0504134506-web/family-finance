@@ -42,7 +42,11 @@ export async function createUserRecords(uid: string, input: NewAccountInput): Pr
     createdAt: now,
     updatedAt: now,
   });
-  batch.set(doc(db, 'users', uid, 'settings', 'main'), { ...DEFAULT_SETTINGS, updatedAt: now });
+  // annualMode (ברירת מחדל: קלנדרי) לא נכתב למסמך: חסר = קלנדרי. כך יצירת חשבון לא נכשלת
+  // אם כללי האבטחה בשרת עוד לא כוללים את השדה, וכל הכתיבה האטומית נדחית.
+  const defaultSettings: Partial<UserSettings> = { ...DEFAULT_SETTINGS };
+  delete defaultSettings.annualMode;
+  batch.set(doc(db, 'users', uid, 'settings', 'main'), { ...defaultSettings, updatedAt: now });
   batch.set(doc(db, 'users', uid, 'businessProfile', 'main'), {
     name: input.businessName.trim(),
     createdAt: now,
