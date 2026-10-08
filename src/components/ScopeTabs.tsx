@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSpaces } from '../features/spaces/SpacesContext';
 import type { Space } from '../domain/spaces';
 import { Icon } from './Icon';
+import { SpaceLabel } from './SpaceLabel';
 
 /**
  * כפתורי מעבר בין המרחבים המוצגים (עסקים ומשק הבית), בתחתית המסך (אזור האגודל).
@@ -26,7 +27,7 @@ export function ScopeTabs({ active }: { active: Space }) {
           aria-current={space.key === active.key ? 'page' : undefined}
           onClick={() => go(space)}
         >
-          <Icon name={space.scope} /> <span className="scope-tab-name">{nameOf(space)}</span>
+          <Icon name={space.scope} /> <SpaceLabel name={nameOf(space)} className="scope-tab-name" />
         </button>
       ))}
     </nav>

@@ -11,6 +11,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSpaces } from '../spaces/SpacesContext';
 import { Icon } from '../../components/Icon';
+import { SpaceLabel } from '../../components/SpaceLabel';
 
 const MAX_RESULTS = 200;
 // החיפוש טוען את כל ההיסטוריה (עד חודש רחוק בעתיד).
@@ -106,7 +107,7 @@ export function SearchScreen() {
         </div>
 
         {spaces.length > 1 && (
-          <div className="segmented segmented-spaces" role="group" aria-label="מרחב">
+          <div className="segmented segmented-spaces has-all" role="group" aria-label="מרחב">
             {[{ key: 'all', label: 'הכול', icon: null as Scope | null }, ...spaces.map((sp) => ({ key: sp.key, label: nameOf(sp), icon: sp.scope as Scope | null }))].map(
               ({ key, label, icon }) => (
                 <button
@@ -121,7 +122,7 @@ export function SearchScreen() {
                       <Icon name={icon} />{' '}
                     </>
                   )}
-                  <span className="seg-label">{label}</span>
+                  <SpaceLabel name={label} />
                 </button>
               ),
             )}

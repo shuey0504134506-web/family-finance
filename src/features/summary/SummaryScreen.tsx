@@ -15,6 +15,7 @@ import { useSettings } from '../settings/SettingsContext';
 import { useSpaces } from '../spaces/SpacesContext';
 import { IncomeExpenseChart } from './IncomeExpenseChart';
 import { Icon } from '../../components/Icon';
+import { SpaceLabel } from '../../components/SpaceLabel';
 
 type Period = 'month' | 'year';
 
@@ -103,10 +104,10 @@ export function SummaryScreen() {
         <MonthSwitcher label={periodLabel} stepMonths={period === 'month' ? 1 : 12} unit={period === 'month' ? 'חודש' : 'שנה'} />
 
         {spaces.length > 1 && (
-          <div className="segmented" role="group" aria-label="מרחב">
+          <div className="segmented segmented-spaces" role="group" aria-label="מרחב">
             {spaces.map((s) => (
               <button key={s.key} type="button" className={s.key === space.key ? 'is-active' : ''} aria-pressed={s.key === space.key} onClick={() => setChosenKey(s.key)}>
-                <Icon name={s.scope} /> {spaceLabel(s)}
+                <Icon name={s.scope} /> <SpaceLabel name={spaceLabel(s)} />
               </button>
             ))}
           </div>

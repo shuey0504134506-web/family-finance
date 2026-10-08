@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
+import { SpaceLabel } from '../../components/SpaceLabel';
 import type { Space } from '../../domain/spaces';
 import { useSpaces } from '../spaces/SpacesContext';
 
@@ -9,7 +10,7 @@ export function ScopeSwitch({ space, page }: { space: Space; page: 'tasks' | 'sh
   const { spaces, nameOf } = useSpaces();
   if (spaces.length < 2) return null;
   return (
-    <div className="segmented" role="group" aria-label="מרחב">
+    <div className="segmented segmented-spaces" role="group" aria-label="מרחב">
       {spaces.map((s) => (
         <button
           key={s.key}
@@ -18,7 +19,7 @@ export function ScopeSwitch({ space, page }: { space: Space; page: 'tasks' | 'sh
           aria-pressed={space.key === s.key}
           onClick={() => space.key !== s.key && navigate(`/${s.key}/${page}`, { replace: true })}
         >
-          <Icon name={s.scope} /> {nameOf(s)}
+          <Icon name={s.scope} /> <SpaceLabel name={nameOf(s)} />
         </button>
       ))}
     </div>

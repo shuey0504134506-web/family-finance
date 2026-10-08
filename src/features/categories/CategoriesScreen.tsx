@@ -8,6 +8,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { Icon } from '../../components/Icon';
+import { SpaceLabel } from '../../components/SpaceLabel';
 
 const MAX_NAME = 60;
 
@@ -63,7 +64,7 @@ export function CategoriesScreen() {
       <ScreenHeader title="קטגוריות" />
       <main className="content">
         {spaces.length > 1 && (
-          <div className="segmented" role="group" aria-label="מרחב">
+          <div className="segmented segmented-spaces" role="group" aria-label="מרחב">
             {spaces.map((s) => (
               <button
                 key={s.key}
@@ -72,7 +73,7 @@ export function CategoriesScreen() {
                 aria-pressed={s.key === space.key}
                 onClick={() => setChosenKey(s.key)}
               >
-                <Icon name={s.scope} /> {nameOf(s)}
+                <Icon name={s.scope} /> <SpaceLabel name={nameOf(s)} />
               </button>
             ))}
           </div>

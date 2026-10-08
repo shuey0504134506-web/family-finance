@@ -2502,7 +2502,7 @@ body::before {
   gap: 6px;
 }
 
-.segmented-spaces button:first-child {
+.segmented-spaces.has-all button:first-child {
   flex: 0 0 auto;
   min-width: 64px;
 }
@@ -2525,4 +2525,19 @@ body::before {
 
 .form-card > button[type='submit']:last-child {
   margin-bottom: 4px;
+}
+
+/* שמות ארוכים של עסק/משק בית: הקטנת כתב */
+.seg-long {
+  font-size: 0.86em;
+}
+
+.seg-xlong {
+  font-size: 0.74em;
+}
+
+.scope-tab-name.seg-label {
+  display: inline-block;
+  max-width: 16ch;
+  vertical-align: bottom;
 }
