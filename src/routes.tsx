@@ -8,6 +8,7 @@ import { LoginScreen } from './features/auth/LoginScreen';
 import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
+import { SwipeHistory } from './features/navigation/SwipeHistory';
 import { LockProvider } from './features/lock/LockContext';
 import { LockGate } from './features/lock/LockScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
@@ -97,6 +98,8 @@ function ScopeRoute({ scope }: { scope: Scope }) {
 
 export function AppRoutes() {
   return (
+    <>
+    <SwipeHistory />
     <Routes>
       <Route element={<PublicOnly />}>
         <Route path="/welcome" element={<WelcomeScreen />} />
@@ -125,5 +128,6 @@ export function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
