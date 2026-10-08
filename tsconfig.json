@@ -14,6 +14,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "ff-i18n",
+    "paths": {
+      "ff-i18n/*": [
+        "./src/i18n/*"
+      ]
+    },
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

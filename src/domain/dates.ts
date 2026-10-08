@@ -2,6 +2,8 @@
  * תאריכים באפליקציה הם מחרוזות: YYYY-MM-DD לתאריך ו-YYYY-MM לחודש.
  * כך אין בעיות אזור זמן, והמיון והשאילתות ב-Firestore פשוטים.
  */
+import { translateText } from '../i18n/translate';
+
 export type IsoDate = string;
 export type YearMonth = string;
 
@@ -89,7 +91,7 @@ export function lastMonths(endYm: YearMonth, count: number): YearMonth[] {
 }
 
 export function hebrewMonthName(ym: YearMonth): string {
-  return HEBREW_MONTHS[parseYearMonth(ym).month - 1];
+  return translateText(HEBREW_MONTHS[parseYearMonth(ym).month - 1]);
 }
 
 /** "אוקטובר 2026" */

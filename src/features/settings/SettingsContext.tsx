@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react';
+import { setCurrency } from '../../domain/currency';
 import { DEFAULT_SETTINGS, type UserSettings } from '../../domain/types';
 import { subscribeSettings } from '../../services/profileService';
 
@@ -19,7 +20,15 @@ export function SettingsProvider({ uid, children }: { uid: string; children: Rea
     [uid],
   );
 
-  return <SettingsContext.Provider value={settings}>{children}</SettingsContext.Provider>;
+  // סימן המטבע נקרא ישירות על ידי פונקציות העיצוב, ולכן מעדכנים אותו לפני הציור,
+  // והמפתח בונה מחדש את המסכים כשהמטבע מתחלף כדי שכל הסכומים יוצגו בסימן החדש.
+  setCurrency(settings.currency);
+
+  return (
+    <SettingsContext.Provider value={settings}>
+      <Fragment key={settings.currency}>{children}</Fragment>
+    </SettingsContext.Provider>
+  );
 }
 
 export function useSettings(): UserSettings {

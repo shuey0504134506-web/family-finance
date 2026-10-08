@@ -1,5 +1,7 @@
 /** טיפוסים משותפים לכל האפליקציה. אין כאן לוגיקה ואין תלות ב-Firebase. */
 
+import { DEFAULT_CURRENCY, type CurrencyCode } from './currency';
+
 export type AccountMode = 'both' | 'business' | 'household';
 export type Scope = 'business' | 'household';
 export type TransactionType = 'income' | 'expense';
@@ -38,6 +40,8 @@ export interface UserSettings {
   /** האם הוצאה עסקית שסומנה "מעשר" נספרת כמעשר ששולם. נקודת החלטה פתוחה. */
   countBusinessTithePayments: boolean;
   businessTransferMode: BusinessTransferMode;
+  /** מטבע התצוגה והחישוב. החלפה אינה ממירה סכומים קיימים. */
+  currency: CurrencyCode;
   updatedAt: number;
 }
 
@@ -45,6 +49,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   titheBps: 1000,
   countBusinessTithePayments: true,
   businessTransferMode: 'allow-negative',
+  currency: DEFAULT_CURRENCY,
   updatedAt: 0,
 };
 

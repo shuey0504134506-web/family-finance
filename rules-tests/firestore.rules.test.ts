@@ -178,6 +178,12 @@ describe('הגדרות וקטגוריות', () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice/settings/main'), settings));
   });
 
+  it('מטבע מוכר מתקבל, מטבע לא מוכר נדחה', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 'USD' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 'XXX' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 5 }));
+  });
+
   it('אחוז מעשר מחוץ לטווח נדחה', async () => {
     await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, titheBps: 20000 }));
     await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, titheBps: -1 }));

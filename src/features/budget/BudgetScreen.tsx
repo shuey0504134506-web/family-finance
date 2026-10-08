@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { currencySymbol } from '../../domain/currency';
 import { Amount } from '../../components/Amount';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -239,7 +240,7 @@ function OverallBudgetCard({
       {editing ? (
         <form className="budget-edit" onSubmit={submit} noValidate>
           <label htmlFor="overall-budget" className="small">
-            תקציב חודשי כללי (₪)
+            {`תקציב חודשי כללי (${currencySymbol()})`}
           </label>
           <input
             id="overall-budget"
@@ -364,7 +365,7 @@ function BudgetRowView({
       {editing ? (
         <form className="budget-edit" onSubmit={submit} noValidate>
           <label htmlFor={`b-${row.categoryId}`} className="small">
-            תקציב חודשי (₪)
+            {`תקציב חודשי (${currencySymbol()})`}
           </label>
           <input
             id={`b-${row.categoryId}`}

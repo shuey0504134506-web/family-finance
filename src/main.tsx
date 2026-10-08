@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { applyDocumentLang } from './i18n/lang';
 import { installAndroidBackHandler } from './native/androidBack';
 import '@fontsource/heebo/hebrew-300.css';
 import '@fontsource/heebo/hebrew-400.css';
@@ -14,6 +15,7 @@ import '@fontsource/heebo/latin-600.css';
 import '@fontsource/heebo/latin-700.css';
 import './styles.css';
 
+applyDocumentLang();
 installAndroidBackHandler();
 
 createRoot(document.getElementById('root')!).render(

@@ -12,7 +12,7 @@ export function PrivacyScreen() {
       <ScreenHeader title="מדיניות פרטיות" />
       <main className="content prose">
         <p className="muted">
-          המסמך מסביר בקצרה איזה מידע {APP_NAME} שומרת, למה, ואיפה.
+          {`המסמך מסביר בקצרה איזה מידע ${APP_NAME} שומרת, למה, ואיפה.`}
         </p>
 
         <h2>איזה מידע נשמר</h2>

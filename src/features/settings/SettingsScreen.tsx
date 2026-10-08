@@ -5,6 +5,7 @@ import { APP_NAME, APP_VERSION } from '../../config/appInfo';
 import { AccordionItem } from './Accordion';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
+import { LanguageCurrencySection } from './LanguageCurrencySection';
 import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
 import { PurposeSection } from './PurposeSection';
@@ -29,6 +30,10 @@ export function SettingsScreen() {
 
           <AccordionItem id="mode" title="ייעוד האפליקציה" open={openId === 'mode'} onToggle={toggle}>
             <PurposeSection />
+          </AccordionItem>
+
+          <AccordionItem id="lang" title="שפה ומטבע" open={openId === 'lang'} onToggle={toggle}>
+            <LanguageCurrencySection />
           </AccordionItem>
 
           <AccordionItem id="manage" title="ניהול האפליקציה" open={openId === 'manage'} onToggle={toggle}>

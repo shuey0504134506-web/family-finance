@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { currencySymbol } from '../../domain/currency';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { Icon } from '../../components/Icon';
@@ -249,7 +250,7 @@ function TransactionForm({
       <main className="content">
         <form className="card form-card" onSubmit={onSubmit} noValidate>
           <Field
-            label="סכום (₪)"
+            label={`סכום (${currencySymbol()})`}
             inputMode="decimal"
             autoComplete="off"
             autoFocus={!existing}

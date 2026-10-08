@@ -1,3 +1,4 @@
+import { isCurrencyCode } from './currency';
 import { BACKUP_FORMAT, BACKUP_VERSION } from './export';
 
 /** מסמך מוכן לכתיבה, עם מזהה המסמך. */
@@ -145,6 +146,11 @@ function cleanSettings(raw: unknown): Obj | null {
   if (!isObj(raw)) return null;
   const d = pick(raw, SETTINGS_KEYS);
   if (!d) return null;
+  // מטבע הוא שדה אופציונלי: גיבויים ישנים לא כוללים אותו.
+  if (raw.currency !== undefined) {
+    if (!isCurrencyCode(raw.currency)) return null;
+    d.currency = raw.currency;
+  }
   const ok =
     isInt(d.titheBps) && d.titheBps >= 0 && d.titheBps <= 10000 &&
     typeof d.countBusinessTithePayments === 'boolean' &&

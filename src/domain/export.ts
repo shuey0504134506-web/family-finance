@@ -1,3 +1,5 @@
+import { tr } from '../i18n/translate';
+import { currencySymbol } from './currency';
 import { PAYMENT_METHOD_LABELS, type Scope, type Transaction } from './types';
 
 /** businessName: שם העסק (בפעולות עסק בלבד), כדי שבקובץ יהיה ברור לאיזה עסק הפעולה שייכת. */
@@ -19,27 +21,27 @@ export function agorotToPlain(agorot: number): string {
   return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
-const HEADER = ['תחום', 'סוג', 'תאריך', 'סכום (₪)', 'ספק / לקוח', 'קטגוריה', 'אמצעי תשלום', 'הערה', 'מעשר'];
+const header = () => ['תחום', 'סוג', 'תאריך', `סכום (${currencySymbol()})`, 'ספק / לקוח', 'קטגוריה', 'אמצעי תשלום', 'הערה', 'מעשר'].map(tr);
 
 /** כל הפעולות כ-CSV, מהישן לחדש. השורה הראשונה היא כותרות. */
 export function transactionsToCsv(transactions: readonly ExportTransaction[]): string {
   const sorted = [...transactions].sort((a, b) =>
     a.date === b.date ? a.createdAt - b.createdAt : a.date < b.date ? -1 : 1,
   );
-  const lines = [HEADER.map(csvCell).join(',')];
+  const lines = [header().map(csvCell).join(',')];
   for (const t of sorted) {
     const tithe = t.type === 'expense' ? (t.isTithePayment ? 'תשלום מעשר' : '') : t.titheStatus === 'exempt' ? 'פטור' : '';
     lines.push(
       [
-        csvCell(t.scope === 'business' ? t.businessName || 'עסק' : 'משק בית'),
-        csvCell(t.type === 'income' ? 'הכנסה' : 'הוצאה'),
+        csvCell(t.scope === 'business' ? t.businessName || tr('עסק') : tr('משק בית')),
+        csvCell(tr(t.type === 'income' ? 'הכנסה' : 'הוצאה')),
         t.date,
         agorotToPlain(t.amountAgorot),
         csvCell(t.counterparty),
         csvCell(t.categoryName),
-        csvCell(PAYMENT_METHOD_LABELS[t.paymentMethod] ?? t.paymentMethod),
+        csvCell(tr(PAYMENT_METHOD_LABELS[t.paymentMethod] ?? t.paymentMethod)),
         csvCell(t.note),
-        csvCell(tithe),
+        csvCell(tr(tithe)),
       ].join(','),
     );
   }

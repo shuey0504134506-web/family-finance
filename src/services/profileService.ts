@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY, isCurrencyCode } from '../domain/currency';
 import { doc, onSnapshot, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { buildBusinessCategories, buildDefaultCategories } from '../data/defaultCategories';
@@ -112,6 +113,10 @@ export function subscribeUserProfile(
   );
 }
 
+function normalizeSettings(settings: UserSettings): UserSettings {
+  return isCurrencyCode(settings.currency) ? settings : { ...settings, currency: DEFAULT_CURRENCY };
+}
+
 /** הגדרות המשתמש. אם עדיין אין מסמך, מחזיר את ברירות המחדל. */
 export function subscribeSettings(
   uid: string,
@@ -123,7 +128,7 @@ export function subscribeSettings(
     (snapshot) => {
       onChange(
         snapshot.exists()
-          ? { ...DEFAULT_SETTINGS, ...(snapshot.data() as Partial<UserSettings>) }
+          ? normalizeSettings({ ...DEFAULT_SETTINGS, ...(snapshot.data() as Partial<UserSettings>) })
           : DEFAULT_SETTINGS,
       );
     },

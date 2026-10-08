@@ -1,3 +1,5 @@
+import { currencySymbol, getCurrency } from './currency';
+
 /**
  * כסף באפליקציה = מספר שלם של אגורות. אין חישובי floating point על סכומים.
  * 100.50 ₪ נשמר כ-10050.
@@ -32,8 +34,8 @@ export function sumAgorot(values: readonly Agorot[]): Agorot {
 export function parseShekelsToAgorot(input: string): Agorot | null {
   let text = input
     .replace(/[\s\u00A0\u200E\u200F]/g, '')
-    .replace(/₪/g, '')
-    .replace(/ש"ח|ש״ח|שח/g, '');
+    .replace(/[₪$€£]/g, '')
+    .replace(/ש"ח|ש״ח|שח|USD|EUR|GBP|ILS|NIS/gi, '');
   if (text === '') return null;
 
   let sign = 1;
@@ -83,8 +85,16 @@ export function formatAgorotNumber(agorot: Agorot, options: FormatOptions = {}):
   return `${sign}${wholeText}${fractionText}`;
 }
 
+/**
+ * סכום עם סימן המטבע שנבחר בהגדרות. שקל מופיע אחרי המספר ("180 ₪"),
+ * שאר המטבעות לפני המספר ("$180"), והמינוס תמיד ראשון.
+ */
 export function formatShekels(agorot: Agorot, options: FormatOptions = {}): string {
-  return `${formatAgorotNumber(agorot, options)}\u00A0₪`;
+  const number = formatAgorotNumber(agorot, options);
+  if (getCurrency() === 'ILS') return `${number}\u00A0${currencySymbol()}`;
+  return number.startsWith('-')
+    ? `-${currencySymbol()}${number.slice(1)}`
+    : `${currencySymbol()}${number}`;
 }
 
 /**

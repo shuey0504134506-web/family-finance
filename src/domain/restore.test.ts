@@ -128,4 +128,15 @@ describe('parseBackup: כמה עסקים', () => {
     );
     expect(r.ok).toBe(false);
   });
+
+  it('מטבע בהגדרות: מתקבל כשהוא תקין, ושחזור מגיבוי ישן בלי מטבע ממשיך לעבוד', () => {
+    const plan = (extra: Record<string, unknown>) => {
+      const r = parseBackup(file({ categories: [cat], settings: [{ ...settings, ...extra }] }));
+      if (!r.ok) throw new Error('expected ok');
+      return r.plan;
+    };
+    expect(plan({ currency: 'USD' }).settings).toMatchObject({ currency: 'USD' });
+    expect(plan({}).settings).not.toHaveProperty('currency');
+    expect(plan({ currency: 'XXX' }).settings).toBeNull();
+  });
 });
