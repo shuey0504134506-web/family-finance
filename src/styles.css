@@ -2140,3 +2140,7 @@ h3 {
 html[dir='ltr'] .chev {
   transform: scaleX(-1);
 }
+
+html[dir='ltr'] .acc-item.is-open .acc-chevron {
+  transform: rotate(90deg);
+}
