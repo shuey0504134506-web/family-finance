@@ -2479,3 +2479,11 @@ body::before {
   border: 0;
   box-shadow: none;
 }
+
+/* כותרת העסק/משק הבית: בלי משבצת */
+.has-hero .scope-title {
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 0;
+  border-radius: 0;
+}
