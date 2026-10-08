@@ -56,7 +56,7 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="auth-screen">
+    <main className="auth-screen login-screen">
       <div className="auth-column">
         <header className="auth-header">
           <h1>{remembered ? `שלום ${remembered.firstName}` : 'כניסה לחשבון'}</h1>
@@ -102,22 +102,22 @@ export function LoginScreen() {
           </button>
         </form>
 
-        <p className="auth-footer-link">
+        <p className="auth-footer-link auth-pill">
           <Link to="/forgot-password" state={{ email: effectiveEmail }}>
             שכחתי סיסמה
           </Link>
         </p>
         {remembered ? (
-          <p className="auth-footer-link">
+          <p className="auth-footer-link auth-pill">
             <button type="button" className="link-btn" onClick={switchUser}>
               כניסה עם משתמש אחר
             </button>
           </p>
         ) : null}
-        <p className="auth-footer-link">
+        <p className="auth-footer-link auth-pill">
           אין לך חשבון? <Link to="/signup">יצירת חשבון</Link>
         </p>
-        <p className="auth-footer-link">
+        <p className="auth-footer-link auth-plain">
           <Link to="/privacy">מדיניות פרטיות</Link>
         </p>
       </div>

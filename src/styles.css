@@ -2380,8 +2380,9 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
   font-weight: 700;
 }
 
-/* מסך פתיחה על רקע הרים */
-.welcome-screen {
+/* מסך פתיחה וכניסה על רקע הרים */
+.welcome-screen,
+.login-screen {
   background: #f7e9d6 url('./assets/mountains-welcome.jpg') center bottom / cover no-repeat;
   align-items: stretch;
 }
@@ -2427,4 +2428,54 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
 
 .welcome-screen .auth-footer-link a {
   color: rgba(255, 255, 255, 0.9);
+}
+
+/* מסך כניסה (מהכניסה השנייה ואילך): אותו רקע הרים, שדה סיסמה כמו כפתור, וגלולות משניות שקופות מעט */
+.login-screen .auth-column {
+  min-height: calc(100dvh - 48px - var(--safe-top) - var(--safe-bottom));
+}
+
+.login-screen .auth-header h1 {
+  color: var(--navy);
+}
+
+.login-screen .auth-header p {
+  color: #2a3a52;
+}
+
+.login-screen .form-card .input {
+  min-height: 54px;
+  border-radius: 999px;
+  padding-inline: 22px;
+}
+
+.login-screen .auth-pill {
+  width: 88%;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 226, 212, 0.9);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 6px 16px rgba(15, 42, 71, 0.08);
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
+.login-screen .auth-pill a,
+.login-screen .auth-pill .link-btn {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.login-screen .auth-plain {
+  margin-top: auto;
+}
+
+.login-screen .auth-plain a {
+  color: rgba(255, 255, 255, 0.92);
 }
