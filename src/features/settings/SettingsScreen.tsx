@@ -9,6 +9,7 @@ import { AccordionItem } from './Accordion';
 import { ChevronLeft } from '../../components/icons';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { FormulasSection } from './FormulasSection';
+import { LockSection } from './LockSection';
 import { ProfileSection } from './ProfileSection';
 import { SecuritySection } from './SecuritySection';
 
@@ -63,6 +64,10 @@ export function SettingsScreen() {
 
           <AccordionItem id="security" title="אבטחה" open={openId === 'security'} onToggle={toggle}>
             <SecuritySection />
+          </AccordionItem>
+
+          <AccordionItem id="lock" title="נעילת האפליקציה" open={openId === 'lock'} onToggle={toggle}>
+            <LockSection />
           </AccordionItem>
 
           <AccordionItem id="data" title="גיבוי ויצוא" open={openId === 'data'} onToggle={toggle}>

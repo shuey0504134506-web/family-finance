@@ -12,6 +12,7 @@ import { auth } from '../../firebase/config';
 import type { UserProfile } from '../../domain/types';
 import { loginWithEmail, logout, registerAccount } from '../../services/authService';
 import { syncProfileEmail } from '../../services/accountService';
+import { rememberPasswordForLock } from '../../services/lockPassword';
 import { saveDeviceUser } from '../../services/deviceUser';
 import {
   createUserRecords,
@@ -107,7 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (input: NewAccountInput, password: string) => {
     setRegistering(true);
     try {
-      await registerAccount(input, password);
+      const newUid = await registerAccount(input, password);
+      rememberPasswordForLock(newUid, password);
       setJustRegistered(true);
     } finally {
       setRegistering(false);
@@ -115,7 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    await loginWithEmail(email, password);
+    const signedInUid = await loginWithEmail(email, password);
+    rememberPasswordForLock(signedInUid, password);
   }, []);
 
   const signOutUser = useCallback(async () => {

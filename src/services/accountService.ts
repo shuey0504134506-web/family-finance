@@ -36,6 +36,12 @@ async function reauthenticate(user: User, password: string): Promise<void> {
   await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
 }
 
+/** אימות סיסמת החשבון מול השרת (לפתיחת נעילת האפליקציה). */
+export async function verifyAccountPassword(user: User, password: string): Promise<void> {
+  requireOnline();
+  await reauthenticate(user, password);
+}
+
 // ---------- הגדרות ופרופיל ----------
 
 export function saveSettings(uid: string, settings: Omit<UserSettings, 'updatedAt'>): Promise<void> {

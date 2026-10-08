@@ -10,7 +10,8 @@ import { createUserRecords, type NewAccountInput } from './profileService';
 
 /**
  * הסיסמאות מנוהלות כולן על ידי Firebase Authentication.
- * האפליקציה לא שומרת סיסמאות בשום מקום, ולא ב-Firestore.
+ * האפליקציה לא שומרת סיסמאות בשום מקום, ולא ב-Firestore. לצורך נעילת האפליקציה נשמר במכשיר בלבד
+ * גיבוב מלוח (PBKDF2) של הסיסמה, ולא הסיסמה עצמה (ראו appLockStorage).
  */
 
 export async function registerAccount(input: NewAccountInput, password: string): Promise<string> {
@@ -27,8 +28,9 @@ export async function registerAccount(input: NewAccountInput, password: string):
   return uid;
 }
 
-export async function loginWithEmail(email: string, password: string): Promise<void> {
-  await signInWithEmailAndPassword(auth, email.trim(), password);
+export async function loginWithEmail(email: string, password: string): Promise<string> {
+  const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+  return credential.user.uid;
 }
 
 export async function logout(): Promise<void> {

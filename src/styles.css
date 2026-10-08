@@ -1567,3 +1567,86 @@ select.input {
 .acc-body {
   padding: 4px 16px 18px;
 }
+
+/* נעילת האפליקציה */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.lock-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.pattern-pad {
+  width: 240px;
+  max-width: 100%;
+  align-self: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pattern-halo {
+  fill: transparent;
+}
+
+.pattern-dot {
+  fill: #000;
+}
+
+.pattern-dot.is-on {
+  fill: var(--accent);
+}
+
+.pattern-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+
+.pattern-pad.is-invalid .pattern-dot.is-on {
+  fill: var(--expense);
+}
+
+.pattern-pad.is-invalid .pattern-line {
+  stroke: var(--expense);
+}
+
+.pattern-pad.is-disabled {
+  opacity: 0.5;
+}
+
+.radio-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-group legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 600;
+}

@@ -8,6 +8,8 @@ import { LoginScreen } from './features/auth/LoginScreen';
 import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
+import { LockProvider } from './features/lock/LockContext';
+import { LockGate } from './features/lock/LockScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
@@ -56,7 +58,11 @@ function RequireAccount() {
     case 'ready':
       return (
         <SettingsProvider uid={state.user.uid}>
-          <Outlet />
+          <LockProvider user={state.user}>
+            <LockGate>
+              <Outlet />
+            </LockGate>
+          </LockProvider>
         </SettingsProvider>
       );
   }

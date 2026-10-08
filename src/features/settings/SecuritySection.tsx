@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
+import { rememberPasswordForLock } from '../../services/lockPassword';
 import { changePassword, requestEmailChange } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
@@ -35,6 +36,7 @@ function PasswordForm() {
     setError('');
     try {
       await changePassword(user, current, next);
+      rememberPasswordForLock(user.uid, next);
       setCurrent('');
       setNext('');
       setAgain('');
