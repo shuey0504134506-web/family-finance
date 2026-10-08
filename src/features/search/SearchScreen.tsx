@@ -106,7 +106,7 @@ export function SearchScreen() {
         </div>
 
         {spaces.length > 1 && (
-          <div className="segmented" role="group" aria-label="מרחב">
+          <div className="segmented segmented-spaces" role="group" aria-label="מרחב">
             {[{ key: 'all', label: 'הכול', icon: null as Scope | null }, ...spaces.map((sp) => ({ key: sp.key, label: nameOf(sp), icon: sp.scope as Scope | null }))].map(
               ({ key, label, icon }) => (
                 <button
@@ -121,7 +121,7 @@ export function SearchScreen() {
                       <Icon name={icon} />{' '}
                     </>
                   )}
-                  {label}
+                  <span className="seg-label">{label}</span>
                 </button>
               ),
             )}

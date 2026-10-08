@@ -2487,3 +2487,33 @@ body::before {
   padding: 6px 0;
   border-radius: 0;
 }
+
+/* בורר מרחבים: שמות ארוכים נחתכים בשלוש נקודות ונשארים בשורה אחת */
+.segmented-spaces {
+  flex-wrap: nowrap;
+}
+
+.segmented-spaces button {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.segmented-spaces button:first-child {
+  flex: 0 0 auto;
+  min-width: 64px;
+}
+
+.segmented-spaces .seg-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmented-spaces button svg {
+  flex: 0 0 auto;
+}
