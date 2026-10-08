@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
-import { describeError } from '../../services/authErrors';
+import { describeErrorWithCode } from '../../services/authErrors';
 import { BusinessesFields } from './BusinessesFields';
 import { useAuth } from './AuthContext';
 
@@ -43,7 +43,7 @@ export function CompleteSetupScreen() {
         householdName: householdName.trim(),
       });
     } catch (caught) {
-      setError(describeError(caught));
+      setError(describeErrorWithCode(caught));
     } finally {
       submitting.current = false;
       setBusy(false);

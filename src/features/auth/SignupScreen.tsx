@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Field } from '../../components/Field';
-import { describeError } from '../../services/authErrors';
+import { describeErrorWithCode } from '../../services/authErrors';
 import { useAuth } from './AuthContext';
 import { BusinessesFields } from './BusinessesFields';
 import { validateSignup, type SignupValues } from './validation';
@@ -54,7 +54,7 @@ export function SignupScreen() {
         values.password,
       );
     } catch (error) {
-      setFormError(describeError(error));
+      setFormError(describeErrorWithCode(error));
     } finally {
       submitting.current = false;
       setBusy(false);

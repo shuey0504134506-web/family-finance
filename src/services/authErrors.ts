@@ -24,3 +24,12 @@ export function describeError(error: unknown): string {
       : '';
   return MESSAGES[code] ?? 'אירעה שגיאה לא צפויה. יש לנסות שוב.';
 }
+
+/** כמו describeError, ומוסיף את קוד השגיאה הטכני (לצילום מסך ואבחון) כשהוא ידוע. */
+export function describeErrorWithCode(error: unknown): string {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code: unknown }).code)
+      : '';
+  return code ? `${describeError(error)} (קוד: ${code})` : describeError(error);
+}
