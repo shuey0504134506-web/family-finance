@@ -1,5 +1,5 @@
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { APP_NAME, PRIVACY_CONTACT_EMAIL } from '../../config/appInfo';
+import { APP_NAME, PRIVACY_CONTACT_EMAIL, PRIVACY_CONTACT_PHONE } from '../../config/appInfo';
 
 /**
  * מדיניות פרטיות. תיאור עובדתי של מה שהאפליקציה עושה טכנית, ללא הבטחות
@@ -62,20 +62,39 @@ export function PrivacyScreen() {
 
         <h2>מחיקת חשבון ונתונים</h2>
         <p>
-          מחיקת חשבון ונתונים תהיה זמינה במסך ההגדרות. עד שהאפשרות תתווסף, אפשר לפנות
-          בבקשת מחיקה לכתובת שבהמשך.
+          ניתן למחוק את החשבון ואת כל הנתונים הכלולים בו באופן עצמאי, במסך ההגדרות, בסעיף
+          &quot;מחיקת חשבון&quot;. המחיקה בלתי הפיכה. כמו כן ניתן להגיש בקשת מחיקה באמצעות פרטי
+          יצירת הקשר שלהלן.
         </p>
 
         <h2>יצירת קשר בנושא פרטיות</h2>
-        {PRIVACY_CONTACT_EMAIL ? (
+        <p>
+          לכל פנייה, שאלה או בקשה בנושא פרטיות והגנה על מידע, לרבות עיון בנתונים, תיקונם או
+          מחיקתם, ניתן לפנות אל:
+        </p>
+        <p>
+          <strong>י. נ. ק.</strong>
+          <br />
+          טלפון:{' '}
+          <a href={`tel:${PRIVACY_CONTACT_PHONE}`} dir="ltr">
+            {PRIVACY_CONTACT_PHONE}
+          </a>
+        </p>
+        {PRIVACY_CONTACT_EMAIL && (
           <p>
+            דואר אלקטרוני:{' '}
             <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} dir="ltr">
               {PRIVACY_CONTACT_EMAIL}
             </a>
           </p>
-        ) : (
-          <p className="muted">פרטי יצירת הקשר טרם הוגדרו על ידי בעל האפליקציה.</p>
         )}
+        <p className="muted">כל פנייה בנושא פרטיות ניתן להפנות למספר הטלפון המצוין לעיל.</p>
+
+        <h2>זכויות יוצרים</h2>
+        <p>
+          כל הזכויות שמורות לעורכי האפליקציה. אין להעתיק, להפיץ, לשכפל, לשנות או לעשות שימוש מסחרי
+          באפליקציה, בעיצובה או בתכניה, כולם או חלקם, ללא קבלת הסכמה מראש ובכתב.
+        </p>
       </main>
     </div>
   );

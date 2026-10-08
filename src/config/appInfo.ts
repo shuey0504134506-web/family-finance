@@ -5,3 +5,6 @@
 export const APP_NAME = 'ניהול כספים';
 export const APP_VERSION = '0.1.0';
 export const PRIVACY_CONTACT_EMAIL: string = (import.meta.env.VITE_PRIVACY_CONTACT_EMAIL ?? '').trim();
+
+/** מספר הטלפון ליצירת קשר בנושא פרטיות. */
+export const PRIVACY_CONTACT_PHONE = '0504134506';
