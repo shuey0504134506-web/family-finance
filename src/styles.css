@@ -2470,3 +2470,12 @@ body::before {
 .login-screen .auth-header {
   text-align: center;
 }
+
+/* כפתורי אייקון בכותרות: בלי משבצת, רק האייקון (אזור הלחיצה נשאר 44px) */
+.icon-btn,
+.screen-header-row .icon-btn,
+.has-hero .icon-btn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
