@@ -1,7 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { formatMonthYear } from '../domain/dates';
 import { useMonth } from '../features/month/MonthContext';
-import { ChartIcon, ChevronLeft, ChevronRight, GearIcon, SearchIcon } from './icons';
+import { scopesForMode, type Scope } from '../domain/types';
+import { useReadyAuth } from '../features/auth/AuthContext';
+import { Modal } from './Modal';
+import { ChevronLeft, ChevronRight, GearIcon, MenuIcon, SearchIcon } from './icons';
 
 /**
  * שורת כותרת קבועה (sticky): הגדרות בצד שמאל, חודש במרכז.
@@ -13,6 +17,12 @@ import { ChartIcon, ChevronLeft, ChevronRight, GearIcon, SearchIcon } from './ic
  */
 export function AppHeader() {
   const navigate = useNavigate();
+  const params = useParams();
+  const { profile } = useReadyAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const scopes = scopesForMode(profile.accountMode);
+  // המשימות והקניות שייכות לתחום שבו נמצאים. במסך בלי תחום (סיכומים) משתמשים בברירת המחדל.
+  const scope: Scope = scopes.includes(params.scope as Scope) ? (params.scope as Scope) : scopes[0];
   const { selected, status, goPrevious, goNext, backToCurrent } = useMonth();
 
   return (
@@ -45,10 +55,11 @@ export function AppHeader() {
           <button
             type="button"
             className="icon-btn"
-            aria-label="סיכומים"
-            onClick={() => navigate('/summary')}
+            aria-label="תפריט"
+            aria-haspopup="dialog"
+            onClick={() => setMenuOpen(true)}
           >
-            <ChartIcon />
+            <MenuIcon />
           </button>
           <button
             type="button"
@@ -67,6 +78,32 @@ export function AppHeader() {
             חזרה לחודש הנוכחי
           </button>
         </div>
+      )}
+      {menuOpen && (
+        <Modal title="תפריט" onClose={() => setMenuOpen(false)}>
+          <nav className="menu-list" aria-label="תפריט">
+            {(
+              [
+                ['/summary', 'סיכומים'],
+                [`/${scope}/tasks`, 'רשימת משימות'],
+                [`/${scope}/shopping`, 'רשימת קניות'],
+              ] as const
+            ).map(([to, label]) => (
+              <button
+                key={to}
+                type="button"
+                className="menu-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate(to);
+                }}
+              >
+                <span>{label}</span>
+                <ChevronLeft />
+              </button>
+            ))}
+          </nav>
+        </Modal>
       )}
     </header>
   );

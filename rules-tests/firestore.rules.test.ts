@@ -246,3 +246,48 @@ describe('תקציבים', () => {
     await assertFails(setDoc(doc(bob(), path), budget));
   });
 });
+
+describe('משימות ורשימת קניות', () => {
+  const task = {
+    id: 't1',
+    scope: 'business',
+    title: 'להתקשר ללקוח',
+    done: false,
+    remind: 'date',
+    remindDate: '2026-10-10',
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const item = { id: 'i1', scope: 'household', name: 'חלב', bought: false, createdAt: 1, updatedAt: 1 };
+
+  it('משימה תקינה מתקבלת, ולא תקינה נדחית', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t1'), task));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t2'), { ...task, id: 't2', remind: 'daily', remindDate: '' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t3'), { ...task, id: 't3', title: '' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t4'), { ...task, id: 't4', scope: 'x' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t5'), { ...task, id: 't5', remind: 'weekly' }));
+    // תזכורת מתאריך חייבת תאריך, ותזכורת אחרת חייבת להישאר בלי תאריך
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t6'), { ...task, id: 't6', remindDate: '' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t7'), { ...task, id: 't7', remind: 'daily' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t8'), { ...task, id: 't8', extra: 1 }));
+  });
+
+  it('אפשר לסמן בוצע, אבל לא לשנות createdAt', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t1'), task));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t1'), { ...task, done: true, updatedAt: 2 }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/tasks/t1'), { ...task, createdAt: 99 }));
+  });
+
+  it('פריט קניות תקין מתקבל, ולא תקין נדחה', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/shoppingItems/i1'), item));
+    await assertFails(setDoc(doc(alice(), 'users/alice/shoppingItems/i2'), { ...item, id: 'i2', name: '' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/shoppingItems/i3'), { ...item, id: 'i3', bought: 'yes' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/shoppingItems/i4'), { ...item, id: 'wrong' }));
+  });
+
+  it('משתמש אחר לא קורא ולא כותב', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/tasks/t1'), task));
+    await assertFails(getDoc(doc(bob(), 'users/alice/tasks/t1')));
+    await assertFails(setDoc(doc(bob(), 'users/alice/shoppingItems/i1'), item));
+  });
+});

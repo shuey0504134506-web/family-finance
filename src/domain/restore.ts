@@ -9,6 +9,8 @@ export interface RestoreDoc {
 export interface RestorePlan {
   categories: RestoreDoc[];
   budgets: RestoreDoc[];
+  tasks: RestoreDoc[];
+  shoppingItems: RestoreDoc[];
   businessTransactions: RestoreDoc[];
   householdTransactions: RestoreDoc[];
   /** הגדרות המעשרות מהקובץ (אופציונלי). */
@@ -41,6 +43,8 @@ function pick(source: Obj, keys: readonly string[]): Obj | null {
 const TX_KEYS = ['id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month', 'counterparty', 'categoryId', 'categoryName', 'paymentMethod', 'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt'] as const;
 const CAT_KEYS = ['id', 'scope', 'type', 'name', 'active', 'isDefault', 'sortOrder', 'createdAt', 'updatedAt'] as const;
 const BUDGET_KEYS = ['id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt'] as const;
+const TASK_KEYS = ['id', 'scope', 'title', 'done', 'remind', 'remindDate', 'createdAt', 'updatedAt'] as const;
+const ITEM_KEYS = ['id', 'scope', 'name', 'bought', 'createdAt', 'updatedAt'] as const;
 const SETTINGS_KEYS = ['titheBps', 'countBusinessTithePayments', 'businessTransferMode', 'updatedAt'] as const;
 
 // הבדיקות כאן משקפות את firestore.rules. מה שנדחה שם, נדחה גם כאן, כדי שלא ייכשל באמצע השחזור.
@@ -91,6 +95,35 @@ function cleanBudget(raw: unknown): RestoreDoc | null {
   return ok ? { id: d.id as string, data: d } : null;
 }
 
+function cleanTask(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw)) return null;
+  const d = pick(raw, TASK_KEYS);
+  if (!d) return null;
+  const dateOk = typeof d.remindDate === 'string' && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d.remindDate);
+  const ok =
+    isNonEmpty(d.id, 100) &&
+    (d.scope === 'business' || d.scope === 'household') &&
+    isNonEmpty(d.title, 200) &&
+    typeof d.done === 'boolean' &&
+    ['none', 'every-open', 'daily', 'date'].includes(d.remind as string) &&
+    (d.remind === 'date' ? dateOk : d.remindDate === '') &&
+    isInt(d.createdAt) && isInt(d.updatedAt);
+  return ok ? { id: d.id as string, data: d } : null;
+}
+
+function cleanItem(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw)) return null;
+  const d = pick(raw, ITEM_KEYS);
+  if (!d) return null;
+  const ok =
+    isNonEmpty(d.id, 100) &&
+    (d.scope === 'business' || d.scope === 'household') &&
+    isNonEmpty(d.name, 120) &&
+    typeof d.bought === 'boolean' &&
+    isInt(d.createdAt) && isInt(d.updatedAt);
+  return ok ? { id: d.id as string, data: d } : null;
+}
+
 function cleanSettings(raw: unknown): Obj | null {
   if (!isObj(raw)) return null;
   const d = pick(raw, SETTINGS_KEYS);
@@ -137,6 +170,8 @@ export function parseBackup(text: string): ParseResult {
   const data = parsed.data;
   const categories = cleanList(data.categories, cleanCategory);
   const budgets = cleanList(data.budgets, cleanBudget);
+  const tasks = cleanList(data.tasks, cleanTask);
+  const shopping = cleanList(data.shoppingItems, cleanItem);
   const business = cleanList(data.businessTransactions, cleanTransaction);
   const household = cleanList(data.householdTransactions, cleanTransaction);
 
@@ -147,15 +182,18 @@ export function parseBackup(text: string): ParseResult {
   const plan: RestorePlan = {
     categories: categories.docs,
     budgets: budgets.docs,
+    tasks: tasks.docs,
+    shoppingItems: shopping.docs,
     businessTransactions: business.docs,
     householdTransactions: household.docs,
     settings,
     invalid:
-      categories.invalid + budgets.invalid + business.invalid + household.invalid +
+      categories.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
       (settingsDoc !== undefined && settings === null ? 1 : 0),
   };
   const total =
-    plan.categories.length + plan.budgets.length + plan.businessTransactions.length + plan.householdTransactions.length;
+    plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+    plan.businessTransactions.length + plan.householdTransactions.length;
   if (total === 0 && !plan.settings) return { ok: false, error: 'בקובץ אין נתונים לשחזור.' };
   return { ok: true, plan };
 }

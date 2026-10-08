@@ -1686,3 +1686,112 @@ select.input {
   background: var(--bg);
   color: var(--text);
 }
+
+/* תפריט, משימות וקניות */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.menu-item:last-child {
+  border-bottom: 0;
+}
+
+.menu-item:active {
+  background: var(--accent-soft);
+}
+
+.task-list,
+.reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-row,
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.task-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+}
+
+button.task-main {
+  cursor: pointer;
+}
+
+.task-title {
+  overflow-wrap: anywhere;
+}
+
+.task-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.task-row.is-done .task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.btn-small {
+  width: auto;
+  min-height: 40px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.reminder-text {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.reminder-list {
+  margin-bottom: 16px;
+}
+
+.chip-label {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}

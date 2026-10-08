@@ -9,9 +9,28 @@ const tx = (over: Record<string, unknown> = {}) => ({
 });
 const cat = { id: 'c1', scope: 'business', type: 'expense', name: 'דלק', active: true, isDefault: false, sortOrder: 1, createdAt: 1, updatedAt: 1 };
 const budget = { id: 'c1', scope: 'business', categoryId: 'c1', amountAgorot: 100000, createdAt: 1, updatedAt: 1 };
+const task = { id: 'k1', scope: 'household', title: 'לשלם', done: false, remind: 'date', remindDate: '2026-10-10', createdAt: 1, updatedAt: 1 };
+const item = { id: 'i1', scope: 'household', name: 'חלב', bought: false, createdAt: 1, updatedAt: 1 };
 const settings = { id: 'main', titheBps: 1000, countBusinessTithePayments: true, businessTransferMode: 'allow-negative', updatedAt: 5 };
 
 const file = (data: Record<string, unknown>) => JSON.stringify(buildBackup(data));
+
+describe('parseBackup: משימות וקניות', () => {
+  it('קורא משימות ופריטי קניות תקינים', () => {
+    const r = parseBackup(file({ tasks: [task], shoppingItems: [item] }));
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.tasks).toHaveLength(1);
+    expect(r.plan.shoppingItems).toHaveLength(1);
+  });
+  it('דוחה תזכורת מתאריך בלי תאריך, ותאריך בתזכורת אחרת', () => {
+    const r = parseBackup(
+      file({ tasks: [task, { ...task, id: 'k2', remindDate: '' }, { ...task, id: 'k3', remind: 'daily' }, { ...task, id: 'k4', remind: 'daily', remindDate: '' }] }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.tasks.map((t) => t.id)).toEqual(['k1', 'k4']);
+    expect(r.plan.invalid).toBe(2);
+  });
+});
 
 describe('parseBackup', () => {
   it('קובץ תקין נקרא במלואו', () => {

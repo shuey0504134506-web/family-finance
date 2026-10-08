@@ -104,11 +104,13 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
   };
 
-  const [businessTx, householdTx, categories, budgets, settingsDocs] = await Promise.all([
+  const [businessTx, householdTx, categories, budgets, tasks, shoppingItems, settingsDocs] = await Promise.all([
     read<Transaction>('businessTransactions'),
     read<Transaction>('householdTransactions'),
     read<Category>('categories'),
     read<object>('budgets'),
+    read<object>('tasks'),
+    read<object>('shoppingItems'),
     read<object>('settings'),
   ]);
 
@@ -122,6 +124,8 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     settings: settingsDocs,
     categories,
     budgets,
+    tasks,
+    shoppingItems,
     businessTransactions: businessTx,
     householdTransactions: householdTx,
   });
@@ -135,6 +139,8 @@ const BATCH_SIZE = 400;
 const RESTORE_COLLECTIONS = [
   ['categories', 'categories'],
   ['budgets', 'budgets'],
+  ['tasks', 'tasks'],
+  ['shoppingItems', 'shoppingItems'],
   ['businessTransactions', 'businessTransactions'],
   ['householdTransactions', 'householdTransactions'],
 ] as const;
@@ -151,7 +157,7 @@ export interface NewDataPlan {
  */
 export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
   requireOnline();
-  const result: RestorePlan = { ...plan, categories: [], budgets: [], businessTransactions: [], householdTransactions: [] };
+  const result: RestorePlan = { ...plan, categories: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
   let alreadyExisting = 0;
   for (const [key, name] of RESTORE_COLLECTIONS) {
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
@@ -186,6 +192,8 @@ const USER_COLLECTIONS = [
   'householdTransactions',
   'categories',
   'budgets',
+  'tasks',
+  'shoppingItems',
   'titheRecords',
   'settings',
   'businessProfile',

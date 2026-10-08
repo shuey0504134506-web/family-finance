@@ -9,6 +9,10 @@ import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
 import { SwipeHistory } from './features/navigation/SwipeHistory';
+import { ListsProvider } from './features/lists/ListsContext';
+import { RemindersHost } from './features/lists/RemindersHost';
+import { ShoppingScreen } from './features/lists/ShoppingScreen';
+import { TasksScreen } from './features/lists/TasksScreen';
 import { LockProvider } from './features/lock/LockContext';
 import { LockGate } from './features/lock/LockScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
@@ -60,9 +64,12 @@ function RequireAccount() {
       return (
         <SettingsProvider uid={state.user.uid}>
           <LockProvider user={state.user}>
-            <LockGate>
-              <Outlet />
-            </LockGate>
+            <ListsProvider uid={state.user.uid}>
+              <LockGate>
+                <RemindersHost />
+                <Outlet />
+              </LockGate>
+            </ListsProvider>
           </LockProvider>
         </SettingsProvider>
       );
@@ -119,6 +126,8 @@ export function AppRoutes() {
         <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
         <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
         <Route path="/:scope/budget" element={<BudgetScreen />} />
+        <Route path="/:scope/tasks" element={<TasksScreen />} />
+        <Route path="/:scope/shopping" element={<ShoppingScreen />} />
         <Route path="/categories" element={<CategoriesScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />

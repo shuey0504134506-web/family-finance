@@ -19,7 +19,8 @@ function download(filename: string, content: string, type: string) {
 }
 
 const countOf = (plan: RestorePlan) =>
-  plan.categories.length + plan.budgets.length + plan.businessTransactions.length + plan.householdTransactions.length;
+  plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+  plan.businessTransactions.length + plan.householdTransactions.length;
 
 /** יצוא, גיבוי ושחזור. הקבצים נשמרים במכשיר בלבד ואינם נשלחים לשום מקום. */
 export function DataSection() {
@@ -133,6 +134,8 @@ export function DataSection() {
               <li>{restore.plan.householdTransactions.length} פעולות משק בית</li>
               <li>{restore.plan.categories.length} קטגוריות</li>
               <li>{restore.plan.budgets.length} תקציבים</li>
+              <li>{restore.plan.tasks.length} משימות</li>
+              <li>{restore.plan.shoppingItems.length} פריטי קניות</li>
             </ul>
             {restore.existing > 0 && <p className="muted small">{restore.existing} פריטים כבר קיימים בחשבון ולא ישונו.</p>}
             {restore.plan.invalid > 0 && <p className="muted small">{restore.plan.invalid} פריטים בקובץ אינם תקינים ויידלגו.</p>}
