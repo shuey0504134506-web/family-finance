@@ -27,6 +27,7 @@ export function LanguageCurrencySection() {
       countBusinessTithePayments: settings.countBusinessTithePayments,
       businessTransferMode: settings.businessTransferMode,
       currency,
+      annualMode: settings.annualMode,
     }).catch(() => {
       reportFailure('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.');
       setError('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.');

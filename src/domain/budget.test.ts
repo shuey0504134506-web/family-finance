@@ -3,6 +3,7 @@ import {
   budgetStatus,
   budgetUsage,
   buildBudgetRows,
+  effectiveMonthly,
   overallBudgetId,
   splitBudgets,
   summarizeBudget,
@@ -191,5 +192,57 @@ describe('תקציב כללי ופרטני', () => {
       basis: 'overall',
       usedAgorot: 200_000,
     });
+  });
+});
+
+describe('תקציב לחודש מסוים ותקציב שנתי', () => {
+  const doc = (id: string, categoryId: string, amountAgorot: number, period?: string) => ({
+    id,
+    scope: 'household' as const,
+    categoryId,
+    amountAgorot,
+    createdAt: 0,
+    updatedAt: 0,
+    ...(period ? { period } : {}),
+  });
+  const overall = overallBudgetId('household');
+  const budgets = [
+    doc(overall, overall, 900_000),
+    doc('food', 'food', 300_000),
+    doc('bills', 'bills', 200_000),
+    doc('food@2026-10', 'food', 450_000, '2026-10'),
+    doc(`${overall}@2026-10`, overall, 1_000_000, '2026-10'),
+    doc('food@2026', 'food', 3_000_000, '2026'),
+    doc(`${overall}@2026-03y`, overall, 9_000_000, '2026-03y'),
+  ];
+
+  it('splitBudgets בלי תקופה מתעלם מתקציבי חודש ושנה', () => {
+    const s = splitBudgets(budgets, 'household');
+    expect(s.overallAgorot).toBe(900_000);
+    expect(s.byCategory.get('food')).toBe(300_000);
+    expect(s.categoriesTotalAgorot).toBe(500_000);
+  });
+
+  it('חודש עם תקציב מיוחד דורס את הקבוע פריט-פריט', () => {
+    const e = effectiveMonthly(budgets, 'household', undefined, '2026-10');
+    expect(e.overallAgorot).toBe(1_000_000);
+    expect(e.overallOverridden).toBe(true);
+    expect(e.byCategory.get('food')).toBe(450_000);
+    expect(e.byCategory.get('bills')).toBe(200_000);
+    expect([...e.overriddenCategories]).toEqual(['food']);
+    expect(e.categoriesTotalAgorot).toBe(650_000);
+  });
+
+  it('חודש בלי תקציב מיוחד משתמש בקבוע', () => {
+    const e = effectiveMonthly(budgets, 'household', undefined, '2026-11');
+    expect(e.overallAgorot).toBe(900_000);
+    expect(e.overallAgorot === 900_000 && e.overallOverridden).toBe(false);
+    expect(e.byCategory.get('food')).toBe(300_000);
+  });
+
+  it('תקציב שנתי נבחר לפי מזהה התקופה, בלי לבלבל עם תקציב חודשי', () => {
+    expect(splitBudgets(budgets, 'household', undefined, '2026').byCategory.get('food')).toBe(3_000_000);
+    expect(splitBudgets(budgets, 'household', undefined, '2026').overallAgorot).toBeNull();
+    expect(splitBudgets(budgets, 'household', undefined, '2026-03y').overallAgorot).toBe(9_000_000);
   });
 });

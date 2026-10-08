@@ -89,6 +89,7 @@ export function TransactionList({
                   {item.categoryName}
                   {item.isTithePayment ? ' · מעשר' : ''}
                 </span>
+                <span className="tx-hint">לחץ לעריכה</span>
                 {item.pendingSync ? (
                   <span className="tx-sync tx-sync-pending">נשמר במכשיר – ממתין לסנכרון</span>
                 ) : justSynced.has(item.id) ? (

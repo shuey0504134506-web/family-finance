@@ -182,6 +182,8 @@ describe('הגדרות וקטגוריות', () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 'USD' }));
     await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 'XXX' }));
     await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, currency: 5 }));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, annualMode: 'from-start' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/settings/main'), { ...settings, annualMode: 'x' }));
   });
 
   it('אחוז מעשר מחוץ לטווח נדחה', async () => {
@@ -238,6 +240,20 @@ describe('תקציבים', () => {
   it('מזהה שלא תואם לקטגוריה, או תחום לא מוכר, נדחה', async () => {
     await assertFails(setDoc(doc(alice(), path), { ...budget, categoryId: 'other' }));
     await assertFails(setDoc(doc(alice(), path), { ...budget, scope: 'x' }));
+  });
+
+  it('תקציב לחודש או לשנה: period ומזהה categoryId@period', async () => {
+    const month = { ...budget, id: 'household-expense-food@2026-10', period: '2026-10' };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026-10'), month));
+    const year = { ...budget, id: 'household-expense-food@2026', period: '2026' };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026'), year));
+    const fromStart = { ...budget, id: 'household-expense-food@2026-03y', period: '2026-03y' };
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026-03y'), fromStart));
+    // תקופה לא תקינה, או מזהה שלא תואם לתקופה
+    await assertFails(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026-13'), { ...month, id: 'household-expense-food@2026-13', period: '2026-13' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026-11'), month));
+    await assertFails(setDoc(doc(alice(), path), { ...budget, period: '2026-10' }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/budgets/household-expense-food@2026-10'), { ...month, period: 5 }));
   });
 
   it('אי אפשר לשנות createdAt, אבל אפשר לשנות סכום', async () => {

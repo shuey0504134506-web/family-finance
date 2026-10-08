@@ -3,10 +3,12 @@ import { Amount } from '../../components/Amount';
 import { useLocation } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
-import { addMonths, formatMonthYear, parseYearMonth } from '../../domain/dates';
+import { previousAnnualPeriod } from '../../domain/annual';
+import { addMonths, formatMonthYear } from '../../domain/dates';
 import { formatPercentChange, percentChange } from '../../domain/compare';
-import { categoryBreakdown, monthsOfYear, periodTotals, type PeriodTotals } from '../../domain/periods';
+import { categoryBreakdown, periodTotals, type PeriodTotals } from '../../domain/periods';
 import { businessIdOf } from '../../domain/spaces';
+import { useAnnualPeriod } from '../../hooks/useAnnualPeriod';
 import { useCategories } from '../../hooks/useCategories';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useReadyAuth } from '../auth/AuthContext';
@@ -38,23 +40,24 @@ export function SummaryScreen() {
   const [period, setPeriod] = useState<Period>('month');
   const { categories } = useCategories(user.uid);
 
-  const { year } = parseYearMonth(month.selected);
-  // נטענת ההיסטוריה עד סוף השנה הנבחרת: מספיקה לחודש, לחודש הקודם, לשנה ולשנה הקודמת.
-  const upTo = `${year}-12`;
+  const { period: annual, ready: annualReady } = useAnnualPeriod(user.uid, scope, month.selected, settings.annualMode);
+  const previousAnnual = useMemo(() => previousAnnualPeriod(annual, settings.annualMode), [annual, settings.annualMode]);
+  // נטענת ההיסטוריה עד סוף התקופה השנתית הנבחרת: מספיקה לחודש, לחודש הקודם, לשנה ולשנה הקודמת.
+  const upTo = annual.endYm;
   const hasBusinessSpace = spaces.some((s) => s.scope === 'business');
-  const business = useTransactionsUpTo(user.uid, 'business', upTo, hasBusinessSpace || countedIds.length > 0);
-  const household = useTransactionsUpTo(user.uid, 'household', upTo, spaces.some((s) => s.scope === 'household'));
-  const loading = business.loading || household.loading;
+  const business = useTransactionsUpTo(user.uid, 'business', upTo, annualReady && (hasBusinessSpace || countedIds.length > 0));
+  const household = useTransactionsUpTo(user.uid, 'household', upTo, annualReady && spaces.some((s) => s.scope === 'household'));
+  const loading = business.loading || household.loading || !annualReady;
   const error = business.error ?? household.error;
 
   const mode = settings.businessTransferMode;
   const currentMonths = useMemo(
-    () => (period === 'month' ? [month.selected] : monthsOfYear(year)),
-    [period, month.selected, year],
+    () => (period === 'month' ? [month.selected] : annual.months),
+    [period, month.selected, annual],
   );
   const previousMonths = useMemo(
-    () => (period === 'month' ? [addMonths(month.selected, -1)] : monthsOfYear(year - 1)),
-    [period, month.selected, year],
+    () => (period === 'month' ? [addMonths(month.selected, -1)] : previousAnnual.months),
+    [period, month.selected, previousAnnual],
   );
 
   // בעסק: רק הפעולות של העסק הנבחר. בבית: רק העסקים שנספרים במכשיר הזה.
@@ -75,11 +78,11 @@ export function SummaryScreen() {
 
   const chartMonths = useMemo(
     () =>
-      monthsOfYear(year).map((ym) => {
+      annual.months.map((ym) => {
         const t = periodTotals(scope, household.items, businessForCalc, [ym], mode);
         return { label: String(Number(ym.slice(5))), incomeAgorot: t.incomeAgorot, expenseAgorot: t.expenseAgorot };
       }),
-    [scope, household.items, businessForCalc, mode, year],
+    [scope, household.items, businessForCalc, mode, annual],
   );
 
   const scopeItems = scope === 'business' ? businessForCalc : household.items;
@@ -94,8 +97,8 @@ export function SummaryScreen() {
     [scopeItems, currentMonths],
   );
 
-  const periodLabel = period === 'month' ? formatMonthYear(month.selected) : `שנת ${year}`;
-  const previousLabel = period === 'month' ? formatMonthYear(previousMonths[0]) : `שנת ${year - 1}`;
+  const periodLabel = period === 'month' ? formatMonthYear(month.selected) : annual.label;
+  const previousLabel = period === 'month' ? formatMonthYear(previousMonths[0]) : previousAnnual.label;
 
   return (
     <div className={`app-shell scope-${scope}`}>
@@ -170,8 +173,8 @@ export function SummaryScreen() {
             <Comparison current={totals} previous={previous} previousLabel={previousLabel} />
 
             <section className="card">
-              <h2 className="card-title">הכנסות והוצאות לפי חודש, {year}</h2>
-              <IncomeExpenseChart months={chartMonths} title={`הכנסות והוצאות לפי חודש בשנת ${year}`} />
+              <h2 className="card-title">הכנסות והוצאות לפי חודש, {annual.label}</h2>
+              <IncomeExpenseChart months={chartMonths} title={`הכנסות והוצאות לפי חודש: ${annual.label}`} />
             </section>
 
             <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />

@@ -1,3 +1,4 @@
+import { isAnnualMode } from './annual';
 import { isCurrencyCode } from './currency';
 import { BACKUP_FORMAT, BACKUP_VERSION } from './export';
 
@@ -104,9 +105,23 @@ function cleanBudget(raw: unknown): RestoreDoc | null {
   if (!isObj(raw)) return null;
   const d = pick(raw, BUDGET_KEYS);
   if (!d) return null;
+  // תקציב לחודש/שנה: שדה period אופציונלי ומזהה המסמך categoryId@period (כמו ב-firestore.rules).
+  let periodOk = true;
+  if ('period' in raw && raw.period !== undefined) {
+    const period = raw.period;
+    periodOk =
+      typeof period === 'string' &&
+      /^\d{4}(-(0[1-9]|1[0-2])y?)?$/.test(period) &&
+      typeof d.categoryId === 'string' &&
+      d.id === `${d.categoryId}@${period}`;
+    if (periodOk) d.period = period;
+  } else {
+    periodOk = d.categoryId === d.id;
+  }
   const ok =
+    periodOk &&
     isNonEmpty(d.id, 100) &&
-    d.categoryId === d.id &&
+    isNonEmpty(d.categoryId, 100) &&
     (d.scope === 'business' || d.scope === 'household') &&
     isInt(d.amountAgorot) && d.amountAgorot > 0 && d.amountAgorot <= MAX_AGOROT &&
     isInt(d.createdAt) && isInt(d.updatedAt);
@@ -150,6 +165,10 @@ function cleanSettings(raw: unknown): Obj | null {
   if (raw.currency !== undefined) {
     if (!isCurrencyCode(raw.currency)) return null;
     d.currency = raw.currency;
+  }
+  if (raw.annualMode !== undefined) {
+    if (!isAnnualMode(raw.annualMode)) return null;
+    d.annualMode = raw.annualMode;
   }
   const ok =
     isInt(d.titheBps) && d.titheBps >= 0 && d.titheBps <= 10000 &&

@@ -6,7 +6,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { ScopeTabs } from '../../components/ScopeTabs';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
-import { splitBudgets, summarizeBudget } from '../../domain/budget';
+import { effectiveMonthly, summarizeBudget } from '../../domain/budget';
 import { neighborSpace } from '../../domain/display';
 import { businessIdOf } from '../../domain/spaces';
 import {
@@ -75,10 +75,10 @@ export function HomeScreen() {
   const budgetSummary = useMemo(
     () =>
       summarizeBudget(
-        splitBudgets(budgets, scope, space.businessId),
+        effectiveMonthly(budgets, scope, space.businessId, month.selected),
         totalsByCategory(activeItems, 'expense'),
       ),
-    [budgets, scope, space.businessId, activeItems],
+    [budgets, scope, space.businessId, month.selected, activeItems],
   );
 
   // יתרת מעשרות: רק במשק הבית, ורק בחודש שהתחיל

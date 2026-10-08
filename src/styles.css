@@ -2541,3 +2541,53 @@ body::before {
   max-width: 16ch;
   vertical-align: bottom;
 }
+
+.tx-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* הגדרות: כפתורים אחידים (גובה, עיגול, גופן, בלי צללים) */
+.acc-list .btn {
+  min-height: 52px;
+  margin-top: 0;
+  padding: 0 20px;
+  border-width: 1.5px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.acc-list .btn-primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.acc-list .btn-secondary {
+  background: #fff;
+  border-color: #d8d1c0;
+  color: var(--navy);
+}
+
+.acc-list .btn-danger {
+  background: var(--expense);
+  border-color: var(--expense);
+  color: #fff;
+}
+
+.acc-list .btn-danger-outline {
+  background: #fff;
+  border-color: #e5b8a6;
+  color: var(--expense);
+}
+
+.acc-list .link-btn {
+  align-self: center;
+  font-size: 0.95rem;
+}

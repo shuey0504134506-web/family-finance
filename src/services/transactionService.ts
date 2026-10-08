@@ -3,6 +3,8 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -11,7 +13,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { monthDateRange, type YearMonth } from '../domain/dates';
+import { monthDateRange, yearMonthOfDate, type YearMonth } from '../domain/dates';
 import type { Scope, Transaction, TransactionRecord } from '../domain/types';
 
 /** שם האוסף לפי תחום. עסק ומשק בית נשמרים באוספים נפרדים לגמרי. */
@@ -113,4 +115,11 @@ export function subscribeTransactionsUpTo(
       ),
     onError,
   );
+}
+
+/** החודש של הפעולה המוקדמת ביותר בתחום, או null אם אין פעולות. נדרש לחישוב "12 חודשים מתחילת התיעוד". */
+export async function getFirstTransactionMonth(uid: string, scope: Scope): Promise<YearMonth | null> {
+  const snapshot = await getDocs(query(transactionsCollection(uid, scope), orderBy('date', 'asc'), limit(1)));
+  const first = snapshot.docs[0]?.data() as Transaction | undefined;
+  return first ? yearMonthOfDate(first.date) : null;
 }

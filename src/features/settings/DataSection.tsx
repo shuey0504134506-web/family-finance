@@ -4,6 +4,7 @@ import { MAX_BACKUP_BYTES, parseBackup, type RestorePlan } from '../../domain/re
 import { applyRestore, exportAllData, planNewData } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
+import { AutoBackupControl } from './AutoBackupControl';
 
 function download(filename: string, content: string, type: string) {
   // BOM בתחילת CSV כדי שאקסל יזהה עברית נכון.
@@ -106,6 +107,9 @@ export function DataSection() {
           </div>
         )}
         <p className="muted small">הקבצים נשמרים במכשיר בלבד. כדאי לשמור גיבוי במקום בטוח מדי פעם.</p>
+
+        <hr className="divider" />
+        <AutoBackupControl />
 
         <hr className="divider" />
         <h4 className="subhead">שחזור מקובץ גיבוי</h4>

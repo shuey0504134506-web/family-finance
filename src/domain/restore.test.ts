@@ -83,6 +83,28 @@ describe('parseBackup', () => {
     expect(Object.keys(r.plan.businessTransactions[0].data)).not.toContain('extra');
   });
 
+  it('תקציב לחודש או לשנה: period ומזהה categoryId@period', () => {
+    const month = { ...budget, id: 'c1@2026-10', period: '2026-10' };
+    const year = { ...budget, id: 'c1@2026', period: '2026' };
+    const fromStart = { ...budget, id: 'c1@2026-03y', period: '2026-03y' };
+    const bad1 = { ...budget, id: 'c1', period: '2026-10' };
+    const bad2 = { ...budget, id: 'c1@2026-13', period: '2026-13' };
+    const r = parseBackup(file({ budgets: [month, year, fromStart, bad1, bad2], categories: [cat] }));
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.budgets).toHaveLength(3);
+    expect(r.plan.budgets[0].data.period).toBe('2026-10');
+    expect(r.plan.invalid).toBe(2);
+  });
+
+  it('הגדרות: annualMode אופציונלי ומאומת', () => {
+    const ok = parseBackup(file({ categories: [cat], settings: [{ ...settings, annualMode: 'from-start' }] }));
+    if (!ok.ok) throw new Error('expected ok');
+    expect(ok.plan.settings?.annualMode).toBe('from-start');
+    const bad = parseBackup(file({ categories: [cat], settings: [{ ...settings, annualMode: 'x' }] }));
+    if (!bad.ok) throw new Error('expected ok');
+    expect(bad.plan.settings).toBeNull();
+  });
+
   it('תקציב: מזהה הקטגוריה חייב להיות מזהה המסמך', () => {
     const r = parseBackup(file({ budgets: [{ ...budget, categoryId: 'other' }], categories: [cat] }));
     if (!r.ok) throw new Error('expected ok');

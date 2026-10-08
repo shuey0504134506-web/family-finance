@@ -65,7 +65,19 @@ export function buildBudgetRows(
   budgets: readonly Budget[],
   usedByCategory: ReadonlyMap<string, Agorot>,
 ): BudgetRow[] {
-  const budgetByCategory = new Map(budgets.map((b) => [b.categoryId, b.amountAgorot]));
+  return buildBudgetRowsFromMap(
+    categories,
+    new Map(budgets.map((b) => [b.categoryId, b.amountAgorot])),
+    usedByCategory,
+  );
+}
+
+/** כמו buildBudgetRows, כשהתקציבים כבר מחושבים כמפה: מזהה קטגוריה -> סכום. */
+export function buildBudgetRowsFromMap(
+  categories: readonly Category[],
+  budgetByCategory: ReadonlyMap<string, Agorot>,
+  usedByCategory: ReadonlyMap<string, Agorot>,
+): BudgetRow[] {
   const severity: Record<BudgetStatus, number> = { over: 0, near: 1, approaching: 2, ok: 3 };
 
   const rows = categories
@@ -112,8 +124,21 @@ export interface SplitBudgets {
   categoriesTotalAgorot: Agorot;
 }
 
-/** מפריד את מסמכי התקציב של תחום לתקציב כללי ולתקציבים פרטניים. */
-export function splitBudgets(budgets: readonly Budget[], scope: Scope, businessId?: string): SplitBudgets {
+/** מזהה מסמך תקציב: בלי תקופה הוא מזהה הקטגוריה, ועם תקופה `${מזהה}@${תקופה}`. */
+export function budgetDocId(baseId: string, period?: string): string {
+  return period ? `${baseId}@${period}` : baseId;
+}
+
+/**
+ * מפריד את מסמכי התקציב של תחום לתקציב כללי ולתקציבים פרטניים.
+ * בלי period: רק התקציבים החודשיים הקבועים. עם period ('YYYY-MM' או 'YYYY'): רק מסמכי התקופה הזו.
+ */
+export function splitBudgets(
+  budgets: readonly Budget[],
+  scope: Scope,
+  businessId?: string,
+  period?: string,
+): SplitBudgets {
   const overallId = overallBudgetId(scope, businessId);
   const space = { key: '', scope, businessId: scope === 'business' ? businessId || DEFAULT_BUSINESS_ID : '' };
   let overallAgorot: Agorot | null = null;
@@ -121,7 +146,8 @@ export function splitBudgets(budgets: readonly Budget[], scope: Scope, businessI
   let total = 0;
   for (const b of budgets) {
     if (!inSpace(b, space)) continue;
-    if (b.id === overallId) {
+    if ((b.period ?? undefined) !== period) continue;
+    if (b.categoryId === overallId) {
       overallAgorot = b.amountAgorot;
     } else {
       byCategory.set(b.categoryId, b.amountAgorot);
@@ -129,6 +155,38 @@ export function splitBudgets(budgets: readonly Budget[], scope: Scope, businessI
     }
   }
   return { overallAgorot, byCategory, categoriesTotalAgorot: total };
+}
+
+export interface EffectiveBudgets extends SplitBudgets {
+  /** התקציב הכללי של החודש נקבע במיוחד לחודש הזה */
+  overallOverridden: boolean;
+  /** קטגוריות שיש להן תקציב מיוחד לחודש הזה */
+  overriddenCategories: Set<string>;
+}
+
+/**
+ * התקציב בפועל לחודש מסוים: התקציב הקבוע, כשכל פריט שנקבע במיוחד לחודש הזה דורס את הקבוע.
+ * הדריסה היא פריט-פריט: קטגוריה בלי תקציב מיוחד ממשיכה לפי הקבוע.
+ */
+export function effectiveMonthly(
+  budgets: readonly Budget[],
+  scope: Scope,
+  businessId: string | undefined,
+  yearMonth: string,
+): EffectiveBudgets {
+  const general = splitBudgets(budgets, scope, businessId);
+  const month = splitBudgets(budgets, scope, businessId, yearMonth);
+  const byCategory = new Map(general.byCategory);
+  for (const [id, amount] of month.byCategory) byCategory.set(id, amount);
+  let total = 0;
+  for (const amount of byCategory.values()) total += amount;
+  return {
+    overallAgorot: month.overallAgorot ?? general.overallAgorot,
+    byCategory,
+    categoriesTotalAgorot: total,
+    overallOverridden: month.overallAgorot !== null,
+    overriddenCategories: new Set(month.byCategory.keys()),
+  };
 }
 
 export type BudgetSummary =

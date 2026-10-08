@@ -1,3 +1,4 @@
+import { DEFAULT_ANNUAL_MODE, isAnnualMode } from '../domain/annual';
 import { DEFAULT_CURRENCY, isCurrencyCode } from '../domain/currency';
 import { doc, onSnapshot, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -114,7 +115,11 @@ export function subscribeUserProfile(
 }
 
 function normalizeSettings(settings: UserSettings): UserSettings {
-  return isCurrencyCode(settings.currency) ? settings : { ...settings, currency: DEFAULT_CURRENCY };
+  return {
+    ...settings,
+    currency: isCurrencyCode(settings.currency) ? settings.currency : DEFAULT_CURRENCY,
+    annualMode: isAnnualMode(settings.annualMode) ? settings.annualMode : DEFAULT_ANNUAL_MODE,
+  };
 }
 
 /** הגדרות המשתמש. אם עדיין אין מסמך, מחזיר את ברירות המחדל. */

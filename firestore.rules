@@ -57,7 +57,7 @@ service cloud.firestore {
     function validSettings(data) {
       return data.keys().hasOnly([
                'titheBps', 'countBusinessTithePayments',
-               'businessTransferMode', 'updatedAt', 'currency'
+               'businessTransferMode', 'updatedAt', 'currency', 'annualMode'
              ])
              && data.keys().hasAll([
                'titheBps', 'countBusinessTithePayments',
@@ -70,6 +70,8 @@ service cloud.firestore {
              && data.businessTransferMode in ['positive-only', 'allow-negative']
              && (!data.keys().hasAny(['currency'])
                  || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
+             && (!data.keys().hasAny(['annualMode'])
+                 || data.annualMode in ['calendar', 'from-start'])
              && data.updatedAt is int;
     }
 
@@ -119,17 +121,28 @@ service cloud.firestore {
     }
 
     // ---------- תקציב: users/{uid}/budgets/{categoryId} ----------
-    // מזהה המסמך הוא מזהה הקטגוריה, לכן לכל קטגוריה יש תקציב אחד לכל היותר.
+    // תקציב קבוע: מזהה המסמך הוא מזהה הקטגוריה.
+    // תקציב לחודש או לשנה: יש שדה period ('YYYY-MM' או 'YYYY') ומזהה המסמך הוא categoryId@period.
+    // לכן לכל קטגוריה יש תקציב אחד לכל היותר בכל תקופה.
+
+    function validBudgetPeriod(data, budgetId) {
+      return !data.keys().hasAny(['period'])
+             ? (data.id == budgetId && data.categoryId == budgetId)
+             : (data.period is string
+                && data.period.matches('^[0-9]{4}(-(0[1-9]|1[0-2])y?)?$')
+                && data.id == budgetId
+                && budgetId == data.categoryId + '@' + data.period);
+    }
 
     function validBudget(data, budgetId) {
       return data.keys().hasOnly([
-               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt', 'businessId'
+               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt', 'businessId', 'period'
              ])
              && data.keys().hasAll([
                'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt'
              ])
-             && data.id == budgetId
-             && data.categoryId == budgetId
+             && validBudgetPeriod(data, budgetId)
+             && data.categoryId is string
              && data.scope in ['business', 'household']
              && data.amountAgorot is int
              && data.amountAgorot > 0

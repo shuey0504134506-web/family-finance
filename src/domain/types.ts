@@ -1,5 +1,6 @@
 /** טיפוסים משותפים לכל האפליקציה. אין כאן לוגיקה ואין תלות ב-Firebase. */
 
+import { DEFAULT_ANNUAL_MODE, type AnnualMode } from './annual';
 import { DEFAULT_CURRENCY, type CurrencyCode } from './currency';
 
 export type AccountMode = 'both' | 'business' | 'household';
@@ -42,6 +43,8 @@ export interface UserSettings {
   businessTransferMode: BusinessTransferMode;
   /** מטבע התצוגה והחישוב. החלפה אינה ממירה סכומים קיימים. */
   currency: CurrencyCode;
+  /** שיטת חישוב שנה בסיכום השנתי ובתקציב השנתי: קלנדרי, או 12 חודשים מתחילת התיעוד. */
+  annualMode: AnnualMode;
   updatedAt: number;
 }
 
@@ -50,6 +53,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   countBusinessTithePayments: true,
   businessTransferMode: 'allow-negative',
   currency: DEFAULT_CURRENCY,
+  annualMode: DEFAULT_ANNUAL_MODE,
   updatedAt: 0,
 };
 
@@ -99,7 +103,12 @@ export interface Category {
   businessId?: string;
 }
 
-/** תקציב חודשי לקטגוריית הוצאה. תקף לכל חודש. מזהה המסמך הוא מזהה הקטגוריה. */
+/**
+ * תקציב לקטגוריית הוצאה (או תקציב כללי של תחום).
+ * בלי period: תקציב חודשי קבוע, תקף לכל חודש; מזהה המסמך הוא מזהה הקטגוריה.
+ * period='YYYY-MM': תקציב לחודש מסוים בלבד, שדורס את הקבוע באותו חודש; מזהה המסמך `${categoryId}@${period}`.
+ * period='YYYY': תקציב שנתי לאותה שנה; מזהה המסמך `${categoryId}@${period}`.
+ */
 export interface Budget {
   id: string;
   scope: Scope;
@@ -107,6 +116,8 @@ export interface Budget {
   amountAgorot: number;
   createdAt: number;
   updatedAt: number;
+  /** חסר = תקציב חודשי קבוע. 'YYYY-MM' = חודש מסוים. 'YYYY' = שנה. */
+  period?: string;
   /** רק לתקציבי עסק. חסר = העסק הראשון. */
   businessId?: string;
 }

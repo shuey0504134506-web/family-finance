@@ -16,6 +16,7 @@ import { TasksScreen } from './features/lists/TasksScreen';
 import { LockProvider } from './features/lock/LockContext';
 import { LockGate } from './features/lock/LockScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
+import { AutoBackupHost } from './features/settings/AutoBackupHost';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { BudgetScreen } from './features/budget/BudgetScreen';
@@ -65,6 +66,7 @@ function RequireAccount() {
               <ListsProvider uid={state.user.uid}>
                 <LockGate>
                   <RemindersHost />
+                  <AutoBackupHost />
                   <Outlet />
                 </LockGate>
               </ListsProvider>
