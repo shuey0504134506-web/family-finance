@@ -1650,3 +1650,39 @@ select.input {
   margin-bottom: 4px;
   font-weight: 600;
 }
+
+/* חלון קופץ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 20, 35, 0.45);
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 20px 16px calc(20px + var(--safe-bottom));
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  outline: none;
+}
+
+@media (min-width: 600px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+  .modal {
+    border-radius: var(--radius);
+  }
+}
+
+.input[readonly] {
+  background: var(--bg);
+  color: var(--text);
+}

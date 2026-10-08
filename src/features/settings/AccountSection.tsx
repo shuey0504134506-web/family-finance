@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { Field } from '../../components/Field';
+import { Modal } from '../../components/Modal';
+import { requestEmailChange, saveProfile } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useAuth, useReadyAuth } from '../auth/AuthContext';
-import { ProfileSection } from './ProfileSection';
-import { EmailForm } from './SecuritySection';
+import { isValidEmail } from '../auth/validation';
+import { useSyncNotice } from '../sync/SyncNotice';
 
-/** פרטי חשבון: מייל (ושינויו), פרטים אישיים ושם העסק, ויציאה מהחשבון. */
+/**
+ * פרטי חשבון. הפרטים מוצגים לקריאה בלבד. שינוי נעשה בחלון "עדכון פרטים" ונשמר בלחיצה על אישור.
+ * החלפת כתובת מייל שולחת קישור אימות לכתובת החדשה (Firebase), והכתובת מתחלפת רק אחרי הלחיצה עליו.
+ */
 export function AccountSection() {
-  const { user } = useReadyAuth();
+  const { user, profile } = useReadyAuth();
   const { signOutUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [sentTo, setSentTo] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,13 +32,22 @@ export function AccountSection() {
 
   return (
     <div className="stack">
-      <ProfileSection />
+      <Field label="שם פרטי" value={profile.firstName} readOnly />
+      <Field label="שם משפחה" value={profile.lastName} readOnly />
+      <Field label="כתובת מייל" value={user.email ?? ''} dir="ltr" readOnly />
+      <Field label="שם העסק" value={profile.businessName} readOnly />
+
+      <button type="button" className="btn btn-primary" onClick={() => { setSentTo(''); setEditing(true); }}>
+        עדכון פרטים
+      </button>
+
+      {sentTo && (
+        <div className="form-success" role="status">
+          שלחנו קישור אימות אל {sentTo}. הכתובת תתחלף רק אחרי שתלחצו עליו. עד אז ממשיכים להיכנס עם הכתובת הישנה. כדאי לבדוק גם בתיקיית הספאם.
+        </div>
+      )}
+
       <hr className="divider" />
-      <EmailForm />
-      <hr className="divider" />
-      <p className="muted small">
-        מחובר בתור <bdi dir="ltr">{user.email}</bdi>
-      </p>
       {error && (
         <div className="form-error" role="alert">
           {error}
@@ -39,6 +56,98 @@ export function AccountSection() {
       <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void onSignOut()}>
         {busy ? 'יוצא…' : 'יציאה מהחשבון'}
       </button>
+
+      {editing && (
+        <EditDetailsDialog
+          onClose={() => setEditing(false)}
+          onEmailRequested={(email) => setSentTo(email)}
+        />
+      )}
     </div>
+  );
+}
+
+function EditDetailsDialog({
+  onClose,
+  onEmailRequested,
+}: {
+  onClose: () => void;
+  onEmailRequested: (email: string) => void;
+}) {
+  const { user, profile } = useReadyAuth();
+  const { reportFailure } = useSyncNotice();
+  const [firstName, setFirstName] = useState(profile.firstName);
+  const [lastName, setLastName] = useState(profile.lastName);
+  const [email, setEmail] = useState(user.email ?? '');
+  const [businessName, setBusinessName] = useState(profile.businessName);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const emailChanged = email.trim().toLowerCase() !== (user.email ?? '').toLowerCase();
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    if (!firstName.trim() || !lastName.trim()) return setError('יש להזין שם פרטי ושם משפחה.');
+    if (profile.accountMode !== 'household' && !businessName.trim()) return setError('יש להזין שם עסק.');
+    if (firstName.length > 60 || lastName.length > 60 || businessName.length > 120) return setError('אחד השדות ארוך מדי.');
+    if (emailChanged && !isValidEmail(email)) return setError('יש להזין כתובת מייל תקינה.');
+    if (emailChanged && !password) return setError('להחלפת כתובת מייל יש להזין את הסיסמה הנוכחית.');
+
+    setBusy(true);
+    setError('');
+    try {
+      // קודם המייל: אם הסיסמה שגויה או אין חיבור, שום דבר לא נשמר והחלון נשאר פתוח.
+      if (emailChanged) {
+        await requestEmailChange(user, password, email);
+        onEmailRequested(email.trim());
+      }
+      const unchanged =
+        firstName.trim() === profile.firstName &&
+        lastName.trim() === profile.lastName &&
+        businessName.trim() === profile.businessName;
+      if (!unchanged) {
+        saveProfile(user.uid, { firstName, lastName, businessName, accountMode: profile.accountMode }).catch(() =>
+          reportFailure('לא הצלחנו לסנכרן את פרטי החשבון. יש לנסות שוב.'),
+        );
+      }
+      onClose();
+    } catch (caught) {
+      setError(describeError(caught));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="עדכון פרטים" onClose={busy ? () => undefined : onClose}>
+      <form className="settings-form" onSubmit={onSubmit} noValidate>
+        <Field label="שם פרטי" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
+        <Field label="שם משפחה" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+        <Field label="כתובת מייל" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        <Field label="שם העסק" value={businessName} onChange={(e) => setBusinessName(e.target.value)} autoComplete="organization" />
+        {emailChanged && (
+          <Field
+            label="סיסמה נוכחית (נדרשת להחלפת מייל)"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            hint="נשלח קישור אימות לכתובת החדשה. הכתובת תתחלף רק אחרי שתלחצו עליו."
+          />
+        )}
+        {error && (
+          <div className="form-error" role="alert">
+            {error}
+          </div>
+        )}
+        <button type="submit" className="btn btn-primary" disabled={busy}>
+          {busy ? 'שומר…' : 'אישור'}
+        </button>
+        <button type="button" className="btn btn-secondary" disabled={busy} onClick={onClose}>
+          ביטול
+        </button>
+      </form>
+    </Modal>
   );
 }

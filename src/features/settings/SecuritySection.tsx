@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { rememberPasswordForLock } from '../../services/lockPassword';
-import { changePassword, requestEmailChange } from '../../services/accountService';
+import { changePassword } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
-import { MIN_PASSWORD_LENGTH, isValidEmail } from '../auth/validation';
+import { MIN_PASSWORD_LENGTH } from '../auth/validation';
 
 /** שינוי סיסמה. דורש להקליד שוב את הסיסמה הנוכחית. */
 export function PasswordForm() {
@@ -56,58 +56,6 @@ export function PasswordForm() {
       )}
       <button type="submit" className="btn btn-secondary" disabled={busy}>
         {busy ? 'משנה…' : 'שינוי סיסמה'}
-      </button>
-    </form>
-  );
-}
-
-/** שינוי מייל. נשלח קישור אימות, והכתובת מתחלפת רק אחרי הלחיצה עליו. */
-export function EmailForm() {
-  const { user } = useReadyAuth();
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [sentTo, setSentTo] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    setSentTo('');
-    if (!isValidEmail(email)) return setError('יש להזין כתובת מייל תקינה.');
-    if (email.trim().toLowerCase() === (user.email ?? '').toLowerCase()) return setError('זו כבר הכתובת הנוכחית.');
-    setBusy(true);
-    setError('');
-    try {
-      await requestEmailChange(user, password, email);
-      setSentTo(email.trim());
-      setPassword('');
-      setEmail('');
-    } catch (caught) {
-      setError(describeError(caught));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <form className="settings-form" onSubmit={onSubmit} noValidate>
-      <h3 className="subhead">שינוי כתובת מייל</h3>
-      <p className="muted small">כתובת נוכחית: <bdi dir="ltr">{user.email}</bdi></p>
-      <Field label="כתובת מייל חדשה" type="email" dir="ltr" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <Field label="סיסמה נוכחית" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      {error && (
-        <div className="form-error" role="alert">
-          {error}
-        </div>
-      )}
-      {sentTo && (
-        <div className="form-success" role="status">
-          שלחנו קישור אימות אל {sentTo}. הכתובת תתחלף רק אחרי שתלחץ עליו. עד אז ממשיכים להיכנס עם הכתובת הישנה.
-        </div>
-      )}
-      <button type="submit" className="btn btn-secondary" disabled={busy}>
-        {busy ? 'שולח…' : 'שליחת קישור אימות'}
       </button>
     </form>
   );

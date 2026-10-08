@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Field } from '../../components/Field';
 import { effectiveMethod, needsPasswordFallback } from '../../domain/appLock';
 import { describeError } from '../../services/authErrors';
-import { useAuth } from '../auth/AuthContext';
+import { requestPasswordReset } from '../../services/authService';
+import { useAuth, useReadyAuth } from '../auth/AuthContext';
 import { useLock, type UnlockResult } from './LockContext';
 import { PatternPad } from './PatternPad';
 
@@ -22,6 +23,8 @@ export function LockGate({ children }: { children: ReactNode }) {
 function LockScreen() {
   const { config, unlockWithPassword, unlockWithSecret } = useLock();
   const { signOutUser } = useAuth();
+  const { user } = useReadyAuth();
+  const [resetInfo, setResetInfo] = useState('');
   const method = effectiveMethod(config);
   const [forcePassword, setForcePassword] = useState(false);
   const usePassword = method === 'password' || forcePassword || needsPasswordFallback(config);
@@ -35,6 +38,24 @@ function LockScreen() {
     try {
       const result = await action();
       if (!result.ok) setMessage(result.message);
+    } catch (caught) {
+      setMessage(describeError(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendReset = async () => {
+    const email = user.email;
+    if (!email || busy) return;
+    setBusy(true);
+    setMessage('');
+    setResetInfo('');
+    try {
+      await requestPasswordReset(email);
+      setResetInfo(
+        `שלחנו קישור לאיפוס הסיסמה אל ${email}. לוחצים עליו, בוחרים סיסמה חדשה, וחוזרים לכאן להיכנס איתה. כדאי לבדוק גם בתיקיית הספאם.`,
+      );
     } catch (caught) {
       setMessage(describeError(caught));
     } finally {
@@ -71,14 +92,24 @@ function LockScreen() {
             {message}
           </div>
         )}
+        {resetInfo && (
+          <div className="form-success" role="status">
+            {resetInfo}
+          </div>
+        )}
 
         <div className="stack">
-          {!usePassword && (
-            <button type="button" className="btn btn-secondary" onClick={() => { setForcePassword(true); setMessage(''); }}>
-              שכחתי. כניסה עם סיסמת החשבון
+          {usePassword && (
+            <button type="button" className="link-btn" disabled={busy} onClick={() => void sendReset()}>
+              שכחתי סיסמה
             </button>
           )}
-          <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void signOutUser()}>
+          {!usePassword && (
+            <button type="button" className="link-btn" onClick={() => { setForcePassword(true); setMessage(''); }}>
+              כניסה באמצעות סיסמה
+            </button>
+          )}
+          <button type="button" className="link-btn" disabled={busy} onClick={() => void signOutUser()}>
             יציאה מהחשבון
           </button>
         </div>
