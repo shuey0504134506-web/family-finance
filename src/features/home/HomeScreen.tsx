@@ -110,7 +110,6 @@ export function HomeScreen() {
 
   return (
     <div className={`app-shell has-hero scope-${scope}`} {...swipe}>
-      <div className="home-hero" aria-hidden="true" />
       <AppHeader />
 
       <main className="content" aria-busy={loading}>

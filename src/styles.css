@@ -2324,35 +2324,22 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
   background: var(--bg);
 }
 
-/* נוף הרים בראש מסך הבית */
-.app-shell.has-hero {
-  position: relative;
-}
-
-.home-hero {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 300px;
-  z-index: 0;
-  pointer-events: none;
-  background: #f1d3b2 url('./assets/mountains-home.jpg') center top / cover no-repeat;
-}
-
-.home-hero::after {
+/* נוף הרים כרקע לכל האפליקציה, מוחלש בשכבת קרם כדי שהתוכן יישאר קריא */
+body::before {
   content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 90px;
-  background: linear-gradient(to bottom, rgba(247, 243, 234, 0), var(--bg));
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(247, 243, 234, 0.8), rgba(247, 243, 234, 0.9)),
+    #f7f3ea url('./assets/mountains-welcome.jpg') center bottom / cover no-repeat;
 }
 
-.has-hero .app-header {
-  position: relative;
-  background: transparent;
+.app-header {
+  background: rgba(247, 243, 234, 0.82);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .has-hero .content {
