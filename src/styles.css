@@ -2641,3 +2641,14 @@ body::before {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* "לחץ לעריכה": שורה במרכז תחתית המסגרת */
+.tx-row {
+  flex-wrap: wrap;
+}
+
+.tx-row .tx-hint {
+  flex: 0 0 100%;
+  margin-top: 0;
+  text-align: center;
+}

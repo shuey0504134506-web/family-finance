@@ -90,7 +90,6 @@ export function TransactionList({
                   {item.isTithePayment ? ' · מעשר' : ''}
                 </span>
                 {item.note ? <span className="tx-note">{item.note}</span> : null}
-                <span className="tx-hint">לחץ לעריכה</span>
                 {item.pendingSync ? (
                   <span className="tx-sync tx-sync-pending">נשמר במכשיר – ממתין לסנכרון</span>
                 ) : justSynced.has(item.id) ? (
@@ -98,6 +97,7 @@ export function TransactionList({
                 ) : null}
               </span>
               <Amount agorot={item.amountAgorot} className={isIncome ? 'tone-income' : 'tone-expense'} />
+              <span className="tx-hint">לחץ לעריכה</span>
             </button>
           </li>
         );
