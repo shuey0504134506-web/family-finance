@@ -1563,9 +1563,6 @@ select.input {
   transform: rotate(-90deg);
 }
 
-.acc-item.is-danger .acc-trigger {
-  color: var(--danger, #b42318);
-}
 
 .acc-body {
   padding: 4px 16px 18px;
