@@ -6,18 +6,8 @@ import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
 import { MIN_PASSWORD_LENGTH, isValidEmail } from '../auth/validation';
 
-/** שינוי סיסמה ושינוי מייל. שניהם דורשים להקליד שוב את הסיסמה הנוכחית. */
-export function SecuritySection() {
-  return (
-    <>
-      <PasswordForm />
-      <hr className="divider" />
-      <EmailForm />
-    </>
-  );
-}
-
-function PasswordForm() {
+/** שינוי סיסמה. דורש להקליד שוב את הסיסמה הנוכחית. */
+export function PasswordForm() {
   const { user } = useReadyAuth();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -71,7 +61,8 @@ function PasswordForm() {
   );
 }
 
-function EmailForm() {
+/** שינוי מייל. נשלח קישור אימות, והכתובת מתחלפת רק אחרי הלחיצה עליו. */
+export function EmailForm() {
   const { user } = useReadyAuth();
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');

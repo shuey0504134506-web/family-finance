@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { buildBackup, type BackupFile, type ExportTransaction } from '../domain/export';
+import type { RestorePlan } from '../domain/restore';
 import type { AccountMode, Category, Transaction, UserSettings } from '../domain/types';
 import { forgetDeviceUser } from './deviceUser';
 
@@ -127,6 +128,57 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
   return { backup, transactions };
 }
 
+const BATCH_SIZE = 400;
+
+// ---------- שחזור מקובץ גיבוי ----------
+
+const RESTORE_COLLECTIONS = [
+  ['categories', 'categories'],
+  ['budgets', 'budgets'],
+  ['businessTransactions', 'businessTransactions'],
+  ['householdTransactions', 'householdTransactions'],
+] as const;
+
+export interface NewDataPlan {
+  plan: RestorePlan;
+  /** מסמכים מהקובץ שכבר קיימים בחשבון. הם אינם נדרסים. */
+  alreadyExisting: number;
+}
+
+/**
+ * משאיר מהקובץ רק מה שעדיין אינו קיים בחשבון. שחזור לעולם לא דורס ולא מוחק נתונים קיימים,
+ * ולכן אפשר להריץ אותו שוב בבטחה. דורש חיבור, כי הבדיקה נעשית מול השרת.
+ */
+export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
+  requireOnline();
+  const result: RestorePlan = { ...plan, categories: [], budgets: [], businessTransactions: [], householdTransactions: [] };
+  let alreadyExisting = 0;
+  for (const [key, name] of RESTORE_COLLECTIONS) {
+    const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
+    const existing = new Set(snapshot.docs.map((d) => d.id));
+    for (const item of plan[key]) {
+      if (existing.has(item.id)) alreadyExisting += 1;
+      else result[key].push(item);
+    }
+  }
+  return { plan: result, alreadyExisting };
+}
+
+export async function applyRestore(uid: string, plan: RestorePlan, replaceSettings: boolean): Promise<void> {
+  requireOnline();
+  for (const [key, name] of RESTORE_COLLECTIONS) {
+    const items = plan[key];
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      items.slice(i, i + BATCH_SIZE).forEach((item) => batch.set(doc(db, 'users', uid, name, item.id), item.data));
+      await batch.commit();
+    }
+  }
+  if (replaceSettings && plan.settings) {
+    await setDoc(doc(db, 'users', uid, 'settings', 'main'), { ...plan.settings, updatedAt: Date.now() });
+  }
+}
+
 // ---------- מחיקת חשבון ----------
 
 const USER_COLLECTIONS = [
@@ -140,7 +192,6 @@ const USER_COLLECTIONS = [
   'householdProfile',
 ] as const;
 
-const BATCH_SIZE = 400;
 
 /**
  * מוחק את כל נתוני המשתמש ואת החשבון עצמו, ללא אפשרות שחזור.
