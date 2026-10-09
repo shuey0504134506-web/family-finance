@@ -22,8 +22,8 @@ export function CompleteSetupScreen() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (submitting.current) return;
-    if (!firstName.trim() || !lastName.trim() || !businessName.trim()) {
-      setError('יש למלא את השם הפרטי, שם המשפחה ושם העסק');
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('יש למלא את השם הפרטי ושם המשפחה');
       return;
     }
     if ([businessName, householdName, ...extraBusinesses].some((n) => n.trim().length > 60)) {
@@ -73,7 +73,7 @@ export function CompleteSetupScreen() {
             onChange={(event) => setLastName(event.target.value)}
           />
           <Field
-            label="שם העסק"
+            label="שם העסק (לא חובה)"
             value={businessName}
             onChange={(event) => setBusinessName(event.target.value)}
           />

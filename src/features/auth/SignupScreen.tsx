@@ -113,7 +113,7 @@ export function SignupScreen() {
             error={errors.lastName}
           />
           <Field
-            label="שם העסק (הראשון)"
+            label="שם העסק (לא חובה)"
             autoComplete="organization"
             value={values.businessName}
             onChange={update('businessName')}

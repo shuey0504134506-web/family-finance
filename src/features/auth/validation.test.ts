@@ -19,7 +19,7 @@ describe('validateSignup', () => {
     const errors = validateSignup({ ...valid, firstName: '  ', lastName: '', businessName: ' ' });
     expect(errors.firstName).toBeDefined();
     expect(errors.lastName).toBeDefined();
-    expect(errors.businessName).toBeDefined();
+    expect(errors.businessName).toBeUndefined();
   });
 
   it('סיסמה קצרה נדחית', () => {

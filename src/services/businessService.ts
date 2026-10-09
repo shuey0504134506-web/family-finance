@@ -1,7 +1,7 @@
-import { collection, doc, onSnapshot, setDoc, writeBatch, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDocsFromServer, onSnapshot, setDoc, updateDoc, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { buildBusinessCategories } from '../data/defaultCategories';
-import type { Business } from '../domain/spaces';
+import { DEFAULT_BUSINESS_ID, businessIdOf, type Business } from '../domain/spaces';
 import { newId } from './ids';
 
 /** כל העסקים של המשתמש (מעטים), ממוינים לפי סדר התצוגה. */
@@ -51,6 +51,36 @@ export function addBusiness(uid: string, name: string, sortOrder: number): { id:
     batch.set(doc(db, 'users', uid, 'categories', category.id), category);
   }
   return { id, saved: batch.commit() };
+}
+
+/**
+ * מוחק עסק לגמרי: הרשומה שלו וכל מה ששייך לו (פעולות, קטגוריות, תקציבים, משימות). אין שחזור.
+ * דורש חיבור, כי המחיקה נעשית לפי מה שקיים בשרת. בטוח להרצה חוזרת.
+ * העסק הראשון הישן נבנה גם משם העסק בפרופיל, ולכן מנקים גם אותו.
+ */
+export async function deleteBusinessAndData(uid: string, businessId: string): Promise<void> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw Object.assign(new Error('offline'), { code: 'app/offline' });
+  }
+  const refs = [] as ReturnType<typeof doc>[];
+  for (const name of ['businessTransactions', 'categories', 'budgets', 'tasks', 'shoppingItems'] as const) {
+    const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
+    for (const d of snapshot.docs) {
+      const data = d.data() as { scope?: string; businessId?: string };
+      const isBusinessItem = name === 'businessTransactions' || data.scope === 'business';
+      if (isBusinessItem && businessIdOf(data) === businessId) refs.push(d.ref);
+    }
+  }
+  refs.push(doc(db, 'users', uid, 'businesses', businessId));
+  if (businessId === DEFAULT_BUSINESS_ID) refs.push(doc(db, 'users', uid, 'businessProfile', 'main'));
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = writeBatch(db);
+    refs.slice(i, i + 400).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+  if (businessId === DEFAULT_BUSINESS_ID) {
+    await updateDoc(doc(db, 'users', uid), { businessName: '', updatedAt: Date.now() });
+  }
 }
 
 // ---------- שם משק הבית ----------

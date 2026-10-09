@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { businessSpace, validateSpaceName, type Business } from '../../domain/spaces';
-import { addBusiness, saveBusiness, saveHouseholdName } from '../../services/businessService';
+import { addBusiness, deleteBusinessAndData, saveBusiness, saveHouseholdName } from '../../services/businessService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
@@ -18,6 +18,9 @@ export function PurposeSection() {
   const [newName, setNewName] = useState('');
   const [addError, setAddError] = useState('');
   const [displayError, setDisplayError] = useState('');
+  const [deleting, setDeleting] = useState<Business | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const fail = () => reportFailure('לא הצלחנו לסנכרן את השינוי. יש לנסות שוב.');
 
@@ -32,6 +35,21 @@ export function PurposeSection() {
     addBusiness(user.uid, newName, sortOrder).saved.catch(fail);
     setNewName('');
     setAddError('');
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting || deleteBusy) return;
+    setDeleteBusy(true);
+    setDeleteError('');
+    try {
+      await deleteBusinessAndData(user.uid, deleting.id);
+      setPrefs({ ...prefs, hiddenBusinessIds: prefs.hiddenBusinessIds.filter((x) => x !== deleting.id) });
+      setDeleting(null);
+    } catch {
+      setDeleteError('המחיקה לא הצליחה. יש לבדוק חיבור לאינטרנט ולנסות שוב.');
+    } finally {
+      setDeleteBusy(false);
+    }
   };
 
   // לא ניתן להסתיר הכול: תמיד נשאר לפחות מסך אחד.
@@ -62,14 +80,44 @@ export function PurposeSection() {
       <h3 className="subhead">העסקים</h3>
       {businesses.length === 0 && <div className="field-hint">עדיין לא הוגדר עסק.</div>}
       {businesses.map((business) => (
-        <NameField
-          key={business.id}
-          label="שם העסק"
-          value={business.name}
-          fieldLabel="שם עסק"
-          onSave={(name) => saveBusiness(user.uid, { ...business, name }).catch(fail)}
-        />
+        <div key={business.id}>
+          <NameField
+            label="שם העסק"
+            value={business.name}
+            fieldLabel="שם עסק"
+            onSave={(name) => saveBusiness(user.uid, { ...business, name }).catch(fail)}
+          />
+          <button
+            type="button"
+            className="btn btn-danger-outline"
+            onClick={() => {
+              setDeleteError('');
+              setDeleting(business);
+            }}
+          >
+            מחיקת העסק
+          </button>
+        </div>
       ))}
+      {deleting && (
+        <div className="card delete-confirm" role="alertdialog" aria-label="אישור מחיקת עסק">
+          <p>
+            <strong>למחוק את "{deleting.name}" לגמרי?</strong> יימחקו לצמיתות כל ההכנסות, ההוצאות, הקטגוריות,
+            התקציבים והמשימות של העסק. אי אפשר לשחזר. מומלץ להוריד קודם גיבוי מלא.
+          </p>
+          {deleteError && (
+            <div className="form-error" role="alert">
+              {deleteError}
+            </div>
+          )}
+          <button type="button" className="btn btn-danger" disabled={deleteBusy} onClick={() => void confirmDelete()}>
+            {deleteBusy ? 'מוחק…' : 'מחיקה סופית'}
+          </button>
+          <button type="button" className="btn btn-secondary" disabled={deleteBusy} onClick={() => setDeleting(null)}>
+            ביטול
+          </button>
+        </div>
+      )}
       <form className="inline-add" onSubmit={onAdd} noValidate>
         <Field
           label="הוספת עסק"
