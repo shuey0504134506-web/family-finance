@@ -2656,3 +2656,108 @@ body::before {
   margin: 0;
   font-size: 0.68rem;
 }
+
+/* ---------- מסכים קטנים: מצב קומפקטי ---------- */
+@media (max-width: 380px), (max-height: 700px) {
+  html {
+    font-size: 15px;
+  }
+
+  body {
+    font-size: 15px;
+  }
+
+  :root {
+    --tap: 44px;
+  }
+
+  .content {
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: calc(88px + var(--safe-bottom));
+    padding-right: calc(12px + var(--safe-right));
+    padding-left: calc(12px + var(--safe-left));
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .btn {
+    min-height: 46px;
+    font-size: 0.98rem;
+  }
+
+  .input {
+    min-height: 46px;
+  }
+
+  .form-card {
+    gap: 8px;
+  }
+
+  .balance-button {
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .balance-amount {
+    font-size: 2.1rem;
+  }
+
+  .quick-link {
+    min-height: 72px;
+    padding: 10px 12px;
+  }
+
+  .tx-row {
+    min-height: 54px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .segmented button {
+    min-height: 40px;
+  }
+
+  .scope-tab {
+    min-height: 44px;
+  }
+
+  .chip-option {
+    min-height: 40px;
+    padding: 0 12px;
+  }
+
+  .acc-list .btn {
+    min-height: 46px;
+  }
+
+  .month-label {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 340px), (max-height: 600px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .content {
+    gap: 8px;
+    padding-right: calc(10px + var(--safe-right));
+    padding-left: calc(10px + var(--safe-left));
+  }
+
+  .balance-amount {
+    font-size: 1.9rem;
+  }
+
+  .tx-hint {
+    display: none;
+  }
+}
