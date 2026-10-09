@@ -36,7 +36,7 @@ export function AccountSection() {
       <Field label="שם משפחה" value={profile.lastName} readOnly />
       <Field label="כתובת מייל" value={user.email ?? ''} dir="ltr" readOnly />
 
-      <button type="button" className="btn btn-primary" onClick={() => { setSentTo(''); setEditing(true); }}>
+      <button type="button" className="btn btn-secondary" onClick={() => { setSentTo(''); setEditing(true); }}>
         עדכון פרטים
       </button>
 
