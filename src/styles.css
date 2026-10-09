@@ -657,7 +657,7 @@ code {
 
 .tiles {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -804,7 +804,7 @@ code {
 
 .add-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 16px 0;
 }
@@ -1017,7 +1017,7 @@ select.input {
 
 .quick-links {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 0 0 16px;
 }
@@ -1466,7 +1466,7 @@ select.input {
 
 .inline-add-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2759,5 +2759,42 @@ body::before {
 
   .tx-hint {
     display: none;
+  }
+}
+
+/* ---- Narrow-phone overflow guard ---- */
+html,
+body,
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+.app-shell,
+.content {
+  min-width: 0;
+  max-width: 100%;
+}
+.content > *,
+.tiles > *,
+.add-actions > *,
+.quick-links > *,
+.tx-row > *,
+.card {
+  min-width: 0;
+}
+.balance-amount,
+.amount {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 380px) {
+  .month-label {
+    min-width: 0;
+    font-size: 1rem;
+  }
+  .header-row {
+    padding-inline: 4px;
+  }
+  .balance-amount {
+    font-size: clamp(1.5rem, 8vw, 2.1rem);
   }
 }
