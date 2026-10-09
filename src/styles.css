@@ -2822,3 +2822,26 @@ input.input[type='date']::-webkit-datetime-edit,
 input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   padding: 0;
 }
+
+/* בורר של שתי אפשרויות ארוכות: אחת מתחת לשנייה, בלי "בלוק" עגול ענק */
+.segmented.segmented-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  border-radius: 24px;
+  gap: 4px;
+}
+.segmented.segmented-stack button {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+  padding: 8px 12px;
+  line-height: 1.25;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  select.input {
+    font-size: 14px;
+    padding-inline: 10px;
+  }
+}

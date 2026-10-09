@@ -78,7 +78,7 @@ export function FormulasSection() {
         <span className="field-label" id="annual-mode-label">
           חישוב שנתי (סיכום שנתי ותקציב שנתי)
         </span>
-        <div className="segmented" role="group" aria-labelledby="annual-mode-label">
+        <div className="segmented segmented-stack" role="group" aria-labelledby="annual-mode-label">
           <button
             type="button"
             className={settings.annualMode === 'calendar' ? 'is-active' : ''}
