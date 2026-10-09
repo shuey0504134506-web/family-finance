@@ -2798,3 +2798,8 @@ body,
     font-size: clamp(1.5rem, 8vw, 2.1rem);
   }
 }
+
+/* אנגלית: "הקודם" משמאל ו"הבא" מימין (בעברית "הבא" משמאל). החצים כבר מתהפכים ב-.chev */
+html[dir='ltr'] .month-nav {
+  flex-direction: row-reverse;
+}
