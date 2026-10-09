@@ -3,7 +3,7 @@ import { Amount } from '../../components/Amount';
 import { useLocation } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
-import { previousAnnualPeriod } from '../../domain/annual';
+import { previousAnnualPeriod, type AnnualPeriod } from '../../domain/annual';
 import { addMonths, formatMonthYear } from '../../domain/dates';
 import { formatPercentChange, percentChange } from '../../domain/compare';
 import { categoryBreakdown, periodTotals, type PeriodTotals } from '../../domain/periods';
@@ -15,7 +15,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { useSpaces } from '../spaces/SpacesContext';
-import { IncomeExpenseChart } from './IncomeExpenseChart';
+import { PeriodComparison, type ComparisonColumn } from './PeriodComparison';
 import { Icon } from '../../components/Icon';
 import { SpaceLabel } from '../../components/SpaceLabel';
 
@@ -76,15 +76,6 @@ export function SummaryScreen() {
     [scope, household.items, businessForCalc, previousMonths, mode],
   );
 
-  const chartMonths = useMemo(
-    () =>
-      annual.months.map((ym) => {
-        const t = periodTotals(scope, household.items, businessForCalc, [ym], mode);
-        return { label: String(Number(ym.slice(5))), incomeAgorot: t.incomeAgorot, expenseAgorot: t.expenseAgorot };
-      }),
-    [scope, household.items, businessForCalc, mode, annual],
-  );
-
   const scopeItems = scope === 'business' ? businessForCalc : household.items;
   const names = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const categoryName = (id: string) => names.get(id) ?? scopeItems.find((t) => t.categoryId === id)?.categoryName ?? 'אחר';
@@ -96,6 +87,27 @@ export function SummaryScreen() {
     () => categoryBreakdown(scopeItems, currentMonths, 'income'),
     [scopeItems, currentMonths],
   );
+
+  const [monthCount, setMonthCount] = useState(6);
+  const [yearCount, setYearCount] = useState(3);
+  const columns = useMemo<ComparisonColumn[]>(() => {
+    if (period === 'month') {
+      return Array.from({ length: monthCount }, (_, i) => addMonths(month.selected, i - (monthCount - 1))).map((ym) => ({
+        key: ym,
+        label: formatMonthYear(ym),
+        short: `${Number(ym.slice(5))}/${ym.slice(2, 4)}`,
+        months: [ym],
+      }));
+    }
+    const periods: AnnualPeriod[] = [annual];
+    while (periods.length < yearCount) periods.unshift(previousAnnualPeriod(periods[0], settings.annualMode));
+    return periods.map((p) => ({
+      key: p.id,
+      label: p.label,
+      short: settings.annualMode === 'calendar' ? p.id : `${Number(p.startYm.slice(5))}/${p.startYm.slice(2, 4)}`,
+      months: p.months,
+    }));
+  }, [period, monthCount, yearCount, month.selected, annual, settings.annualMode]);
 
   const periodLabel = period === 'month' ? formatMonthYear(month.selected) : annual.label;
   const previousLabel = period === 'month' ? formatMonthYear(previousMonths[0]) : previousAnnual.label;
@@ -170,15 +182,21 @@ export function SummaryScreen() {
               </dl>
             </section>
 
-            <Comparison current={totals} previous={previous} previousLabel={previousLabel} />
-
-            <section className="card">
-              <h2 className="card-title">הכנסות והוצאות לפי חודש, {annual.label}</h2>
-              <IncomeExpenseChart months={chartMonths} title={`הכנסות והוצאות לפי חודש: ${annual.label}`} />
-            </section>
-
             <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />
             <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={categoryName} tone="income" />
+
+            <Comparison current={totals} previous={previous} previousLabel={previousLabel} />
+
+            <PeriodComparison
+              title={period === 'month' ? 'השוואה בין חודשים' : 'השוואה בין שנים'}
+              unitLabel={period === 'month' ? 'חודשים' : 'שנים'}
+              columns={columns}
+              items={scopeItems}
+              nameOf={categoryName}
+              counts={period === 'month' ? [3, 6, 12] : [2, 3, 5]}
+              count={period === 'month' ? monthCount : yearCount}
+              onCount={period === 'month' ? setMonthCount : setYearCount}
+            />
           </>
         )}
       </main>

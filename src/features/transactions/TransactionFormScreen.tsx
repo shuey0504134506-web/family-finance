@@ -23,7 +23,6 @@ import { useCategories } from '../../hooks/useCategories';
 import { createCategory } from '../../services/categoryService';
 import { newId } from '../../services/ids';
 import {
-  deleteTransaction,
   getTransaction,
   saveTransaction,
 } from '../../services/transactionService';
@@ -149,7 +148,6 @@ function TransactionForm({
 
   const [draft, setDraft] = useState<TransactionDraft>(initial);
   const [errors, setErrors] = useState<DraftErrors>({});
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // מונע שליחה כפולה גם אם לוחצים מהר מכפי שהמסך מתעדכן.
   const submitted = useRef(false);
 
@@ -251,15 +249,6 @@ function TransactionForm({
       reportFailure('לא הצלחנו לסנכרן פעולה אחרונה, והיא לא נשמרה בשרת. יש לבדוק ולהזין אותה שוב.'),
     );
     leave(transaction.yearMonth);
-  };
-
-  const onDelete = () => {
-    if (!existing || submitted.current) return;
-    submitted.current = true;
-    deleteTransaction(user.uid, scope, existing.id).catch(() =>
-      reportFailure('לא הצלחנו לסנכרן את המחיקה. הפעולה עשויה להופיע שוב.'),
-    );
-    leave();
   };
 
   return (
@@ -421,26 +410,6 @@ function TransactionForm({
           </button>
         </form>
 
-        {existing &&
-          (confirmingDelete ? (
-            <div className="card delete-confirm" role="alertdialog" aria-label="אישור מחיקה">
-              <p>למחוק את הפעולה? אי אפשר לשחזר אותה.</p>
-              <button type="button" className="btn btn-danger" onClick={onDelete}>
-                כן, למחוק
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setConfirmingDelete(false)}
-              >
-                ביטול
-              </button>
-            </div>
-          ) : (
-            <button type="button" className="btn btn-danger-outline" onClick={() => setConfirmingDelete(true)}>
-              מחיקת הפעולה
-            </button>
-          ))}
       </main>
     </div>
   );
