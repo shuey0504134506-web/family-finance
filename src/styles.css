@@ -2845,3 +2845,10 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
     padding-inline: 10px;
   }
 }
+
+/* הוספת קטגוריה: רווח בין השדה, השגיאה והכפתור */
+.add-category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

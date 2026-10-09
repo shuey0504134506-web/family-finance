@@ -92,7 +92,7 @@ export function CategoriesScreen() {
           ))}
         </div>
 
-        <form className="card" onSubmit={onAdd} noValidate>
+        <form className="card add-category-form" onSubmit={onAdd} noValidate>
           <label htmlFor="new-category">קטגוריה חדשה</label>
           <input
             id="new-category"
