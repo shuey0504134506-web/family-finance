@@ -16,6 +16,25 @@ export function WelcomeScreen() {
           <p className="muted">הכול במקום אחד, כל חלק בנפרד וברור.</p>
         </header>
 
+        <ul className="feature-list welcome-features">
+          <li>
+            <span className="feature-icon" aria-hidden="true"><Icon name="business" /></span>
+            <span>עסק ומשק בית, כל אחד בנפרד וברור</span>
+          </li>
+          <li>
+            <span className="feature-icon" aria-hidden="true"><Icon name="budget" /></span>
+            <span>תקציב חודשי ושנתי עם מעקב</span>
+          </li>
+          <li>
+            <span className="feature-icon" aria-hidden="true"><Icon name="tithe" /></span>
+            <span>מעשרות וחישובים אוטומטיים</span>
+          </li>
+          <li>
+            <span className="feature-icon" aria-hidden="true"><Icon name="sync" /></span>
+            <span>סנכרון בין מכשירים וגיבוי אוטומטי</span>
+          </li>
+        </ul>
+
         <div className="welcome-bottom">
           <div className="auth-actions">
             <button type="button" className="btn btn-primary" onClick={() => navigate('/signup')}>

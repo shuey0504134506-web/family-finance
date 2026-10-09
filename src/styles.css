@@ -2852,3 +2852,61 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   flex-direction: column;
   gap: 12px;
 }
+
+/* מסך פתיחה: שקוף, כך שרקע ההרים הכללי של האפליקציה נראה דרכו */
+.welcome-screen {
+  background: transparent;
+}
+.welcome-screen .auth-column {
+  justify-content: flex-start;
+  gap: 20px;
+}
+.welcome-screen .welcome-bottom {
+  margin-top: auto;
+}
+.welcome-features {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 20px rgba(15, 42, 71, 0.1);
+  color: var(--navy);
+  font-weight: 500;
+}
+.welcome-features .feature-icon {
+  color: var(--navy);
+  display: flex;
+  justify-content: center;
+}
+.welcome-screen .btn-secondary {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(15, 42, 71, 0.35);
+  color: var(--navy);
+}
+.welcome-screen .auth-footer-link a {
+  color: var(--navy);
+}
+@media (max-height: 700px) {
+  .welcome-screen .welcome-hero { padding-top: 0; }
+  .welcome-screen .welcome-logo { width: 56px; height: 56px; margin-bottom: 10px; }
+  .welcome-features { padding: 10px 12px; }
+}
+
+/* שורת קטגוריה: השם ממורכז למעלה, ומתחתיו שלושת הכפתורים ממורכזים */
+.category-row {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+.category-row .category-name {
+  display: block;
+  text-align: center;
+  font-weight: 600;
+}
+.category-row .category-actions {
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}

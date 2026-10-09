@@ -22,6 +22,7 @@ import {
   type LockMethod,
   type LockTiming,
 } from '../../domain/appLock';
+import { reloadedForLangChange } from '../../i18n/lang';
 import { verifyAccountPassword } from '../../services/accountService';
 import { loadLockConfig, patchLockConfig, hashSecret, verifySecret } from '../../services/appLockStorage';
 import { describeError } from '../../services/authErrors';
@@ -50,7 +51,7 @@ export function LockProvider({ user, children }: { user: User; children: ReactNo
   const [config, setConfig] = useState<LockConfig>(() => loadLockConfig(uid));
   // בהפעלה נועלים, אלא אם הסיסמה הוקלדה זה עתה בכניסה לחשבון.
   const [locked, setLocked] = useState(
-    () => lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now()),
+    () => !reloadedForLangChange && lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now()),
   );
   const configRef = useRef(config);
   configRef.current = config;
