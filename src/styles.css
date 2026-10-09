@@ -2803,3 +2803,22 @@ body,
 html[dir='ltr'] .month-nav {
   flex-direction: row-reverse;
 }
+
+/* שדה תאריך: הטקסט במרכז האנכי של המשבצת גם במסכים קטנים (אנדרואיד מעלה אותו למעלה) */
+input.input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
+  padding-block: 0;
+}
+input.input[type='date']::-webkit-date-and-time-value {
+  min-height: 1.4em;
+  text-align: start;
+  margin: 0;
+}
+input.input[type='date']::-webkit-datetime-edit,
+input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
