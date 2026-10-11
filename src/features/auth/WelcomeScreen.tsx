@@ -10,7 +10,7 @@ export function WelcomeScreen() {
       <div className="auth-column">
         <header className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true">
-            <Icon name="currency" size="1.6em" />
+            <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={88} height={88} draggable={false} />
           </div>
           <h1>ניהול כספים לעסק ולמשק הבית</h1>
           <p className="muted">הכול במקום אחד, כל חלק בנפרד וברור.</p>
