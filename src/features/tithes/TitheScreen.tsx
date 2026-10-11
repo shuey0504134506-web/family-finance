@@ -1,4 +1,5 @@
-import { Navigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
@@ -16,6 +17,7 @@ export function TitheScreen() {
   const settings = useSettings();
   const { nameOf } = useSpaces();
   const month = useMonth();
+  const [openRecipient, setOpenRecipient] = useState<string | null>(null);
   const { rows, recipients, loading, error, hasBusiness, hasHousehold } = useTitheRows(true);
 
   if (!hasHousehold) return <Navigate to="/" replace />;
@@ -133,18 +135,41 @@ export function TitheScreen() {
                 <p className="muted">עדיין לא נרשמו תשלומי מעשר.</p>
               ) : (
                 <ul className="tithe-months">
-                  {recipients.map((r) => (
-                    <li key={r.name || '__none__'}>
-                      <span>
-                        {r.name || 'ללא שם'}
-                        <span className="muted small">
-                          {' '}
-                          · {r.count} {r.count === 1 ? 'תשלום' : 'תשלומים'} · אחרון {formatDisplayDate(r.lastDate)}
-                        </span>
-                      </span>
-                      <Amount agorot={r.totalAgorot} />
-                    </li>
-                  ))}
+                  {recipients.map((r) => {
+                    const key = r.name || '__none__';
+                    const open = openRecipient === key;
+                    return (
+                      <li key={key} className="recipient">
+                        <button
+                          type="button"
+                          className="recipient-head"
+                          aria-expanded={open}
+                          onClick={() => setOpenRecipient(open ? null : key)}
+                        >
+                          <span>
+                            {r.name || 'ללא שם'}
+                            <span className="muted small">
+                              {' '}
+                              · {r.count} {r.count === 1 ? 'תשלום' : 'תשלומים'} · אחרון {formatDisplayDate(r.lastDate)}
+                            </span>
+                          </span>
+                          <Amount agorot={r.totalAgorot} />
+                        </button>
+                        {open && (
+                          <ul className="recipient-payments">
+                            {r.payments.map((p) => (
+                              <li key={p.id || p.date}>
+                                <Link to={`/${p.space}/edit/${p.id}`}>
+                                  <span>{formatDisplayDate(p.date)}</span>
+                                  <Amount agorot={p.amountAgorot} />
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               <p className="muted small">מצטבר מתחילת הנתונים ועד סוף {formatMonthYear(month.selected)}.</p>

@@ -196,9 +196,15 @@ export interface TitheRecipient {
   count: number;
   /** התאריך האחרון, YYYY-MM-DD */
   lastDate: string;
+  /** התשלומים עצמם, מהחדש לישן. space הוא מפתח המסך לעריכה (למשל household). */
+  payments: Array<{ id: string; date: string; amountAgorot: Agorot; space: string }>;
 }
 
-type RecipientTx = Pick<Transaction, 'type' | 'amountAgorot' | 'isTithePayment' | 'counterparty' | 'date'>;
+type RecipientTx = Pick<Transaction, 'type' | 'amountAgorot' | 'isTithePayment' | 'counterparty' | 'date'> & {
+  id?: string;
+  /** מפתח המסך שבו הפעולה נערכת */
+  space?: string;
+};
 
 /** למי ניתנו מעשרות: הוצאות מסומנות "תשלום מעשר", מקובצות לפי בית עסק, מהגדול לקטן. */
 export function titheRecipients(items: readonly RecipientTx[]): TitheRecipient[] {
@@ -207,11 +213,13 @@ export function titheRecipients(items: readonly RecipientTx[]): TitheRecipient[]
     if (t.type !== 'expense' || !t.isTithePayment) continue;
     const name = (t.counterparty ?? '').trim();
     const key = name.toLocaleLowerCase();
-    const row = map.get(key) ?? { name, totalAgorot: 0, count: 0, lastDate: '' };
+    const row = map.get(key) ?? { name, totalAgorot: 0, count: 0, lastDate: '', payments: [] };
     row.totalAgorot += t.amountAgorot;
     row.count += 1;
+    row.payments.push({ id: t.id ?? '', date: t.date, amountAgorot: t.amountAgorot, space: t.space ?? 'household' });
     if (t.date > row.lastDate) row.lastDate = t.date;
     map.set(key, row);
   }
+  for (const row of map.values()) row.payments.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   return [...map.values()].sort((a, b) => b.totalAgorot - a.totalAgorot || a.name.localeCompare(b.name, 'he'));
 }

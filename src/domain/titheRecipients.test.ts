@@ -23,3 +23,14 @@ describe('titheRecipients', () => {
     expect(r[0].totalAgorot).toBe(500);
   });
 });
+
+describe('titheRecipients: התשלומים של כל נמען', () => {
+  it('מחזיר את התשלומים מהחדש לישן עם מזהה ומסך', () => {
+    const r = titheRecipients([
+      { ...tx('גמח א', 1000, '2026-01-05'), id: 'a', space: 'household' },
+      { ...tx('גמח א', 2000, '2026-03-01'), id: 'b', space: 'business' },
+    ]);
+    expect(r[0].payments.map((p) => p.id)).toEqual(['b', 'a']);
+    expect(r[0].payments[0].space).toBe('business');
+  });
+});

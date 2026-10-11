@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { buildTitheInputs, titheByMonth, titheRecipients, type TitheMonthRow, type TitheRecipient } from '../../domain/tithe';
-import { businessIdOf } from '../../domain/spaces';
+import { businessIdOf, businessSpace } from '../../domain/spaces';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useReadyAuth } from '../auth/AuthContext';
@@ -50,7 +50,13 @@ export function useTitheRows(enabled: boolean): {
   );
 
   const recipients = useMemo(
-    () => titheRecipients([...household.items, ...(settings.countBusinessTithePayments ? countedBusinessItems : [])]),
+    () =>
+      titheRecipients([
+        ...household.items.map((t) => ({ ...t, space: 'household' })),
+        ...(settings.countBusinessTithePayments
+          ? countedBusinessItems.map((t) => ({ ...t, space: businessSpace(businessIdOf(t)).key }))
+          : []),
+      ]),
     [household.items, countedBusinessItems, settings.countBusinessTithePayments],
   );
 
