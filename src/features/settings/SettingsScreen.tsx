@@ -63,11 +63,9 @@ export function SettingsScreen() {
         </div>
 
         {isAdminEmail(user.email) ? (
-          <div className="acc-list">
-            <Link to="/admin" className="btn btn-outline">
-              ניהול מתקדם (מנהל)
-            </Link>
-          </div>
+          <Link to="/admin" className="btn btn-secondary">
+            ניהול מתקדם (מנהל)
+          </Link>
         ) : null}
 
         <p className="auth-footer-link">
