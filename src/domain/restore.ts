@@ -68,6 +68,12 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     if (!isCurrencyCode(raw.currency)) return null;
     d.currency = raw.currency;
   }
+  // שם אמצעי תשלום אישי: חובה כש-paymentMethod הוא 'other', ואסור בשאר.
+  if (raw.paymentLabel !== undefined) {
+    if (!isNonEmpty(raw.paymentLabel, 30)) return null;
+    d.paymentLabel = raw.paymentLabel;
+  }
+  if ((d.paymentMethod === 'other') !== (d.paymentLabel !== undefined)) return null;
   const ok =
     isNonEmpty(d.id, 100) &&
     (d.type === 'income' || d.type === 'expense') &&
@@ -76,7 +82,7 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     d.yearMonth === d.date.slice(0, 7) &&
     isInt(d.year) && isInt(d.month) && d.month >= 1 && d.month <= 12 &&
     isStr(d.counterparty, 120) && isNonEmpty(d.categoryId, 100) && isStr(d.categoryName, 60) &&
-    ['cash', 'credit', 'direct', 'check', 'transfer'].includes(d.paymentMethod as string) &&
+    ['cash', 'credit', 'direct', 'check', 'transfer', 'other'].includes(d.paymentMethod as string) &&
     isStr(d.note, 1000) &&
     (d.titheStatus === 'liable' || d.titheStatus === 'exempt') &&
     typeof d.isTithePayment === 'boolean' &&

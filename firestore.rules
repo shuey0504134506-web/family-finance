@@ -52,6 +52,16 @@ service cloud.firestore {
              && data.updatedAt is int;
     }
 
+    // ---------- אמצעי תשלום אישיים: users/{uid}/settings/paymentMethods ----------
+
+    function validPaymentMethods(data) {
+      return data.keys().hasOnly(['income', 'expense', 'updatedAt'])
+             && data.keys().hasAll(['income', 'expense', 'updatedAt'])
+             && data.income is list && data.income.size() <= 12
+             && data.expense is list && data.expense.size() <= 12
+             && data.updatedAt is int;
+    }
+
     // ---------- הגדרות: users/{uid}/settings/main ----------
 
     function validSettings(data) {
@@ -198,7 +208,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
                'counterparty', 'categoryId', 'categoryName', 'paymentMethod',
-               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId', 'currency'
+               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId', 'currency', 'paymentLabel'
              ])
              && data.keys().hasAll([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
@@ -220,7 +230,9 @@ service cloud.firestore {
              && isShortString(data.counterparty, 120)
              && isNonEmptyString(data.categoryId, 100)
              && isShortString(data.categoryName, 60)
-             && data.paymentMethod in ['cash', 'credit', 'direct', 'check', 'transfer']
+             && data.paymentMethod in ['cash', 'credit', 'direct', 'check', 'transfer', 'other']
+             && ((data.paymentMethod == 'other') == data.keys().hasAny(['paymentLabel']))
+             && (!data.keys().hasAny(['paymentLabel']) || isNonEmptyString(data.paymentLabel, 30))
              && isShortString(data.note, 1000)
              && data.titheStatus in ['liable', 'exempt']
              && data.isTithePayment is bool
@@ -243,8 +255,8 @@ service cloud.firestore {
       match /settings/{settingsId} {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
-                              && settingsId == 'main'
-                              && validSettings(request.resource.data);
+                              && ((settingsId == 'main' && validSettings(request.resource.data))
+                                  || (settingsId == 'paymentMethods' && validPaymentMethods(request.resource.data)));
         allow delete: if isOwner(uid);
       }
 

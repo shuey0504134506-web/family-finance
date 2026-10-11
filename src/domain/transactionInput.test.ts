@@ -13,6 +13,7 @@ const draft = (overrides: Partial<TransactionDraft> = {}): TransactionDraft => (
   counterparty: 'ספק',
   categoryId: 'business-expense-fuel',
   paymentMethod: 'credit',
+  paymentLabel: '',
   note: '',
   titheStatus: 'liable',
   isTithePayment: false,

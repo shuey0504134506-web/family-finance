@@ -4,7 +4,8 @@ import { Amount } from '../../components/Amount';
 import { currencyOf } from '../../domain/currency';
 import { PencilIcon, TrashIcon } from '../../components/icons';
 import { parseSpaceKey } from '../../domain/spaces';
-import { PAYMENT_METHOD_LABELS, type TransactionRecord } from '../../domain/types';
+import { paymentLabelOf } from '../../domain/payment';
+import type { TransactionRecord } from '../../domain/types';
 import { deleteTransaction } from '../../services/transactionService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useSyncNotice } from '../sync/SyncNotice';
@@ -116,7 +117,7 @@ export function TransactionList({
             <div className="txc-mid">
               <span className="txc-chips">
                 <span className="txc-chip">{item.categoryName}</span>
-                <span className="txc-chip">{PAYMENT_METHOD_LABELS[item.paymentMethod] ?? item.paymentMethod}</span>
+                <span className="txc-chip">{paymentLabelOf(item)}</span>
                 {item.isTithePayment ? <span className="txc-chip">מעשר</span> : null}
               </span>
               <Amount agorot={item.amountAgorot} currency={currencyOf(item)} className={isIncome ? 'tone-income' : 'tone-expense'} />

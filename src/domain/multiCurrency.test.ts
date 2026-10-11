@@ -42,7 +42,7 @@ describe('מטבע לכל פעולה', () => {
 
   const draft: TransactionDraft = {
     type: 'expense', amountText: '10', date: '2026-10-07', counterparty: '', categoryId: 'c',
-    paymentMethod: 'cash', note: '', titheStatus: 'liable', isTithePayment: false, currency: 'ILS',
+    paymentMethod: 'cash', paymentLabel: '', note: '', titheStatus: 'liable', isTithePayment: false, currency: 'ILS',
   };
   const ctx = { id: 'x', categoryName: 'c', now: 1 };
 

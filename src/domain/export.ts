@@ -1,6 +1,7 @@
 import { tr } from '../i18n/translate';
 import { currencyOf } from './currency';
-import { PAYMENT_METHOD_LABELS, type Scope, type Transaction } from './types';
+import { paymentLabelOf } from './payment';
+import type { Scope, Transaction } from './types';
 
 /** businessName: שם העסק (בפעולות עסק בלבד), כדי שבקובץ יהיה ברור לאיזה עסק הפעולה שייכת. */
 export type ExportTransaction = Transaction & { scope: Scope; businessName?: string };
@@ -40,7 +41,7 @@ export function transactionsToCsv(transactions: readonly ExportTransaction[]): s
         currencyOf(t),
         csvCell(t.counterparty),
         csvCell(t.categoryName),
-        csvCell(tr(PAYMENT_METHOD_LABELS[t.paymentMethod] ?? t.paymentMethod)),
+        csvCell(tr(paymentLabelOf(t))),
         csvCell(t.note),
         csvCell(tr(tithe)),
       ].join(','),

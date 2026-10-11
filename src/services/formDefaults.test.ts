@@ -6,8 +6,12 @@ describe('parseFormDefaults', () => {
     expect(parseFormDefaults(null)).toEqual({});
     expect(parseFormDefaults('{bad')).toEqual({});
   });
-  it('מקבל רק ערכים מוכרים', () => {
-    expect(parseFormDefaults('{"currency":"USD","paymentMethod":"credit"}')).toEqual({ currency: 'USD', paymentMethod: 'credit' });
-    expect(parseFormDefaults('{"currency":"BTC","paymentMethod":"gold"}')).toEqual({});
+  it('מקבל רק ערכים מוכרים, לכל מקרה בנפרד', () => {
+    expect(
+      parseFormDefaults('{"household.income":{"currency":"USD","payment":"transfer"},"business.expense":{"payment":"other:כרטיס חברה"},"business.income":{"currency":"BTC","payment":"gold"}}'),
+    ).toEqual({
+      'household.income': { currency: 'USD', payment: { method: 'transfer' } },
+      'business.expense': { payment: { method: 'other', label: 'כרטיס חברה' } },
+    });
   });
 });

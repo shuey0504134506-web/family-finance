@@ -1,6 +1,7 @@
 import { currencyOf, getCurrency, isCurrencyCode, type CurrencyCode } from './currency';
 import { isValidIsoDate, parseYearMonth, yearMonthOfDate } from './dates';
 import { DEFAULT_BUSINESS_ID } from './spaces';
+import { MAX_PAYMENT_LABEL } from './payment';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from './money';
 import {
   PAYMENT_METHOD_LABELS,
@@ -18,6 +19,8 @@ export interface TransactionDraft {
   counterparty: string;
   categoryId: string;
   paymentMethod: PaymentMethod;
+  /** רק כש-paymentMethod הוא 'other' */
+  paymentLabel: string;
   note: string;
   titheStatus: TitheStatus;
   isTithePayment: boolean;
@@ -65,6 +68,8 @@ export function validateDraft(
 
   if (!Object.prototype.hasOwnProperty.call(PAYMENT_METHOD_LABELS, draft.paymentMethod)) {
     errors.paymentMethod = 'יש לבחור אמצעי תשלום.';
+  } else if (draft.paymentMethod === 'other' && (!draft.paymentLabel.trim() || draft.paymentLabel.trim().length > MAX_PAYMENT_LABEL)) {
+    errors.paymentMethod = 'יש לבחור אמצעי תשלום.';
   }
 
   if (draft.counterparty.trim().length > MAX_COUNTERPARTY_LENGTH) {
@@ -109,6 +114,7 @@ export function buildTransaction(draft: TransactionDraft, context: BuildContext)
     categoryId: draft.categoryId,
     categoryName: context.categoryName,
     paymentMethod: draft.paymentMethod,
+    ...(draft.paymentMethod === 'other' ? { paymentLabel: draft.paymentLabel.trim() } : {}),
     note: draft.note.trim(),
     // הסימון "תשלום מעשר" רלוונטי להוצאות בלבד. בהכנסה הוא תמיד כבוי.
     titheStatus: draft.type === 'income' ? draft.titheStatus : 'liable',
@@ -133,6 +139,7 @@ export function draftFromTransaction(transaction: Transaction): TransactionDraft
     counterparty: transaction.counterparty,
     categoryId: transaction.categoryId,
     paymentMethod: transaction.paymentMethod,
+    paymentLabel: transaction.paymentLabel ?? '',
     note: transaction.note,
     titheStatus: transaction.titheStatus,
     isTithePayment: transaction.isTithePayment,

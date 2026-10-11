@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { readFormDefaults } from '../../services/formDefaults';
+import { useCustomMethods } from '../../hooks/useCustomMethods';
+import { choiceKey, choiceText, choicesFor, validateCustomMethod, type PaymentChoice } from '../../domain/payment';
+import { saveCustomMethods } from '../../services/paymentMethodsService';
+import { defaultsKey, readFormDefaults } from '../../services/formDefaults';
 import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencySymbol, getCurrency } from '../../domain/currency';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
@@ -15,8 +18,6 @@ import {
 } from '../../domain/transactionInput';
 import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
 import {
-  PAYMENT_METHOD_LABELS,
-  type PaymentMethod,
   type Transaction,
   type TransactionType,
 } from '../../domain/types';
@@ -52,6 +53,7 @@ function AddLoader({ space, type }: { space: Space; type: TransactionType }) {
   const month = useMonth();
   // המזהה נוצר פעם אחת בפתיחת הטופס: לחיצה כפולה או ניסיון חוזר לא יוצרים כפילות.
   const [id] = useState(newId);
+  const formDefault = useMemo(() => readFormDefaults()[defaultsKey(space.scope, type)] ?? {}, [space.scope, type]);
   const initial = useMemo<TransactionDraft>(
     () => ({
       type,
@@ -59,11 +61,12 @@ function AddLoader({ space, type }: { space: Space; type: TransactionType }) {
       date: month.selected === month.current ? todayIso() : `${month.selected}-01`,
       counterparty: '',
       categoryId: '',
-      paymentMethod: readFormDefaults().paymentMethod ?? 'cash',
+      paymentMethod: formDefault.payment?.method ?? 'cash',
+      paymentLabel: formDefault.payment?.label ?? '',
       note: '',
       titheStatus: 'liable',
       isTithePayment: false,
-      currency: readFormDefaults().currency ?? getCurrency(),
+      currency: formDefault.currency ?? getCurrency(),
     }),
     // ערכי ברירת המחדל נקבעים פעם אחת בפתיחה. שינוי חודש בזמן הקלדה לא יאפס את הטופס.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,6 +164,30 @@ function TransactionForm({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [categoryError, setCategoryError] = useState('');
 
+  // צורת תשלום / הכנסה: האפשרויות המובנות, אלה שהוספת, ובעריכה גם הערך השמור.
+  const custom = useCustomMethods(user.uid);
+  const [addingPayment, setAddingPayment] = useState(false);
+  const [newPayment, setNewPayment] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const paymentChoices = useMemo(
+    () => choicesFor(draft.type, custom[draft.type], { method: initial.paymentMethod, label: initial.paymentLabel }),
+    [draft.type, custom, initial.paymentMethod, initial.paymentLabel],
+  );
+  const selectPayment = (choice: PaymentChoice) =>
+    setDraft((d) => ({ ...d, paymentMethod: choice.method, paymentLabel: choice.label ?? '' }));
+  const onAddPayment = () => {
+    const problem = validateCustomMethod(newPayment, custom[draft.type], draft.type);
+    if (problem) return setPaymentError(problem);
+    const name = newPayment.trim();
+    saveCustomMethods(user.uid, { ...custom, [draft.type]: [...custom[draft.type], name] }).catch(() =>
+      reportFailure('לא הצלחנו לשמור את האמצעי החדש. יש לנסות שוב.'),
+    );
+    selectPayment({ method: 'other', label: name });
+    setNewPayment('');
+    setPaymentError('');
+    setAddingPayment(false);
+  };
+
   const options = useMemo(() => {
     const base = categories
       .filter(
@@ -228,7 +255,7 @@ function TransactionForm({
 
     const found = validateDraft(draft, options.map((c) => c.id));
     setErrors(found);
-    if (found.date || found.paymentMethod) setShowDetails(true);
+    if (found.date) setShowDetails(true);
     if (Object.keys(found).length > 0) return;
 
     const category = options.find((c) => c.id === draft.categoryId);
@@ -345,6 +372,71 @@ function TransactionForm({
           </div>
 
           <div className="field">
+            <span className="field-label" id="tx-payment-label">
+              {isIncome ? 'צורת הכנסה' : 'צורת תשלום'}
+            </span>
+            <div
+              className={`chip-group${errors.paymentMethod ? ' chip-group-error' : ''}`}
+              role="radiogroup"
+              aria-labelledby="tx-payment-label"
+            >
+              {paymentChoices.map((choice) => {
+                const active = choiceKey(choice) === choiceKey({ method: draft.paymentMethod, label: draft.paymentLabel });
+                return (
+                  <button
+                    key={choiceKey(choice)}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`chip-option${active ? ' is-active' : ''}`}
+                    onClick={() => selectPayment(choice)}
+                  >
+                    {choiceText(choice)}
+                  </button>
+                );
+              })}
+            </div>
+            {errors.paymentMethod && <div className="field-error">{errors.paymentMethod}</div>}
+            {addingPayment ? (
+              <div className="inline-add">
+                <input
+                  className={`input${paymentError ? ' input-error' : ''}`}
+                  aria-label="שם האמצעי החדש"
+                  autoFocus
+                  value={newPayment}
+                  onChange={(e) => setNewPayment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onAddPayment();
+                    }
+                  }}
+                />
+                {paymentError && <div className="field-error">{paymentError}</div>}
+                <div className="inline-add-actions">
+                  <button type="button" className="btn btn-primary" onClick={onAddPayment}>
+                    הוספה
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setAddingPayment(false);
+                      setPaymentError('');
+                    }}
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="link-btn" onClick={() => setAddingPayment(true)}>
+                <Icon name="plus" /> אמצעי חדש
+              </button>
+            )}
+          </div>
+
+          <div className="field">
             <label htmlFor="tx-note">הערה (לא חובה)</label>
             <textarea
               id="tx-note"
@@ -390,26 +482,6 @@ function TransactionForm({
                   onClick={() => update('currency', code)}
                 >
                   {CURRENCY_SYMBOLS[code]} {code}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="field">
-            <span className="field-label" id="tx-payment-label">
-              אמצעי תשלום
-            </span>
-            <div className="chip-group" role="radiogroup" aria-labelledby="tx-payment-label">
-              {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[]).map((method) => (
-                <button
-                  key={method}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.paymentMethod === method}
-                  className={`chip-option${draft.paymentMethod === method ? ' is-active' : ''}`}
-                  onClick={() => update('paymentMethod', method)}
-                >
-                  {PAYMENT_METHOD_LABELS[method]}
                 </button>
               ))}
             </div>

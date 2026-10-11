@@ -6,7 +6,7 @@ import { DEFAULT_CURRENCY, type CurrencyCode } from './currency';
 export type AccountMode = 'both' | 'business' | 'household';
 export type Scope = 'business' | 'household';
 export type TransactionType = 'income' | 'expense';
-export type PaymentMethod = 'cash' | 'credit' | 'direct' | 'check' | 'transfer';
+export type PaymentMethod = 'cash' | 'credit' | 'direct' | 'check' | 'transfer' | 'other';
 export type TitheStatus = 'liable' | 'exempt';
 
 /**
@@ -23,6 +23,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   direct: 'דיירקט',
   check: "צ'ק",
   transfer: 'העברה בנקאית',
+  other: 'אחר',
 };
 
 export interface UserProfile {
@@ -73,6 +74,8 @@ export interface Transaction {
   categoryId: string;
   categoryName: string;
   paymentMethod: PaymentMethod;
+  /** שם אמצעי התשלום כש-paymentMethod הוא 'other' (אמצעי שהמשתמש הוסיף). */
+  paymentLabel?: string;
   note: string;
   titheStatus: TitheStatus;
   /** האם הפעולה היא תשלום מעשר (רלוונטי להוצאות) */

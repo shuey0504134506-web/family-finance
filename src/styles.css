@@ -3174,3 +3174,31 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.5);
 }
+
+/* אמצעי תשלום אישיים ובלוקי ברירות מחדל */
+.defaults-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.custom-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.custom-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.chip-x {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  min-width: 24px;
+  min-height: 24px;
+}
