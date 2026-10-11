@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { FullScreenMessage } from '../../components/FullScreenMessage';
+import { Modal } from '../../components/Modal';
 import {
   ensureApprovalRequest,
   subscribeApproval,
@@ -26,6 +27,35 @@ function PayLink({ payment }: { payment: PaymentNotice }) {
     <a className="btn btn-primary" href={payment.url} target="_blank" rel="noopener noreferrer" onClick={() => suppressLock()}>
       מעבר לתשלום
     </a>
+  );
+}
+
+/** פס תזכורת בראש האפליקציה. לחיצה פותחת את דרישת התשלום המלאה. */
+function PaymentStrip({ payment }: { payment: PaymentNotice }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" className="payment-strip" onClick={() => setOpen(true)}>
+        <span className="payment-strip-text">
+          {`תשלום נדרש עד ${dateOnly(payment.dueAt)}`}
+          {payment.amountText ? ` · ${payment.amountText}` : ''}
+        </span>
+        <span className="payment-strip-more">לפרטים</span>
+      </button>
+      {open ? (
+        <Modal title="דרישת תשלום" onClose={() => setOpen(false)}>
+          <div className="stack">
+            {payment.amountText ? <p className="center-title">{payment.amountText}</p> : null}
+            <p className="muted">{`האפליקציה תינעל בסוף ${dateOnly(payment.dueAt)} אם התשלום לא יתקבל. הנתונים שלך נשמרים.`}</p>
+            {payment.message ? <p style={{ whiteSpace: 'pre-wrap' }}>{payment.message}</p> : null}
+            <PayLink payment={payment} />
+            <button type="button" className="btn btn-secondary" onClick={() => setOpen(false)}>
+              סגירה
+            </button>
+          </div>
+        </Modal>
+      ) : null}
+    </>
   );
 }
 
@@ -125,15 +155,7 @@ export function ApprovalGate({
   return (
     <>
       <UsageTracker uid={uid} />
-      {soon && payment ? (
-        <div className="payment-strip" role="status">
-          <span>
-            {`תשלום נדרש עד ${dateOnly(payment.dueAt)}`}
-            {payment.amountText ? ` · ${payment.amountText}` : ''}
-          </span>
-          <PayLink payment={payment} />
-        </div>
-      ) : null}
+      {soon && payment ? <PaymentStrip payment={payment} /> : null}
       {children}
     </>
   );

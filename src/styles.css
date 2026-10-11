@@ -3559,16 +3559,24 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 /* כפתור בלי מסגרת (למשל "ניהול מתקדם" בהגדרות) */
 .btn.btn-borderless { border-color: transparent; }
 
-/* פס תזכורת תשלום מעל האפליקציה (לפני מועד הנעילה) */
+/* פס תזכורת תשלום מעל האפליקציה (לפני מועד הנעילה). לחיצה פותחת את הדרישה המלאה. */
 .payment-strip {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 12px;
-  padding: 10px 16px;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 16px;
+  padding-top: calc(8px + var(--safe-top));
+  border: 0;
+  border-bottom: 1px solid #e6d28a;
   background: #fff4d6;
   color: #5c4300;
+  font: inherit;
   font-size: 14px;
+  text-align: start;
+  cursor: pointer;
 }
-.payment-strip .btn { min-height: 36px; padding: 4px 14px; width: auto; }
+.payment-strip-text { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.payment-strip-more { flex: 0 0 auto; text-decoration: underline; }

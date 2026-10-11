@@ -17,6 +17,7 @@ const join = (parent: unknown, segs: string[]): string => {
   return [base, ...segs].filter(Boolean).join('/');
 };
 export const initializeFirestore = () => ({});
+export const increment = (n: number) => n;
 export const persistentLocalCache = () => ({});
 export const persistentMultipleTabManager = () => ({});
 export const collection = (parent: unknown, ...segs: string[]): Ref => {
