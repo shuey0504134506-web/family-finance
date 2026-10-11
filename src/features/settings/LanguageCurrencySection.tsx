@@ -1,39 +1,7 @@
-import { useState } from 'react';
-import { CURRENCY_CODES, CURRENCY_SYMBOLS, type CurrencyCode } from '../../domain/currency';
 import { changeLang, getLang, type Lang } from '../../i18n/lang';
-import { saveSettings } from '../../services/accountService';
-import { useSyncNotice } from '../sync/SyncNotice';
-import { useReadyAuth } from '../auth/AuthContext';
-import { useSettings } from './SettingsContext';
 
-const CURRENCY_NAMES: Record<CurrencyCode, string> = {
-  ILS: 'שקל חדש',
-  USD: 'דולר אמריקאי',
-  EUR: 'אירו',
-  GBP: 'לירה שטרלינג',
-};
-
-/** שפת הממשק (במכשיר הזה) ומטבע התצוגה והחישוב (בחשבון). */
+/** שפת הממשק (במכשיר הזה), והסבר על בחירת המטבע בטופס. */
 export function LanguageCurrencySection() {
-  const { user } = useReadyAuth();
-  const settings = useSettings();
-  const { reportFailure } = useSyncNotice();
-  const [error, setError] = useState('');
-
-  const onCurrency = (currency: CurrencyCode) => {
-    setError('');
-    saveSettings(user.uid, {
-      titheBps: settings.titheBps,
-      countBusinessTithePayments: settings.countBusinessTithePayments,
-      businessTransferMode: settings.businessTransferMode,
-      currency,
-      annualMode: settings.annualMode,
-    }).catch(() => {
-      reportFailure('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.');
-      setError('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.');
-    });
-  };
-
   return (
     <form className="settings-form" onSubmit={(e) => e.preventDefault()} noValidate>
       <div className="field">
@@ -50,31 +18,11 @@ export function LanguageCurrencySection() {
         <div className="field-hint">נשמר במכשיר הזה בלבד. החלפת השפה מרעננת את האפליקציה.</div>
       </div>
 
-      <div className="field">
-        <label htmlFor="app-currency">מטבע</label>
-        <select
-          id="app-currency"
-          className="input"
-          value={settings.currency}
-          onChange={(e) => onCurrency(e.target.value as CurrencyCode)}
-        >
-          {CURRENCY_CODES.map((code) => (
-            <option key={code} value={code}>
-              {`${CURRENCY_SYMBOLS[code]} ${CURRENCY_NAMES[code]} (${code})`}
-            </option>
-          ))}
-        </select>
-        <div className="field-hint">
-          המטבע משמש בכל התצוגות והחישובים בחשבון. החלפת מטבע משנה רק את הסימן: סכומים שכבר נשמרו אינם
-          מומרים לפי שער.
-        </div>
-      </div>
+      <p className="muted small">
+        המטבע נבחר בכל הוספת הכנסה או הוצאה, בטופס עצמו. פעולות שכבר הוזנו נשארות במטבע שבו הוזנו. כשיש פעולות
+        ביותר ממטבע אחד, מופיע סיכום לפי מטבע, עם כפתור המרה לפי שער עדכני.
+      </p>
 
-      {error && (
-        <div className="form-error" role="alert">
-          {error}
-        </div>
-      )}
     </form>
   );
 }

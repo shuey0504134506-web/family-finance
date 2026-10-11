@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { currencySymbol } from '../../domain/currency';
+import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencySymbol, getCurrency } from '../../domain/currency';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { Icon } from '../../components/Icon';
@@ -62,6 +62,7 @@ function AddLoader({ space, type }: { space: Space; type: TransactionType }) {
       note: '',
       titheStatus: 'liable',
       isTithePayment: false,
+      currency: getCurrency(),
     }),
     // ערכי ברירת המחדל נקבעים פעם אחת בפתיחה. שינוי חודש בזמן הקלדה לא יאפס את הטופס.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,8 +257,28 @@ function TransactionForm({
       <ScreenHeader title={title} />
       <main className="content">
         <form className="card form-card" onSubmit={onSubmit} noValidate>
+          <div className="field">
+            <span className="field-label" id="tx-currency-label">
+              מטבע
+            </span>
+            <div className="chip-group" role="radiogroup" aria-labelledby="tx-currency-label">
+              {CURRENCY_CODES.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.currency === code}
+                  className={`chip-option${draft.currency === code ? ' is-active' : ''}`}
+                  onClick={() => update('currency', code)}
+                >
+                  {CURRENCY_SYMBOLS[code]} {code}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Field
-            label={`סכום (${currencySymbol()})`}
+            label={`סכום (${currencySymbol(draft.currency)})`}
             inputMode="decimal"
             autoComplete="off"
             autoFocus={!existing}

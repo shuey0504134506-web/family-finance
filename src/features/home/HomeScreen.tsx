@@ -1,3 +1,4 @@
+import { MultiCurrencySummary } from '../../components/MultiCurrencySummary';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
@@ -151,6 +152,14 @@ export function HomeScreen() {
           onOpenIncome={() => navigate(`/${space.key}/list/income`)}
           onOpenExpense={() => navigate(`/${space.key}/list/expense`)}
         />
+
+        {!loading && !active.error && month.status !== 'future' && (
+          <MultiCurrencySummary
+            items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
+            primaryIncomeAgorot={totals.incomeAgorot}
+            primaryExpenseAgorot={totals.expenseAgorot}
+          />
+        )}
 
         {month.status !== 'future' && !active.error && (
           <div className="add-actions">

@@ -32,7 +32,7 @@ export function SettingsScreen() {
             <PurposeSection />
           </AccordionItem>
 
-          <AccordionItem id="lang" title="שפה ומטבע" open={openId === 'lang'} onToggle={toggle}>
+          <AccordionItem id="lang" title="שפה" open={openId === 'lang'} onToggle={toggle}>
             <LanguageCurrencySection />
           </AccordionItem>
 

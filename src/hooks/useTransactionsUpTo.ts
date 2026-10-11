@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { isPrimaryCurrency } from '../domain/currency';
 import type { YearMonth } from '../domain/dates';
 import type { Scope, TransactionRecord } from '../domain/types';
 import { subscribeTransactionsUpTo } from '../services/transactionService';
 
-/** כל ההיסטוריה עד סוף החודש הנבחר, בזמן אמת. */
+const EMPTY: TransactionRecord[] = [];
+
+/**
+ * כל ההיסטוריה עד סוף החודש הנבחר, בזמן אמת.
+ * items = רק המטבע הראשי (לחישובים); all = כל הפעולות.
+ */
 export function useTransactionsUpTo(
   uid: string,
   scope: Scope,
   yearMonth: YearMonth,
   enabled: boolean,
-): { items: TransactionRecord[]; loading: boolean; error: Error | null } {
+): { items: TransactionRecord[]; all: TransactionRecord[]; loading: boolean; error: Error | null } {
   const key = `${scope}|${yearMonth}`;
   const [state, setState] = useState<{
     key: string;
@@ -29,8 +35,11 @@ export function useTransactionsUpTo(
   }, [uid, scope, yearMonth, enabled, key]);
 
   const isCurrent = state.key === key;
+  const all = isCurrent ? state.items : EMPTY;
+  const items = useMemo(() => all.filter(isPrimaryCurrency), [all]);
   return {
-    items: isCurrent ? state.items : [],
+    items,
+    all,
     loading: enabled && !isCurrent,
     error: isCurrent ? state.error : null,
   };

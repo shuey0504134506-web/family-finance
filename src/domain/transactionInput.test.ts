@@ -16,6 +16,7 @@ const draft = (overrides: Partial<TransactionDraft> = {}): TransactionDraft => (
   note: '',
   titheStatus: 'liable',
   isTithePayment: false,
+  currency: 'ILS',
   ...overrides,
 });
 

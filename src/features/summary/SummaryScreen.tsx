@@ -1,3 +1,4 @@
+import { MultiCurrencySummary } from '../../components/MultiCurrencySummary';
 import { useMemo, useState } from 'react';
 import { Amount } from '../../components/Amount';
 import { useLocation } from 'react-router-dom';
@@ -77,6 +78,11 @@ export function SummaryScreen() {
   );
 
   const scopeItems = scope === 'business' ? businessForCalc : household.items;
+  const currentMonthSet = useMemo(() => new Set<string>(currentMonths), [currentMonths]);
+  const allScopeItems = useMemo(
+    () => (scope === 'business' ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all),
+    [scope, business.all, household.all, space.businessId],
+  );
   const names = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const categoryName = (id: string) => names.get(id) ?? scopeItems.find((t) => t.categoryId === id)?.categoryName ?? 'אחר';
   const expenseShares = useMemo(
@@ -181,6 +187,12 @@ export function SummaryScreen() {
                 </div>
               </dl>
             </section>
+
+            <MultiCurrencySummary
+              items={allScopeItems.filter((t) => currentMonthSet.has(t.yearMonth))}
+              primaryIncomeAgorot={totals.incomeAgorot}
+              primaryExpenseAgorot={totals.expenseAgorot}
+            />
 
             <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />
             <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={categoryName} tone="income" />

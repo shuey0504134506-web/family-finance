@@ -77,6 +77,8 @@ export interface Transaction {
   titheStatus: TitheStatus;
   /** האם הפעולה היא תשלום מעשר (רלוונטי להוצאות) */
   isTithePayment: boolean;
+  /** מטבע הפעולה. חסר = המטבע הראשי של החשבון (כך נשמרו כל הפעולות עד היום). */
+  currency?: CurrencyCode;
   createdAt: number;
   updatedAt: number;
   /** באיזה עסק נרשמה הפעולה. חסר = העסק הראשון (נתונים שנשמרו לפני שנוספה תמיכה בכמה עסקים). */

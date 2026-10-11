@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { isPrimaryCurrency } from '../domain/currency';
 import type { YearMonth } from '../domain/dates';
 import type { Scope, TransactionRecord } from '../domain/types';
 import { subscribeMonthTransactions } from '../services/transactionService';
 
 interface Result {
+  /** רק פעולות במטבע הראשי: אלה שנכנסות לסיכומים, לתקציב ולמעשרות. */
   items: TransactionRecord[];
+  /** כל הפעולות, בכל מטבע (לרשימות ולסיכום לפי מטבע). */
+  all: TransactionRecord[];
   loading: boolean;
   error: Error | null;
   retry: () => void;
 }
+
+const EMPTY: TransactionRecord[] = [];
 
 /**
  * פעולות של חודש אחד בזמן אמת. כשהחודש או התחום משתנים, ההאזנה הקודמת
@@ -40,8 +46,11 @@ export function useMonthTransactions(
   }, [uid, scope, yearMonth, enabled, key, attempt]);
 
   const isCurrent = state.key === key;
+  const all = isCurrent ? state.items : EMPTY;
+  const items = useMemo(() => all.filter(isPrimaryCurrency), [all]);
   return {
-    items: isCurrent ? state.items : [],
+    items,
+    all,
     loading: enabled && !isCurrent,
     error: isCurrent ? state.error : null,
     retry: () => {

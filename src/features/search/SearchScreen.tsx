@@ -1,6 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
+import { currencyOf } from '../../domain/currency';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { formatMonthYear } from '../../domain/dates';
 import { searchTransactions } from '../../domain/search';
@@ -41,14 +42,14 @@ export function SearchScreen() {
   const all = useMemo<ScopedTx[]>(() => {
     const visible = new Set(spaces.map((s) => s.key));
     return [
-      ...business.items.map((t) => ({
+      ...business.all.map((t) => ({
         ...t,
         scope: 'business' as const,
         spaceKey: businessSpace(t.businessId ?? '').key,
       })),
-      ...household.items.map((t) => ({ ...t, scope: 'household' as const, spaceKey: HOUSEHOLD_SPACE.key })),
+      ...household.all.map((t) => ({ ...t, scope: 'household' as const, spaceKey: HOUSEHOLD_SPACE.key })),
     ].filter((t) => visible.has(t.spaceKey));
-  }, [business.items, household.items, spaces]);
+  }, [business.all, household.all, spaces]);
 
   const results = useMemo(
     () =>
@@ -171,7 +172,7 @@ export function SearchScreen() {
                           {item.note ? ` · ${item.note}` : ''}
                         </span>
                       </span>
-                      <Amount agorot={item.amountAgorot} className={isIncome ? 'tone-income' : 'tone-expense'} />
+                      <Amount agorot={item.amountAgorot} currency={currencyOf(item)} className={isIncome ? 'tone-income' : 'tone-expense'} />
                     </button>
                   </li>
                 );

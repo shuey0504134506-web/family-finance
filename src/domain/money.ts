@@ -1,4 +1,4 @@
-import { currencySymbol, getCurrency } from './currency';
+import { currencySymbol, getCurrency, type CurrencyCode } from './currency';
 
 /**
  * כסף באפליקציה = מספר שלם של אגורות. אין חישובי floating point על סכומים.
@@ -67,6 +67,8 @@ export function parseShekelsToAgorot(input: string): Agorot | null {
 }
 
 export interface FormatOptions {
+  /** מטבע להצגה. ברירת מחדל: המטבע הראשי של החשבון. */
+  currency?: CurrencyCode;
   /** auto = אגורות רק כשיש; always = תמיד שתי ספרות */
   fraction?: 'auto' | 'always';
 }
@@ -91,10 +93,11 @@ export function formatAgorotNumber(agorot: Agorot, options: FormatOptions = {}):
  */
 export function formatShekels(agorot: Agorot, options: FormatOptions = {}): string {
   const number = formatAgorotNumber(agorot, options);
-  if (getCurrency() === 'ILS') return `${number}\u00A0${currencySymbol()}`;
+  const code = options.currency ?? getCurrency();
+  if (code === 'ILS') return `${number}\u00A0${currencySymbol(code)}`;
   return number.startsWith('-')
-    ? `-${currencySymbol()}${number.slice(1)}`
-    : `${currencySymbol()}${number}`;
+    ? `-${currencySymbol(code)}${number.slice(1)}`
+    : `${currencySymbol(code)}${number}`;
 }
 
 /**

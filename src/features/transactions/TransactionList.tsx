@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
+import { currencyOf } from '../../domain/currency';
 import { PencilIcon, TrashIcon } from '../../components/icons';
 import { parseSpaceKey } from '../../domain/spaces';
 import { PAYMENT_METHOD_LABELS, type TransactionRecord } from '../../domain/types';
@@ -118,7 +119,7 @@ export function TransactionList({
                 <span className="txc-chip">{PAYMENT_METHOD_LABELS[item.paymentMethod] ?? item.paymentMethod}</span>
                 {item.isTithePayment ? <span className="txc-chip">מעשר</span> : null}
               </span>
-              <Amount agorot={item.amountAgorot} className={isIncome ? 'tone-income' : 'tone-expense'} />
+              <Amount agorot={item.amountAgorot} currency={currencyOf(item)} className={isIncome ? 'tone-income' : 'tone-expense'} />
             </div>
             {item.note ? <div className="txc-note">{item.note}</div> : null}
             {item.pendingSync ? (

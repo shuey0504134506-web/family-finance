@@ -198,7 +198,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
                'counterparty', 'categoryId', 'categoryName', 'paymentMethod',
-               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId'
+               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId', 'currency'
              ])
              && data.keys().hasAll([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
@@ -224,6 +224,7 @@ service cloud.firestore {
              && isShortString(data.note, 1000)
              && data.titheStatus in ['liable', 'exempt']
              && data.isTithePayment is bool
+             && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
              && data.createdAt is int
              && data.updatedAt is int
              && validOptionalBusinessId(data);

@@ -34,6 +34,7 @@ export function TitheScreen() {
         <h1 className="scope-title">
           <Icon name="tithe" /> מעשרות
         </h1>
+        <p className="muted small">במעשרות נספרות רק פעולות במטבע הראשי. פעולות במטבע אחר אינן נכללות.</p>
 
         {error ? (
           <div className="card error-card" role="alert">

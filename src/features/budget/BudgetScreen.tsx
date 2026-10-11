@@ -168,6 +168,7 @@ function BudgetContent({ space }: { space: Space }) {
     <div className={`app-shell scope-${scope}`}>
       <ScreenHeader title={`תקציב · ${nameOf(space)}`} />
       <main className="content" aria-busy={loading}>
+        <p className="muted small">בתקציב נספרות רק פעולות במטבע הראשי. פעולות במטבע אחר אינן נכללות.</p>
         <div className="segmented" role="group" aria-label="סוג תקציב">
           {(
             [

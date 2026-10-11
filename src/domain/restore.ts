@@ -63,6 +63,11 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
   if (!isObj(raw)) return null;
   const d = pick(raw, TX_KEYS);
   if (!d) return null;
+  // מטבע אופציונלי: חסר = המטבע הראשי. ערך לא מוכר פוסל את הפעולה.
+  if (raw.currency !== undefined) {
+    if (!isCurrencyCode(raw.currency)) return null;
+    d.currency = raw.currency;
+  }
   const ok =
     isNonEmpty(d.id, 100) &&
     (d.type === 'income' || d.type === 'expense') &&

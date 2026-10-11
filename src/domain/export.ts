@@ -1,5 +1,5 @@
 import { tr } from '../i18n/translate';
-import { currencySymbol } from './currency';
+import { currencyOf } from './currency';
 import { PAYMENT_METHOD_LABELS, type Scope, type Transaction } from './types';
 
 /** businessName: שם העסק (בפעולות עסק בלבד), כדי שבקובץ יהיה ברור לאיזה עסק הפעולה שייכת. */
@@ -21,7 +21,7 @@ export function agorotToPlain(agorot: number): string {
   return `${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
-const header = () => ['תחום', 'סוג', 'תאריך', `סכום (${currencySymbol()})`, 'ספק / לקוח', 'קטגוריה', 'אמצעי תשלום', 'הערה', 'מעשר'].map(tr);
+const header = () => ['תחום', 'סוג', 'תאריך', 'סכום', 'מטבע', 'ספק / לקוח', 'קטגוריה', 'אמצעי תשלום', 'הערה', 'מעשר'].map(tr);
 
 /** כל הפעולות כ-CSV, מהישן לחדש. השורה הראשונה היא כותרות. */
 export function transactionsToCsv(transactions: readonly ExportTransaction[]): string {
@@ -37,6 +37,7 @@ export function transactionsToCsv(transactions: readonly ExportTransaction[]): s
         csvCell(tr(t.type === 'income' ? 'הכנסה' : 'הוצאה')),
         t.date,
         agorotToPlain(t.amountAgorot),
+        currencyOf(t),
         csvCell(t.counterparty),
         csvCell(t.categoryName),
         csvCell(tr(PAYMENT_METHOD_LABELS[t.paymentMethod] ?? t.paymentMethod)),

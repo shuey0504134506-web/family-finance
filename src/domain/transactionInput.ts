@@ -1,3 +1,4 @@
+import { currencyOf, getCurrency, isCurrencyCode, type CurrencyCode } from './currency';
 import { isValidIsoDate, parseYearMonth, yearMonthOfDate } from './dates';
 import { DEFAULT_BUSINESS_ID } from './spaces';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from './money';
@@ -20,6 +21,7 @@ export interface TransactionDraft {
   note: string;
   titheStatus: TitheStatus;
   isTithePayment: boolean;
+  currency: CurrencyCode;
 }
 
 export type DraftField = 'amount' | 'date' | 'counterparty' | 'category' | 'paymentMethod' | 'note';
@@ -47,6 +49,10 @@ export function validateDraft(
     errors.amount = 'הסכום חייב להיות גדול מאפס.';
   } else if (amount > MAX_TRANSACTION_AGOROT) {
     errors.amount = 'הסכום גדול מדי.';
+  }
+
+  if (!isCurrencyCode(draft.currency)) {
+    errors.amount = errors.amount ?? 'יש לבחור מטבע.';
   }
 
   if (!isValidIsoDate(draft.date)) {
@@ -109,6 +115,8 @@ export function buildTransaction(draft: TransactionDraft, context: BuildContext)
     isTithePayment: draft.type === 'expense' ? draft.isTithePayment : false,
     createdAt: context.createdAt ?? context.now,
     updatedAt: context.now,
+    // מטבע ראשי נשמר בלי שדה (כמו נתונים ישנים); רק מטבע אחר נשמר במפורש.
+    ...(draft.currency !== getCurrency() ? { currency: draft.currency } : {}),
     // העסק הראשון נשמר בלי מזהה (כמו נתונים ישנים). עסק נוסף נשמר עם מזהה.
     ...(context.businessId && context.businessId !== DEFAULT_BUSINESS_ID ? { businessId: context.businessId } : {}),
   };
@@ -128,5 +136,6 @@ export function draftFromTransaction(transaction: Transaction): TransactionDraft
     note: transaction.note,
     titheStatus: transaction.titheStatus,
     isTithePayment: transaction.isTithePayment,
+    currency: currencyOf(transaction),
   };
 }

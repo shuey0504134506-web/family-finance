@@ -1,3 +1,4 @@
+import { CURRENCY_NAMES, foreignTotals, isPrimaryCurrency } from '../../domain/currency';
 import { useMemo } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
@@ -46,12 +47,13 @@ function Content({ type }: { type: TransactionType }) {
 
   const items = useMemo(
     () =>
-      main.items.filter(
+      main.all.filter(
         (t) => t.type === type && (scope === 'household' || businessIdOf(t) === space.businessId),
       ),
-    [main.items, type, scope, space.businessId],
+    [main.all, type, scope, space.businessId],
   );
-  const ownTotal = useMemo(() => totalsOf(items), [items]);
+  const ownTotal = useMemo(() => totalsOf(items.filter(isPrimaryCurrency)), [items]);
+  const foreign = useMemo(() => foreignTotals(items), [items]);
   const fromBusiness = useMemo(() => {
     if (!needsBusinessNet) return 0;
     const counted = new Set(countedIds);
@@ -97,6 +99,16 @@ function Content({ type }: { type: TransactionType }) {
                 <span>סך הכול</span>
                 <Amount agorot={total} className={isIncome ? 'tone-income' : 'tone-expense'} />
               </div>
+              {foreign.map((f) => (
+                <div className="row-between" key={f.currency}>
+                  <span className="muted">ובמטבע {CURRENCY_NAMES[f.currency]}</span>
+                  <Amount
+                    agorot={isIncome ? f.incomeAgorot : f.expenseAgorot}
+                    currency={f.currency}
+                    className={isIncome ? 'tone-income' : 'tone-expense'}
+                  />
+                </div>
+              ))}
             </section>
 
             <button

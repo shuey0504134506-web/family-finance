@@ -3119,3 +3119,42 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
 .cmp-table tbody th {
   z-index: 1;
 }
+
+/* ---------- סיכום לפי מטבע ---------- */
+.mc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mc-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mc-name {
+  font-weight: 600;
+}
+.mc-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 0.95rem;
+}
+.mc-legend {
+  margin-top: 6px;
+}
+.mc-convert {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mc-result {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
