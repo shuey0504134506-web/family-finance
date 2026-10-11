@@ -3538,3 +3538,7 @@ a.btn,
 @media (max-width: 400px) { .chip-with-x .chip-main { min-height: 40px; padding-inline-start: 12px; padding-inline-end: 4px; } }
 .category-dialog-name { margin: 0 0 4px; font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
 .dialog-actions .btn { margin: 0; }
+
+/* אזורי לחיצה גדולים יותר (לפחות ~40px) בלי לשנות את המראה */
+.home-clean .quick-link { padding: 10px 0; margin: -10px 0; }
+a[href$="/privacy"] { display: inline-block; padding: 10px 6px; }

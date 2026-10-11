@@ -231,8 +231,13 @@ function TransactionForm({
       )
       .map((c) => ({ id: c.id, name: c.name }));
     const known = new Set(base.map((c) => c.id));
-    return [...base, ...added.filter((c) => !known.has(c.id))];
-  }, [categories, space, draft.type, existing?.categoryId, added]);
+    // פעולה ישנה שהקטגוריה שלה נמחקה: נשארת זמינה בעריכה בשמה השמור, כדי שלא יידרש לבחור מחדש
+    const orphan =
+      existing && existing.type === draft.type && !categories.some((c) => c.id === existing.categoryId)
+        ? [{ id: existing.categoryId, name: existing.categoryName }]
+        : [];
+    return [...base, ...orphan, ...added.filter((c) => !known.has(c.id) && !orphan.some((o) => o.id === c.id))];
+  }, [categories, space, draft.type, existing, added]);
 
   // הקטגוריה האחרונה שבה השתמשו בסוג הזה מופיעה ראשונה (בלי לבחור אותה מראש)
   const lastKey = `ff.lastCategory.v1.${space.key}.${draft.type}`;

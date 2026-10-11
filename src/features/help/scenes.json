@@ -99,7 +99,7 @@
    "h": 0.0688
   },
   "settings-manage": {
-   "img": "0bdb80701d.webp",
+   "img": "71d8fc0a83.webp",
    "x": 0.0361,
    "y": 0.4734,
    "w": 0.9278,
@@ -120,7 +120,7 @@
    "h": 0.0719
   },
   "settings-mode": {
-   "img": "0bdb80701d.webp",
+   "img": "71d8fc0a83.webp",
    "x": 0.0361,
    "y": 0.1969,
    "w": 0.9278,
@@ -323,14 +323,14 @@
    "h": 0.0719
   },
   "settings-security": {
-   "img": "5ead2ec8cb.webp",
+   "img": "295a79796e.webp",
    "x": 0.0361,
-   "y": 0.5783,
+   "y": 0.5471,
    "w": 0.9278,
    "h": 0.0906
   },
   "lock-pin": {
-   "img": "b2fdb8e96d.webp",
+   "img": "94a5d8f9ae.webp",
    "x": 0.8417,
    "y": 0.4828,
    "w": 0.0611,
@@ -393,7 +393,7 @@
    "h": 0.0625
   },
   "settings-defaults": {
-   "img": "0bdb80701d.webp",
+   "img": "71d8fc0a83.webp",
    "x": 0.0361,
    "y": 0.2891,
    "w": 0.9278,
@@ -414,7 +414,7 @@
    "h": 0.0719
   },
   "defaults-custom-name": {
-   "img": "52daed84e0.webp",
+   "img": "4b59ccd743.webp",
    "x": 0.0972,
    "y": 0.4634,
    "w": 0.8056,
@@ -437,14 +437,14 @@
    "h": 0.0719
   },
   "exp-amount": {
-   "img": "56a05cc9eb.webp",
+   "img": "ef6518dba3.webp",
    "x": 0.0694,
    "y": 0.1645,
    "w": 0.8611,
    "h": 0.0719
   },
   "exp-name": {
-   "img": "f05910243e.webp",
+   "img": "e2a2886c12.webp",
    "x": 0.0694,
    "y": 0.2898,
    "w": 0.8611,
@@ -528,7 +528,7 @@
    "h": 0.0688
   },
   "settings-manage": {
-   "img": "f333152920.webp",
+   "img": "d2a3231bda.webp",
    "x": 0.0361,
    "y": 0.4734,
    "w": 0.9278,
@@ -549,7 +549,7 @@
    "h": 0.0719
   },
   "settings-mode": {
-   "img": "f333152920.webp",
+   "img": "d2a3231bda.webp",
    "x": 0.0361,
    "y": 0.1969,
    "w": 0.9278,
@@ -654,7 +654,7 @@
    "h": 0.0906
   },
   "tithe-recipients": {
-   "img": "8ab55ca995.webp",
+   "img": "ce93a62783.webp",
    "x": 0.0694,
    "y": 0.4807,
    "w": 0.8611,
@@ -745,21 +745,21 @@
    "h": 0.0688
   },
   "manage-backup": {
-   "img": "9b5ee09af8.webp",
+   "img": "c819db8718.webp",
    "x": 0.0972,
    "y": 0.4633,
    "w": 0.8056,
    "h": 0.0719
   },
   "settings-security": {
-   "img": "c11260ebd1.webp",
+   "img": "8607b174e7.webp",
    "x": 0.0361,
-   "y": 0.5777,
+   "y": 0.5476,
    "w": 0.9278,
    "h": 0.0906
   },
   "lock-pin": {
-   "img": "4526b53920.webp",
+   "img": "c4fc9dbc7e.webp",
    "x": 0.0972,
    "y": 0.4828,
    "w": 0.0611,
@@ -780,7 +780,7 @@
    "h": 0.0906
   },
   "lang-select": {
-   "img": "066cdce276.webp",
+   "img": "d8a4fa4e6e.webp",
    "x": 0.0972,
    "y": 0.5191,
    "w": 0.8056,
@@ -822,7 +822,7 @@
    "h": 0.0625
   },
   "settings-defaults": {
-   "img": "f333152920.webp",
+   "img": "d2a3231bda.webp",
    "x": 0.0361,
    "y": 0.2891,
    "w": 0.9278,
@@ -836,16 +836,16 @@
    "h": 0.0719
   },
   "defaults-custom": {
-   "img": "01c32a59cf.webp",
+   "img": "b604f97c7f.webp",
    "x": 0.0972,
-   "y": 0.4634,
+   "y": 0.4645,
    "w": 0.8056,
    "h": 0.0719
   },
   "defaults-custom-name": {
-   "img": "e0f67a0bb7.webp",
+   "img": "10ff965d04.webp",
    "x": 0.0972,
-   "y": 0.4634,
+   "y": 0.4645,
    "w": 0.8056,
    "h": 0.0719
   },
