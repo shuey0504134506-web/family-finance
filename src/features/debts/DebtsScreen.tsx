@@ -17,7 +17,7 @@ import {
 import { formatDisplayDate, todayIso } from '../../domain/dates';
 import { parseShekelsToAgorot } from '../../domain/money';
 import { choiceKey, choiceText, choicesFor, parseChoiceKey, paymentLabelOf } from '../../domain/payment';
-import { inSpace } from '../../domain/spaces';
+import { DEFAULT_BUSINESS_ID, inSpace } from '../../domain/spaces';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
 import { useDebts } from '../../hooks/useDebts';
 import { deleteDebt, saveDebt } from '../../services/debtService';
@@ -341,7 +341,7 @@ function DebtForm({
     const debt: Debt = {
       id,
       scope,
-      ...(spaceBusinessId && scope === 'business' ? { businessId: spaceBusinessId } : {}),
+      ...(spaceBusinessId && scope === 'business' && spaceBusinessId !== DEFAULT_BUSINESS_ID ? { businessId: spaceBusinessId } : {}),
       direction,
       name: name.trim(),
       amountAgorot: amount,
