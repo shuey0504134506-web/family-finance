@@ -244,8 +244,13 @@ exports.adminSetPayment = onCall({ region: REGION }, async (request) => {
 /** מספר החשבונות שממתינים לאישור (קריאה זולה, להצגת תג ליד הכפתור בהגדרות). */
 exports.adminPendingCount = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
-  const pending = await count(admin.firestore().collection('approvals').where('status', '==', 'pending'));
-  return { pending };
+  const db = admin.firestore();
+  const [pending, messages, answered] = await Promise.all([
+    count(db.collection('approvals').where('status', '==', 'pending')),
+    count(db.collection('messages')),
+    count(db.collection('messages').where('repliedAt', '>', 0)),
+  ]);
+  return { pending, unanswered: Math.max(0, messages - answered) };
 });
 
 /**
@@ -262,7 +267,12 @@ exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, asy
   }
   const db = admin.firestore();
   await db.recursiveDelete(db.collection('users').doc(uid));
-  await Promise.all([db.collection('approvals').doc(uid).delete(), db.collection('usage').doc(uid).delete()]);
+  const msgs = await db.collection('messages').where('uid', '==', uid).get();
+  await Promise.all([
+    db.collection('approvals').doc(uid).delete(),
+    db.collection('usage').doc(uid).delete(),
+    ...msgs.docs.map((d) => d.ref.delete()),
+  ]);
   await admin.auth().deleteUser(uid);
   return { ok: true };
 });
@@ -307,4 +317,61 @@ exports.adminSendNotice = onCall({ region: REGION, timeoutSeconds: 120 }, async 
     await batch.commit();
   }
   return { sent: docs.length };
+});
+
+async function emailsFor(uids) {
+  const out = new Map();
+  for (let i = 0; i < uids.length; i += 100) {
+    const res = await admin.auth().getUsers(uids.slice(i, i + 100).map((uid) => ({ uid })));
+    res.users.forEach((u) => out.set(u.uid, u.email ?? ''));
+  }
+  return out;
+}
+
+/** הודעות ממשתמשים (200 האחרונות), עם האימייל של השולח. */
+exports.adminListMessages = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const snap = await admin.firestore().collection('messages').orderBy('createdAt', 'desc').limit(200).get();
+  const emails = await emailsFor([...new Set(snap.docs.map((d) => d.data().uid))]);
+  return {
+    messages: snap.docs.map((d) => {
+      const m = d.data();
+      return {
+        id: d.id,
+        uid: m.uid,
+        email: emails.get(m.uid) ?? '',
+        text: m.text ?? '',
+        createdAt: m.createdAt ?? 0,
+        reply: m.reply ?? '',
+        repliedAt: m.repliedAt ?? null,
+      };
+    }),
+  };
+});
+
+/** מענה להודעה: נשמר בהודעה, ובנוסף קופץ אצל המשתמש כשהוא פותח את האפליקציה. */
+exports.adminReplyMessage = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { id, text } = request.data ?? {};
+  const reply = typeof text === 'string' ? text.trim().slice(0, 1000) : '';
+  if (typeof id !== 'string' || !id || !reply) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const db = admin.firestore();
+  const ref = db.collection('messages').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'ההודעה לא נמצאה.');
+  const now = Date.now();
+  await ref.update({ reply, repliedAt: now });
+  await db.collection('approvals').doc(snap.data().uid).set(
+    { notice: { id: `reply-${id}-${now}`, title: 'תשובה מהמנהל', text: reply, createdAt: now } },
+    { merge: true },
+  );
+  return { ok: true };
+});
+
+exports.adminDeleteMessage = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { id } = request.data ?? {};
+  if (typeof id !== 'string' || !id) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  await admin.firestore().collection('messages').doc(id).delete();
+  return { ok: true };
 });

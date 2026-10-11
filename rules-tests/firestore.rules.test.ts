@@ -457,4 +457,18 @@ describe('אישור חשבונות', () => {
     await seed('carol', 'blocked');
     await assertFails(setDoc(doc(as('carol'), 'usage/carol'), { days: {}, updatedAt: 5 }));
   });
+
+  it('הודעות למנהל: מאושר או ממתין שולחים בשמם בלבד, וקוראים רק את שלהם', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'messages/m1'), { uid: 'alice', text: 'שלום', createdAt: 5 }));
+    await assertFails(setDoc(doc(alice(), 'messages/m2'), { uid: 'bob', text: 'שלום', createdAt: 5 }));
+    await assertFails(setDoc(doc(alice(), 'messages/m3'), { uid: 'alice', text: '', createdAt: 5 }));
+    await assertFails(setDoc(doc(alice(), 'messages/m4'), { uid: 'alice', text: 'x', createdAt: 5, reply: 'מזויף' }));
+    await assertSucceeds(getDoc(doc(alice(), 'messages/m1')));
+    await assertFails(getDoc(doc(bob(), 'messages/m1')));
+    await assertFails(updateDoc(doc(alice(), 'messages/m1'), { text: 'שינוי' }));
+    await seed('carol', 'pending');
+    await assertSucceeds(setDoc(doc(as('carol'), 'messages/m5'), { uid: 'carol', text: 'שלום', createdAt: 5 }));
+    await seed('dave', 'blocked');
+    await assertFails(setDoc(doc(as('dave'), 'messages/m6'), { uid: 'dave', text: 'שלום', createdAt: 5 }));
+  });
 });

@@ -80,9 +80,33 @@ export async function setPaymentRequest(uid: string, payment: PaymentRequest | n
 }
 
 /** מספר החשבונות הממתינים לאישור (לתג בהגדרות). */
-export async function loadPendingCount(): Promise<number> {
-  const result = await httpsCallable<void, { pending: number }>(functions(), 'adminPendingCount')();
-  return result.data.pending;
+export async function loadPendingCount(): Promise<{ pending: number; unanswered: number }> {
+  const result = await httpsCallable<void, { pending: number; unanswered: number }>(functions(), 'adminPendingCount')();
+  return result.data;
+}
+
+export interface AdminMessage {
+  id: string;
+  uid: string;
+  email: string;
+  text: string;
+  createdAt: number;
+  reply: string;
+  repliedAt: number | null;
+}
+
+export async function loadAdminMessages(): Promise<AdminMessage[]> {
+  const result = await httpsCallable<void, { messages: AdminMessage[] }>(functions(), 'adminListMessages')();
+  return result.data.messages;
+}
+
+/** מענה להודעה. התשובה גם קופצת אצל המשתמש. */
+export async function replyToMessage(id: string, text: string): Promise<void> {
+  await httpsCallable(functions(), 'adminReplyMessage')({ id, text });
+}
+
+export async function deleteMessage(id: string): Promise<void> {
+  await httpsCallable(functions(), 'adminDeleteMessage')({ id });
 }
 
 /** מחיקה סופית של חשבון וכל הנתונים שלו. */

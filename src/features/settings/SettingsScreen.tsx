@@ -22,12 +22,19 @@ import { PasswordForm } from './SecuritySection';
 export function SettingsScreen() {
   const { user } = useReadyAuth();
   const [pending, setPending] = useState(0);
+  const [unanswered, setUnanswered] = useState(0);
   const isAdmin = isAdminEmail(user.email);
   useEffect(() => {
     if (!isAdmin) return;
     loadPendingCount()
-      .then(setPending)
-      .catch(() => setPending(0));
+      .then((r) => {
+        setPending(r.pending);
+        setUnanswered(r.unanswered);
+      })
+      .catch(() => {
+        setPending(0);
+        setUnanswered(0);
+      });
   }, [isAdmin]);
   const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
@@ -73,7 +80,9 @@ export function SettingsScreen() {
 
         {isAdminEmail(user.email) ? (
           <Link to="/admin" className="btn btn-secondary btn-borderless">
-            {pending > 0 ? `ניהול מתקדם (מנהל) · ${pending} ממתינים לאישור` : 'ניהול מתקדם (מנהל)'}
+            {['ניהול מתקדם (מנהל)', pending > 0 ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '']
+              .filter(Boolean)
+              .join(' · ')}
           </Link>
         ) : null}
 

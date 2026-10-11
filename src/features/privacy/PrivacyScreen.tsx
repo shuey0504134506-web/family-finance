@@ -1,3 +1,4 @@
+import { ContactAdmin } from './ContactAdmin';
 import { suppressLock } from '../../services/lockSuppress';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, PRIVACY_CONTACT_EMAIL, PRIVACY_CONTACT_PHONE } from '../../config/appInfo';
@@ -102,6 +103,14 @@ export function PrivacyScreen() {
           כל הזכויות שמורות לעורכי האפליקציה. אין להעתיק, להפיץ, לשכפל, לשנות או לעשות שימוש מסחרי
           באפליקציה, בעיצובה או בתכניה, כולם או חלקם, ללא קבלת הסכמה מראש ובכתב.
         </p>
+
+        <h2>פנייה למנהל האפליקציה</h2>
+        <p>
+          דרך נוספת ליצירת קשר: משתמש מחובר יכול לשלוח הודעה ישירות למנהל האפליקציה, גם בנושאי
+          פרטיות. ההודעה נקראת על ידי המנהל בלבד ונשמרת יחד עם כתובת האימייל של השולח, כדי שאפשר יהיה
+          להשיב. התשובה מוצגת כאן וגם קופצת כשפותחים את האפליקציה.
+        </p>
+        <ContactAdmin />
       </main>
     </div>
   );

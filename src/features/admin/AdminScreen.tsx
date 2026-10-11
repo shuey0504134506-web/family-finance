@@ -5,6 +5,10 @@ import { isAdminEmail } from '../../config/admin';
 import {
   approveExistingAccounts,
   deleteAccountByAdmin,
+  deleteMessage,
+  loadAdminMessages,
+  replyToMessage,
+  type AdminMessage,
   loadAdminOverview,
   setAccountStatus,
   sendNotice,
@@ -164,6 +168,95 @@ function NoticeForm({
         <button type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>ביטול</button>
       </div>
     </div>
+  );
+}
+
+function Messages() {
+  const [list, setList] = useState<AdminMessage[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    loadAdminMessages()
+      .then((m) => {
+        setList(m);
+        setError(null);
+      })
+      .catch(() => setError('לא הצלחנו לטעון את ההודעות.'));
+  }, []);
+  useEffect(load, [load]);
+
+  const send = async (m: AdminMessage) => {
+    if (!draft.trim()) return;
+    setBusy(true);
+    try {
+      await replyToMessage(m.id, draft.trim());
+      setReplyId(null);
+      setDraft('');
+      load();
+    } catch {
+      setError('המענה לא נשלח. יש לנסות שוב.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (m: AdminMessage) => {
+    setBusy(true);
+    try {
+      await deleteMessage(m.id);
+      load();
+    } catch {
+      setError('המחיקה נכשלה.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const open = list?.filter((m) => !m.reply).length ?? 0;
+  return (
+    <section className="card" aria-label="הודעות ממשתמשים">
+      <h2 className="card-title">הודעות ממשתמשים{list ? ` (${open} ללא מענה)` : ''}</h2>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      {list && list.length === 0 ? <p className="muted">אין הודעות.</p> : null}
+      <ul className="tx-list" aria-label="הודעות">
+        {(list ?? []).map((m) => (
+          <li key={m.id} className="txc">
+            <div className="txc-top">
+              <span className="txc-title" dir="ltr">{m.email || m.uid}</span>
+            </div>
+            <div className="txc-note">{dateTime(m.createdAt)}</div>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+            {m.reply ? (
+              <div className="txc-note" style={{ whiteSpace: 'pre-wrap' }}>
+                {`עניתי (${dateTime(m.repliedAt)}): ${m.reply}`}
+              </div>
+            ) : null}
+            {replyId === m.id ? (
+              <div className="stack">
+                <label className="field-label" htmlFor={`reply-${m.id}`}>תשובה (קופצת אצל המשתמש)</label>
+                <textarea id={`reply-${m.id}`} className="input" rows={3} maxLength={1000} value={draft} onChange={(e) => setDraft(e.target.value)} />
+                <div className="form-actions">
+                  <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void send(m)}>שליחת תשובה</button>
+                  <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => setReplyId(null)}>ביטול</button>
+                </div>
+              </div>
+            ) : (
+              <div className="form-actions">
+                <button type="button" className="btn btn-outline" onClick={() => { setReplyId(m.id); setDraft(''); }}>
+                  {m.reply ? 'מענה נוסף' : 'מענה'}
+                </button>
+                <button type="button" className="btn btn-outline" disabled={busy} onClick={() => void remove(m)}>
+                  מחיקה
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -347,6 +440,8 @@ function AdminContent() {
                 {loading ? 'מרענן…' : 'רענון'}
               </button>
             </section>
+
+            <Messages />
 
             <ul className="tx-list" aria-label="חשבונות">
               {data.users.map((u) => (

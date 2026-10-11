@@ -79,6 +79,12 @@ export const setDoc = async (r: Ref, data: Data, options?: { merge?: boolean }) 
   store.set(r.path, options?.merge ? { ...(store.get(r.path) ?? {}), ...clone(data) } : clone(data));
   notify();
 };
+export const addDoc = async (col: Ref, data: Data) => {
+  const id = `m${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  store.set(`${col.path}/${id}`, clone(data));
+  notify();
+  return { id };
+};
 export const updateDoc = async (r: Ref, data: Data) => {
   store.set(r.path, { ...(store.get(r.path) ?? {}), ...clone(data) });
   notify();

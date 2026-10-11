@@ -59,6 +59,20 @@ service cloud.firestore {
       allow read, delete: if false;
     }
 
+    // הודעות ממשתמש למנהל: messages/{id} = {uid, text, createdAt}. המשתמש יוצר וקורא את שלו בלבד.
+    // המנהל קורא ועונה דרך פונקציות השרת (התשובה נכתבת שם: reply, repliedAt). חסום לא יכול לשלוח.
+    // גם חשבון שננעל לתשלום או ממתין לאישור יכול לפנות למנהל.
+    match /messages/{messageId} {
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['uid', 'text', 'createdAt'])
+                    && request.resource.data.uid == request.auth.uid
+                    && isNonEmptyString(request.resource.data.text, 2000)
+                    && request.resource.data.createdAt is int
+                    && get(approvalPath(request.auth.uid)).data.status in ['approved', 'pending'];
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /approvals/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)
