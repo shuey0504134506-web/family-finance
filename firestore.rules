@@ -18,6 +18,33 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    // ---------- אישור חשבונות ----------
+    // approvals/{uid} = {status: 'pending' | 'approved' | 'blocked'}.
+    // המשתמש יכול רק ליצור בקשה (pending) לעצמו. את האישור והחסימה כותבות רק פונקציות השרת של המנהל.
+    // חשבון בלי רשומה, ממתין או חסום: אין קריאה של נתונים. ממתין: מותרת כתיבה של רשומות ההרשמה בלבד.
+
+    function approvalPath(uid) {
+      return /databases/$(database)/documents/approvals/$(uid);
+    }
+
+    function isReader(uid) {
+      // בלי רשומה, get מחזיר ריק והבדיקה נכשלת: סגור כברירת מחדל
+      return isOwner(uid) && get(approvalPath(uid)).data.status == 'approved';
+    }
+
+    function isWriter(uid) {
+      return isOwner(uid) && get(approvalPath(uid)).data.status in ['approved', 'pending'];
+    }
+
+    match /approvals/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+                    && request.resource.data.keys().hasOnly(['status', 'createdAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+
     function isShortString(value, maxLength) {
       return value is string && value.size() <= maxLength;
     }
@@ -301,125 +328,125 @@ service cloud.firestore {
     // ---------- הנתיבים ----------
 
     match /users/{uid} {
-      allow read: if isOwner(uid);
-      allow create: if isOwner(uid) && validUser(request.resource.data);
-      allow update: if isOwner(uid)
+      allow read: if isWriter(uid);
+      allow create: if isWriter(uid) && validUser(request.resource.data);
+      allow update: if isWriter(uid)
                     && validUser(request.resource.data)
                     && request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if isOwner(uid);
+      allow delete: if isWriter(uid);
 
       match /settings/{settingsId} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
                               && ((settingsId == 'main' && validSettings(request.resource.data))
                                   || (settingsId == 'paymentMethods' && validPaymentMethods(request.resource.data))
                                   || (settingsId == 'debtCategories' && validDebtCategories(request.resource.data))
                                   || (settingsId.matches('logo_.{1,64}') && validLogo(request.resource.data)));
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /businessProfile/{profileId} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
                               && profileId == 'main'
                               && validProfileDoc(request.resource.data);
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /householdProfile/{profileId} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
                               && profileId == 'main'
                               && validProfileDoc(request.resource.data);
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /businesses/{businessId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validBusiness(request.resource.data, businessId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validBusiness(request.resource.data, businessId);
+        allow update: if isWriter(uid)
                       && validBusiness(request.resource.data, businessId)
                       && request.resource.data.createdAt == resource.data.createdAt;
         // עסקים לא נמחקים מהאפליקציה (רק מוסתרים במכשיר). המחיקה מותרת בעת מחיקת חשבון.
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /categories/{categoryId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validCategory(request.resource.data, categoryId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validCategory(request.resource.data, categoryId);
+        allow update: if isWriter(uid)
                       && validCategory(request.resource.data, categoryId)
                       && request.resource.data.createdAt == resource.data.createdAt;
         // מחיקה מותרת לבעלים. פעולות קיימות שומרות את שם הקטגוריה בתוכן הפעולה,
         // ולכן ההיסטוריה והסיכומים לא נפגעים.
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /businessTransactions/{transactionId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validTransaction(request.resource.data, transactionId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validTransaction(request.resource.data, transactionId);
+        allow update: if isWriter(uid)
                       && validTransaction(request.resource.data, transactionId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /householdTransactions/{transactionId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validTransaction(request.resource.data, transactionId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validTransaction(request.resource.data, transactionId);
+        allow update: if isWriter(uid)
                       && validTransaction(request.resource.data, transactionId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       // תמונות מצורפות לפעולה (קבלה, תלוש): מסמך אחד לכל פעולה, עד שלוש תמונות.
       match /attachments/{transactionId} {
-        allow read: if isOwner(uid);
-        allow create, update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
                               && request.resource.data.keys().hasOnly(['images', 'updatedAt'])
                               && request.resource.data.keys().hasAll(['images', 'updatedAt'])
                               && request.resource.data.images is list
                               && request.resource.data.images.size() >= 1
                               && request.resource.data.images.size() <= 3
                               && request.resource.data.updatedAt is int;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /debts/{debtId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validDebt(request.resource.data, debtId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validDebt(request.resource.data, debtId);
+        allow update: if isWriter(uid)
                       && validDebt(request.resource.data, debtId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /budgets/{budgetId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validBudget(request.resource.data, budgetId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validBudget(request.resource.data, budgetId);
+        allow update: if isWriter(uid)
                       && validBudget(request.resource.data, budgetId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /tasks/{taskId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validTask(request.resource.data, taskId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validTask(request.resource.data, taskId);
+        allow update: if isWriter(uid)
                       && validTask(request.resource.data, taskId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
 
       match /shoppingItems/{itemId} {
-        allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validShoppingItem(request.resource.data, itemId);
-        allow update: if isOwner(uid)
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validShoppingItem(request.resource.data, itemId);
+        allow update: if isWriter(uid)
                       && validShoppingItem(request.resource.data, itemId)
                       && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if isOwner(uid);
+        allow delete: if isWriter(uid);
       }
     }
 

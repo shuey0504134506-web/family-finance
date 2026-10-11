@@ -1,6 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { FullScreenMessage } from './components/FullScreenMessage';
 import { useAuth } from './features/auth/AuthContext';
+import { ApprovalGate } from './features/auth/ApprovalGate';
 import { CompleteSetupScreen } from './features/auth/CompleteSetupScreen';
 import { ForgotPasswordScreen } from './features/auth/ForgotPasswordScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
@@ -45,22 +46,30 @@ function RequireAccount() {
     case 'signedOut':
       // מכשיר שכבר השתמש בחשבון נכנס ישר למסך הכניסה, מכשיר חדש למסך הפתיחה.
       return <Navigate to={readDeviceUser() ? '/login' : '/welcome'} replace />;
-    case 'checking':
-      return (
+    case 'checking': {
+      const waiting = (
         <FullScreenMessage title="ממתין לחיבור">
-          <p className="muted">
-            לא הצלחנו לאמת את החשבון מול השרת. יש לבדוק את החיבור לאינטרנט. האפליקציה תמשיך
-            אוטומטית כשהחיבור יחזור.
-          </p>
-          <button type="button" className="btn btn-secondary" onClick={() => void signOutUser()}>
-            יציאה
-          </button>
-        </FullScreenMessage>
+              <p className="muted">
+                לא הצלחנו לאמת את החשבון מול השרת. יש לבדוק את החיבור לאינטרנט. האפליקציה תמשיך
+                אוטומטית כשהחיבור יחזור.
+              </p>
+              <button type="button" className="btn btn-secondary" onClick={() => void signOutUser()}>
+                יציאה
+              </button>
+            </FullScreenMessage>
       );
+      // חשבון חסום לא יכול לקרוא את הפרופיל, ולכן גם כאן בודקים אישור
+      return (
+        <ApprovalGate uid={state.user.uid} whileLoading={waiting}>
+          {waiting}
+        </ApprovalGate>
+      );
+    }
     case 'needsSetup':
       return <CompleteSetupScreen />;
     case 'ready':
       return (
+        <ApprovalGate uid={state.user.uid} whileLoading={<LoadingScreen />}>
         <SettingsProvider uid={state.user.uid}>
           <LockProvider user={state.user}>
             <SpacesProvider uid={state.user.uid} profile={state.profile}>
@@ -74,6 +83,7 @@ function RequireAccount() {
             </SpacesProvider>
           </LockProvider>
         </SettingsProvider>
+        </ApprovalGate>
       );
   }
 }

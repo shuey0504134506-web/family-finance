@@ -7,7 +7,7 @@ interface Ref { __kind: 'doc' | 'col'; path: string; id: string }
 interface Constraint { kind: 'where' | 'orderBy' | 'limit'; field?: string; op?: string; value?: unknown; dir?: string; n?: number }
 interface Query { __kind: 'query'; col: string; constraints: Constraint[] }
 
-const store = new Map<string, Data>();
+const store = new Map<string, Data>([['approvals/demo', { status: 'approved', createdAt: 1 }]]);
 const listeners = new Set<() => void>();
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const notify = () => queueMicrotask(() => listeners.forEach((l) => l()));

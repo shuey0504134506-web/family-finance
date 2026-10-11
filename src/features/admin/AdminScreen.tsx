@@ -2,7 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { isAdminEmail } from '../../config/admin';
-import { loadAdminOverview, type AdminOverview, type UsageLevel } from '../../services/adminService';
+import {
+  approveExistingAccounts,
+  loadAdminOverview,
+  setAccountStatus,
+  type AdminOverview,
+  type AdminUserRow,
+  type ApprovalStatus,
+  type UsageLevel,
+} from '../../services/adminService';
 import { useReadyAuth } from '../auth/AuthContext';
 
 const USAGE_LABEL: Record<UsageLevel, string> = {
@@ -10,6 +18,13 @@ const USAGE_LABEL: Record<UsageLevel, string> = {
   medium: 'שימוש בינוני',
   low: 'שימוש נמוך',
   idle: 'לא פעיל',
+};
+
+const STATUS_LABEL: Record<ApprovalStatus, string> = {
+  approved: 'מאושר',
+  pending: 'ממתין לאישור',
+  blocked: 'חסום',
+  none: 'בלי החלטה',
 };
 
 function dateTime(ms: number | null): string {
@@ -33,6 +48,11 @@ function AdminContent() {
   const [data, setData] = useState<AdminOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busyUid, setBusyUid] = useState<string | null>(null);
+  const [confirmBlock, setConfirmBlock] = useState<string | null>(null);
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -52,6 +72,32 @@ function AdminContent() {
   }, []);
 
   useEffect(load, [load]);
+
+  const change = async (row: AdminUserRow, status: 'approved' | 'pending' | 'blocked') => {
+    setBusyUid(row.uid);
+    setActionError(null);
+    setConfirmBlock(null);
+    try {
+      await setAccountStatus(row.uid, status);
+      load();
+    } catch {
+      setActionError('הפעולה נכשלה. יש לבדוק חיבור ולנסות שוב.');
+    } finally {
+      setBusyUid(null);
+    }
+  };
+
+  const approveAll = async () => {
+    setConfirmAll(false);
+    setActionError(null);
+    try {
+      const n = await approveExistingAccounts();
+      setNotice(`אושרו ${n} חשבונות.`);
+      load();
+    } catch {
+      setActionError('הפעולה נכשלה. יש לבדוק חיבור ולנסות שוב.');
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -79,7 +125,32 @@ function AdminContent() {
                 <div><dt>נכנסו בחודש</dt><dd>{data.totals.active30d}</dd></div>
                 <div><dt>חשבונות חדשים בשבוע</dt><dd>{data.totals.newLast7d}</dd></div>
                 <div><dt>חסומים</dt><dd>{data.totals.disabled}</dd></div>
+                <div><dt>ממתינים לאישור</dt><dd>{data.totals.pending}</dd></div>
+                <div><dt>בלי החלטה (קיימים)</dt><dd>{data.totals.undecided}</dd></div>
               </dl>
+              {data.totals.pending + data.totals.undecided > 0 && (
+                <div className="stack">
+                  {confirmAll ? (
+                    <div className="form-actions" role="alertdialog" aria-label="אישור">
+                      <p className="muted small">
+                        לאשר את כל החשבונות הממתינים והקיימים בלי החלטה? חשבונות חסומים לא ישתנו.
+                      </p>
+                      <button type="button" className="btn btn-primary" onClick={() => void approveAll()}>
+                        כן, לאשר הכול
+                      </button>
+                      <button type="button" className="btn btn-secondary" onClick={() => setConfirmAll(false)}>
+                        ביטול
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn btn-secondary" onClick={() => setConfirmAll(true)}>
+                      אישור כל החשבונות הקיימים
+                    </button>
+                  )}
+                </div>
+              )}
+              {notice ? <p className="muted small" role="status">{notice}</p> : null}
+              {actionError ? <p className="form-error" role="alert">{actionError}</p> : null}
               {data.truncated ? <p className="muted small">מוצגים 1,000 החשבונות הראשונים בלבד.</p> : null}
               <p className="muted small">עודכן ב-{dateTime(data.generatedAt)}. מוצגים מספרים כלליים בלבד, בלי סכומים ובלי תוכן הפעולות.</p>
               <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
@@ -96,7 +167,7 @@ function AdminContent() {
                   <div className="txc-mid">
                     <span className="txc-chips">
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
-                      {u.disabled ? <span className="txc-chip">חסום</span> : null}
+                      <span className="txc-chip">{STATUS_LABEL[u.status]}</span>
                     </span>
                   </div>
                   <div className="txc-note">
@@ -105,6 +176,36 @@ function AdminContent() {
                   <div className="txc-note">
                     פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון
                   </div>
+                  {isAdminEmail(u.email) ? null : confirmBlock === u.uid ? (
+                    <div className="txc-confirm" role="alertdialog" aria-label="אישור חסימה">
+                      <span>לחסום את החשבון? המשתמש ינותק ולא יוכל להיכנס.</span>
+                      <span className="txc-confirm-actions">
+                        <button type="button" className="btn btn-danger" onClick={() => void change(u, 'blocked')}>
+                          כן, לחסום
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={() => setConfirmBlock(null)}>
+                          ביטול
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="form-actions">
+                      {u.status !== 'approved' && u.status !== 'blocked' && (
+                        <button type="button" className="btn btn-primary" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>
+                          אישור
+                        </button>
+                      )}
+                      {u.status === 'blocked' ? (
+                        <button type="button" className="btn btn-secondary" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>
+                          ביטול חסימה
+                        </button>
+                      ) : (
+                        <button type="button" className="btn btn-outline" disabled={busyUid === u.uid} onClick={() => setConfirmBlock(u.uid)}>
+                          חסימה
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

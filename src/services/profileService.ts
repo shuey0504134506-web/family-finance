@@ -2,6 +2,7 @@ import { DEFAULT_ANNUAL_MODE, isAnnualMode } from '../domain/annual';
 import { DEFAULT_CURRENCY, isCurrencyCode } from '../domain/currency';
 import { doc, onSnapshot, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { ensureApprovalRequest } from './approvalService';
 import { buildBusinessCategories, buildDefaultCategories } from '../data/defaultCategories';
 import { DEFAULT_BUSINESS_ID } from '../domain/spaces';
 import {
@@ -29,6 +30,8 @@ export interface NewAccountInput {
  * בטוחה להרצה חוזרת: המזהים קבועים, ולכן אין כפילויות.
  */
 export async function createUserRecords(uid: string, input: NewAccountInput): Promise<void> {
+  // בקשת האישור חייבת להיכתב לפני שאר הרשומות: כללי Firestore בודקים אותה בכל כתיבה
+  await ensureApprovalRequest(uid);
   const now = Date.now();
   const batch = writeBatch(db);
   const userRef = doc(db, 'users', uid);

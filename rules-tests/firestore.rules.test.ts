@@ -30,6 +30,12 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await env.clearFirestore();
+  // כל הבדיקות הרגילות מניחות חשבונות שאושרו על ידי המנהל
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    for (const uid of ['alice', 'bob']) {
+      await setDoc(doc(ctx.firestore(), `approvals/${uid}`), { status: 'approved', createdAt: 1 });
+    }
+  });
 });
 
 const alice = () => env.authenticatedContext('alice').firestore();
@@ -365,5 +371,54 @@ describe('כמה עסקים', () => {
 
   it('פעולה בלי מזהה עסק (נתון ישן) עדיין מתקבלת', async () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice/businessTransactions/old'), transaction({}, 'old')));
+  });
+});
+
+describe('אישור חשבונות', () => {
+  const as = (uid: string) => env.authenticatedContext(uid).firestore();
+  const seed = (uid: string, status: string) =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `approvals/${uid}`), { status, createdAt: 1 });
+    });
+
+  it('משתמש חדש יכול ליצור בקשה ממתינה לעצמו בלבד', async () => {
+    await assertSucceeds(setDoc(doc(as('carol'), 'approvals/carol'), { status: 'pending', createdAt: 5 }));
+    await assertFails(setDoc(doc(as('dave'), 'approvals/carol2'), { status: 'pending', createdAt: 5 }));
+  });
+
+  it('אי אפשר ליצור בקשה כבר מאושרת, או לשנות אותה', async () => {
+    await assertFails(setDoc(doc(as('carol'), 'approvals/carol'), { status: 'approved', createdAt: 5 }));
+    await assertFails(updateDoc(doc(alice(), 'approvals/alice'), { status: 'approved' }));
+    await assertFails(deleteDoc(doc(alice(), 'approvals/alice')));
+  });
+
+  it('משתמש קורא רק את הרשומה של עצמו', async () => {
+    await assertSucceeds(getDoc(doc(alice(), 'approvals/alice')));
+    await assertFails(getDoc(doc(bob(), 'approvals/alice')));
+  });
+
+  it('בלי רשומת אישור אין גישה לנתונים', async () => {
+    await assertFails(setDoc(doc(as('carol'), 'users/carol'), userProfile));
+    await assertFails(getDoc(doc(as('carol'), 'users/carol')));
+  });
+
+  it('ממתין: יכול לכתוב את רשומות ההרשמה ולקרוא את הפרופיל, אבל לא נתונים', async () => {
+    await seed('carol', 'pending');
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol'), userProfile));
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol')));
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1'), transaction()));
+    await assertFails(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
+    await assertFails(getDocs(collectionGroup(as('carol'), 'householdTransactions')));
+  });
+
+  it('חסום: אין קריאה ואין כתיבה', async () => {
+    await seed('carol', 'blocked');
+    await assertFails(setDoc(doc(as('carol'), 'users/carol'), userProfile));
+    await assertFails(getDoc(doc(as('carol'), 'users/carol')));
+  });
+
+  it('מאושר: גישה מלאה', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/householdTransactions/tx1'), transaction()));
+    await assertSucceeds(getDoc(doc(alice(), 'users/alice/householdTransactions/tx1')));
   });
 });
