@@ -588,7 +588,7 @@ function TransactionForm({
             </label>
           )}
 
-          <AttachmentsField images={attachments} onChange={setAttachments} loading={attLoading} failed={attFailed} />
+          <AttachmentsField images={attachments} onChange={setAttachments} loading={attLoading} failed={attFailed} isIncome={isIncome} />
 
             </div>
           )}

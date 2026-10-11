@@ -9,11 +9,14 @@ export function AttachmentsField({
   onChange,
   loading,
   failed,
+  isIncome,
 }: {
   images: string[];
   onChange: (images: string[]) => void;
   loading: boolean;
   failed: boolean;
+  /** הכנסה: "תלוש או אסמכתה". הוצאה: "קבלה או חשבונית". */
+  isIncome: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
@@ -38,7 +41,7 @@ export function AttachmentsField({
 
   return (
     <div className="field attachments">
-      <span className="field-label">קבלה או תלוש (תמונה, לא חובה)</span>
+      <span className="field-label">{isIncome ? 'תלוש או אסמכתה (תמונה, לא חובה)' : 'קבלה או חשבונית (תמונה, לא חובה)'}</span>
       {loading ? (
         <div className="muted small" role="status">
           טוען תמונות…

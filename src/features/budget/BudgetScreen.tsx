@@ -16,7 +16,7 @@ import { formatMonthYear } from '../../domain/dates';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from '../../domain/money';
 import { totalsByCategory } from '../../domain/summary';
 import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
-import type { Budget, TransactionRecord } from '../../domain/types';
+import type { Budget, Category, TransactionRecord } from '../../domain/types';
 import { useBudgets } from '../../hooks/useBudgets';
 import { useAnnualPeriod } from '../../hooks/useAnnualPeriod';
 import { useCategories } from '../../hooks/useCategories';
@@ -99,15 +99,28 @@ function BudgetContent({ space }: { space: Space }) {
     () => [...expenseByCategory.values()].reduce((a, b) => a + b, 0),
     [expenseByCategory],
   );
-  const rows = useMemo(
-    () =>
-      buildBudgetRowsFromMap(
-        categories.filter((c) => inSpace(c, space)),
-        view.byCategory,
-        expenseByCategory,
-      ),
-    [categories, space, view.byCategory, expenseByCategory],
-  );
+  const rows = useMemo(() => {
+    const own = categories.filter((c) => inSpace(c, space));
+    // הוצאות בקטגוריה שנמחקה: מופיעות כשורה בשם שנשמר בפעולה, כדי שהסכום לא ייעלם מהמסך
+    const known = new Set(own.map((c) => c.id));
+    const orphans: Category[] = [];
+    for (const t of periodItems) {
+      if (t.type !== 'expense' || known.has(t.categoryId)) continue;
+      known.add(t.categoryId);
+      orphans.push({
+        id: t.categoryId,
+        scope,
+        type: 'expense',
+        name: t.categoryName,
+        active: true,
+        isDefault: false,
+        sortOrder: Number.MAX_SAFE_INTEGER,
+        createdAt: 0,
+        updatedAt: 0,
+      });
+    }
+    return buildBudgetRowsFromMap([...own, ...orphans], view.byCategory, expenseByCategory);
+  }, [categories, space, scope, periodItems, view.byCategory, expenseByCategory]);
   const categoriesUsed = useMemo(() => {
     let used = 0;
     for (const row of rows) if (row.usage) used += row.usedAgorot;

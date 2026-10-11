@@ -162,3 +162,43 @@ describe('parseBackup: כמה עסקים', () => {
     expect(plan({ currency: 'XXX' }).settings).toBeNull();
   });
 });
+
+describe('parseBackup: תמונות והגדרות נוספות', () => {
+  const img = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  it('קורא תמונות מצורפות תקינות ומדלג על לא תקינות', () => {
+    const r = parseBackup(
+      file({
+        attachments: [{ id: 't1', images: [img, 'לא תמונה'], updatedAt: 9 }, { id: 't2', images: [] }, { id: '', images: [img] }],
+        businessTransactions: [tx()],
+      }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.attachments).toHaveLength(1);
+    expect(r.plan.attachments[0].data).toEqual({ images: [img], updatedAt: 9 });
+    expect(r.plan.invalid).toBe(2);
+  });
+  it('קורא אמצעי תשלום, קטגוריות חובות שהוסרו ולוגו, ומתעלם ממסמכים לא מוכרים', () => {
+    const r = parseBackup(
+      file({
+        settings: [
+          settings,
+          { id: 'paymentMethods', income: ['ביט'], expense: ['פייבוקס'], updatedAt: 3 },
+          { id: 'debtCategories', hidden: ['אחר'], updatedAt: 4 },
+          { id: 'logo_main', data: img, updatedAt: 5 },
+          { id: 'logo_x', data: 'javascript:alert(1)', updatedAt: 5 },
+          { id: 'whatever', foo: 1 },
+        ],
+        businessTransactions: [tx()],
+      }),
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.extraSettings.map((d) => d.id).sort()).toEqual(['debtCategories', 'logo_main', 'paymentMethods']);
+    expect(r.plan.settings).toMatchObject({ titheBps: 1000 });
+  });
+  it('גיבוי בלי תמונות ובלי הגדרות נוספות נקרא כמו קודם', () => {
+    const r = parseBackup(file({ businessTransactions: [tx()] }));
+    if (!r.ok) throw new Error('expected ok');
+    expect(r.plan.attachments).toEqual([]);
+    expect(r.plan.extraSettings).toEqual([]);
+  });
+});

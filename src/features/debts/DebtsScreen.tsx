@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Amount } from '../../components/Amount';
+import { Icon } from '../../components/Icon';
 import { CategoryChip } from '../../components/CategoryChip';
 import { CategoryDialog } from '../../components/CategoryDialog';
 import { Field } from '../../components/Field';
@@ -10,6 +11,7 @@ import {
   debtCategories,
   debtTotals,
   isSettled,
+  MAX_DEBT_CATEGORY,
   paidAgorot,
   validateDebt,
   validatePayment,
@@ -18,11 +20,12 @@ import {
 } from '../../domain/debt';
 import { formatDisplayDate, todayIso } from '../../domain/dates';
 import { parseShekelsToAgorot } from '../../domain/money';
-import { choiceKey, choiceText, choicesFor, parseChoiceKey, paymentLabelOf } from '../../domain/payment';
+import { choiceKey, choiceText, choicesFor, parseChoiceKey, paymentLabelOf, validateCustomMethod } from '../../domain/payment';
 import { DEFAULT_BUSINESS_ID, inSpace } from '../../domain/spaces';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
 import { useDebts } from '../../hooks/useDebts';
 import { useHiddenDebtCategories } from '../../hooks/useHiddenDebtCategories';
+import { saveCustomMethods } from '../../services/paymentMethodsService';
 import { saveHiddenDebtCategories } from '../../services/debtCategoriesService';
 import { deleteDebt, saveDebt } from '../../services/debtService';
 import { newId } from '../../services/ids';
@@ -117,7 +120,7 @@ export function DebtsScreen() {
               <p className="muted small">החובות ותשלומיהם אינם נספרים בהכנסות, בהוצאות, בתקציב ובמעשרות.</p>
             </section>
 
-            <button type="button" className="btn btn-primary" onClick={() => setEditing('new')}>
+            <button type="button" className="btn btn-outline" onClick={() => setEditing('new')}>
               הוספת חוב
             </button>
 
@@ -316,6 +319,11 @@ function DebtForm({
   const [category, setCategory] = useState(initial?.category ?? '');
   const [newCategory, setNewCategory] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState('');
+  const [extraCategories, setExtraCategories] = useState<string[]>([]);
+  const [addingPayment, setAddingPayment] = useState(false);
+  const [newPayment, setNewPayment] = useState('');
+  const [paymentError, setPaymentError] = useState('');
   const [payment, setPayment] = useState(
     choiceKey({ method: initial?.paymentMethod ?? 'cash', label: initial?.paymentLabel }),
   );
@@ -327,14 +335,39 @@ function DebtForm({
   const { reportFailure } = useSyncNotice();
   const hiddenCategories = useHiddenDebtCategories(user.uid);
   const [managing, setManaging] = useState<string | null>(null);
-  const categories = useMemo(
-    () => debtCategories(debts, hiddenCategories, initial?.category),
-    [debts, hiddenCategories, initial?.category],
-  );
+  const categories = useMemo(() => {
+    const base = debtCategories(debts, hiddenCategories, initial?.category);
+    return [...base, ...extraCategories.filter((c) => !base.includes(c))];
+  }, [debts, hiddenCategories, initial?.category, extraCategories]);
   const failCategory = () => reportFailure('לא הצלחנו לסנכרן את שינוי הקטגוריות. יש לנסות שוב.');
   const choice = parseChoiceKey(payment);
   const methods = useMemo(() => choicesFor('expense', custom.expense, choice), [custom.expense, choice]);
-  const chosenCategory = addingCategory ? newCategory.trim() : category;
+  const chosenCategory = category;
+
+  const onAddCategory = () => {
+    const name = newCategory.trim();
+    if (!name) return setCategoryError('יש להזין שם לקטגוריה.');
+    if (name.length > MAX_DEBT_CATEGORY) return setCategoryError(`השם ארוך מדי (עד ${MAX_DEBT_CATEGORY} תווים).`);
+    // קטגוריה קיימת: בוחרים אותה במקום ליצור כפילות
+    if (!categories.includes(name)) setExtraCategories((previous) => [...previous, name]);
+    setCategory(name);
+    setNewCategory('');
+    setCategoryError('');
+    setAddingCategory(false);
+  };
+
+  const onAddPayment = () => {
+    const problem = validateCustomMethod(newPayment, custom.expense, 'expense');
+    if (problem) return setPaymentError(problem);
+    const name = newPayment.trim();
+    saveCustomMethods(user.uid, { ...custom, expense: [...custom.expense, name] }).catch(() =>
+      reportFailure('לא הצלחנו לשמור את האמצעי החדש. יש לנסות שוב.'),
+    );
+    setPayment(choiceKey({ method: 'other', label: name }));
+    setNewPayment('');
+    setPaymentError('');
+    setAddingPayment(false);
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -419,17 +452,11 @@ function DebtForm({
             <CategoryChip
               key={c}
               label={c}
-              selected={!addingCategory && category === c}
-              onSelect={() => {
-                setAddingCategory(false);
-                setCategory(c);
-              }}
+              selected={category === c}
+              onSelect={() => setCategory(c)}
               onManage={() => setManaging(c)}
             />
           ))}
-          <button type="button" className={`chip-option${addingCategory ? ' is-active' : ''}`} onClick={() => setAddingCategory(true)}>
-            + חדשה
-          </button>
         </div>
         {managing && (
           <CategoryDialog
@@ -444,13 +471,49 @@ function DebtForm({
             }}
           />
         )}
-        {addingCategory && <Field label="שם הקטגוריה" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />}
         {errors.category && <div className="field-error">{errors.category}</div>}
+        {addingCategory ? (
+          <div className="inline-add">
+            <input
+              className={`input${categoryError ? ' input-error' : ''}`}
+              aria-label="שם הקטגוריה החדשה"
+              autoFocus
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onAddCategory();
+                }
+              }}
+            />
+            {categoryError && <div className="field-error">{categoryError}</div>}
+            <div className="inline-add-actions">
+              <button type="button" className="btn btn-primary" onClick={onAddCategory}>
+                הוספה
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setAddingCategory(false);
+                  setCategoryError('');
+                }}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="link-btn" onClick={() => setAddingCategory(true)}>
+            <Icon name="plus" /> קטגוריה חדשה
+          </button>
+        )}
       </div>
 
       <div className="field">
         <span className="field-label" id="debt-pay-label">
-          צורת תשלום
+          {direction === 'owe' ? 'צורת קבלת ההלוואה' : 'צורת מתן ההלוואה'}
         </span>
         <div className="chip-group" role="radiogroup" aria-labelledby="debt-pay-label">
           {methods.map((m) => (
@@ -459,6 +522,43 @@ function DebtForm({
             </button>
           ))}
         </div>
+        {addingPayment ? (
+          <div className="inline-add">
+            <input
+              className={`input${paymentError ? ' input-error' : ''}`}
+              aria-label="שם האמצעי החדש"
+              autoFocus
+              value={newPayment}
+              onChange={(e) => setNewPayment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onAddPayment();
+                }
+              }}
+            />
+            {paymentError && <div className="field-error">{paymentError}</div>}
+            <div className="inline-add-actions">
+              <button type="button" className="btn btn-primary" onClick={onAddPayment}>
+                הוספה
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setAddingPayment(false);
+                  setPaymentError('');
+                }}
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" className="link-btn" onClick={() => setAddingPayment(true)}>
+            <Icon name="plus" /> אמצעי חדש
+          </button>
+        )}
       </div>
 
       <Field label="תאריך" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />

@@ -9,13 +9,14 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { AutoBackupControl } from './AutoBackupControl';
 
 const countOf = (plan: RestorePlan) =>
-  plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
-  plan.businessTransactions.length + plan.householdTransactions.length;
+  plan.businesses.length + plan.categories.length + plan.debts.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+  plan.businessTransactions.length + plan.householdTransactions.length + plan.attachments.length + plan.extraSettings.length;
 
 /** יצוא, גיבוי ושחזור. הקבצים נשמרים במכשיר בלבד ואינם נשלחים לשום מקום. */
 export function DataSection() {
   const { user } = useReadyAuth();
   const [busy, setBusy] = useState<'json' | 'csv' | null>(null);
+  const [withImages, setWithImages] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -25,7 +26,7 @@ export function DataSection() {
     setError('');
     setMessage('');
     try {
-      const { backup, transactions } = await exportAllData(user.uid);
+      const { backup, transactions } = await exportAllData(user.uid, { withAttachments: kind === 'json' && withImages });
       const stamp = new Date().toISOString().slice(0, 10);
       const outcome =
         kind === 'json'
@@ -82,6 +83,10 @@ export function DataSection() {
 
   return (
     <div className="stack">
+        <label className="check-row">
+          <input type="checkbox" checked={withImages} onChange={(e) => setWithImages(e.target.checked)} />
+          <span>לכלול בגיבוי גם את תמונות הקבלות והתלושים (הקובץ יהיה גדול יותר)</span>
+        </label>
         <button type="button" className="btn btn-secondary" disabled={busy !== null} onClick={() => void run('json')}>
           {busy === 'json' ? 'מכין…' : 'הורדת גיבוי מלא (JSON)'}
         </button>
@@ -135,6 +140,9 @@ export function DataSection() {
               <li>{restore.plan.budgets.length} תקציבים</li>
               <li>{restore.plan.tasks.length} משימות</li>
               <li>{restore.plan.shoppingItems.length} פריטי קניות</li>
+              <li>{restore.plan.debts.length} חובות</li>
+              {restore.plan.attachments.length > 0 && <li>{restore.plan.attachments.length} פעולות עם תמונות מצורפות</li>}
+              {restore.plan.extraSettings.length > 0 && <li>{restore.plan.extraSettings.length} הגדרות נוספות (אמצעי תשלום, לוגו ועוד)</li>}
             </ul>
             {restore.existing > 0 && <p className="muted small">{restore.existing} פריטים כבר קיימים בחשבון ולא ישונו.</p>}
             {restore.plan.invalid > 0 && <p className="muted small">{restore.plan.invalid} פריטים בקובץ אינם תקינים ויידלגו.</p>}

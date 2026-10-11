@@ -105,14 +105,14 @@ export interface ExportResult {
 }
 
 /** קורא את כל נתוני המשתמש (מהשרת כשיש חיבור, אחרת מהמטמון המקומי). */
-export async function exportAllData(uid: string): Promise<ExportResult> {
+export async function exportAllData(uid: string, options: { withAttachments?: boolean } = {}): Promise<ExportResult> {
   const read = async <T>(name: string): Promise<T[]> => {
     const ref = collection(db, 'users', uid, name);
     const snapshot = await (navigator.onLine === false ? getDocs(ref) : getDocsFromServer(ref));
     return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
   };
 
-  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts] = await Promise.all([
+  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts, attachments] = await Promise.all([
     read<Transaction>('businessTransactions'),
     read<Transaction>('householdTransactions'),
     read<{ id: string; name?: string }>('businesses'),
@@ -122,6 +122,8 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     read<object>('shoppingItems'),
     read<object>('settings'),
     read<object>('debts'),
+    // תמונות מצורפות כבדות, ולכן נכללות רק כשמבקשים (גיבוי אוטומטי אינו כולל אותן)
+    options.withAttachments ? read<object>('attachments') : Promise.resolve([] as object[]),
   ]);
 
   const businessNames = new Map(businesses.map((b) => [b.id, (b as { name?: string }).name ?? '']));
@@ -142,6 +144,7 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     debts,
     tasks,
     shoppingItems,
+    ...(options.withAttachments ? { attachments } : {}),
     businessTransactions: businessTx,
     householdTransactions: householdTx,
   });
@@ -172,6 +175,8 @@ const RESTORE_COLLECTIONS = [
   ['shoppingItems', 'shoppingItems'],
   ['businessTransactions', 'businessTransactions'],
   ['householdTransactions', 'householdTransactions'],
+  ['attachments', 'attachments'],
+  ['extraSettings', 'settings'],
 ] as const;
 
 export interface NewDataPlan {
@@ -186,7 +191,7 @@ export interface NewDataPlan {
  */
 export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
   requireOnline();
-  const result: RestorePlan = { ...plan, businesses: [], categories: [], debts: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
+  const result: RestorePlan = { ...plan, businesses: [], categories: [], debts: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [], attachments: [], extraSettings: [] };
   let alreadyExisting = 0;
   for (const [key, name] of RESTORE_COLLECTIONS) {
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
@@ -226,7 +231,6 @@ const USER_COLLECTIONS = [
   'budgets',
   'tasks',
   'shoppingItems',
-  'titheRecords',
   'settings',
   'businessProfile',
   'householdProfile',

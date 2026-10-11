@@ -3542,3 +3542,16 @@ a.btn,
 /* אזורי לחיצה גדולים יותר (לפחות ~40px) בלי לשנות את המראה */
 .home-clean .quick-link { padding: 10px 0; margin: -10px 0; }
 a[href$="/privacy"] { display: inline-block; padding: 10px 6px; }
+
+/* כפתור שקוף ניטרלי (בלי צבע הכנסה/הוצאה): מסגרת וטקסט בכחול, כמו כפתורי ההוספה בהכנסות ובהוצאות */
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--navy);
+  color: var(--navy);
+  box-shadow: none;
+}
+
+/* אחידות: כל הכפתורים באותו גודל גופן וגובה, וכל שדות הטופס באותו צבע וגודל טקסט */
+.btn, .acc-list .btn { font-size: 15px; }
+.logo-row .btn { min-height: 46px; }
+select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 16px; }

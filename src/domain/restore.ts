@@ -1,5 +1,7 @@
 import { isAnnualMode } from './annual';
+import { cleanAttachments } from './attachment';
 import { isCurrencyCode } from './currency';
+import { isLogoData } from './logo';
 import { BACKUP_FORMAT, BACKUP_VERSION } from './export';
 
 /** מסמך מוכן לכתיבה, עם מזהה המסמך. */
@@ -17,6 +19,10 @@ export interface RestorePlan {
   shoppingItems: RestoreDoc[];
   businessTransactions: RestoreDoc[];
   householdTransactions: RestoreDoc[];
+  /** תמונות מצורפות לפעולות (users/{uid}/attachments). מופיעות בגיבוי רק אם נבחר "כולל תמונות". */
+  attachments: RestoreDoc[];
+  /** הגדרות נוספות: אמצעי תשלום אישיים, קטגוריות חובות שהוסרו, לוגו עסק. נוספות רק אם חסרות. */
+  extraSettings: RestoreDoc[];
   /** הגדרות המעשרות מהקובץ (אופציונלי). */
   settings: Record<string, unknown> | null;
   /** מסמכים שלא עברו בדיקה ויידלגו. */
@@ -25,7 +31,8 @@ export interface RestorePlan {
 
 export type ParseResult = { ok: true; plan: RestorePlan } | { ok: false; error: string };
 
-export const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
+/** גיבוי עם תמונות מצורפות יכול להיות גדול בהרבה מגיבוי רגיל. */
+export const MAX_BACKUP_BYTES = 80 * 1024 * 1024;
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -225,6 +232,36 @@ function cleanSettings(raw: unknown): Obj | null {
   return ok ? d : null;
 }
 
+/** תמונות מצורפות: מזהה המסמך הוא מזהה הפעולה. נשארות רק תמונות תקינות (1 עד 3). */
+function cleanAttachmentDoc(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw) || !isNonEmpty(raw.id, 100)) return null;
+  const images = cleanAttachments(raw.images);
+  if (images.length === 0) return null;
+  return { id: raw.id, data: { images, updatedAt: isInt(raw.updatedAt) ? raw.updatedAt : Date.now() } };
+}
+
+const LOGO_ID = /^logo_.{1,64}$/;
+
+/** הגדרות נוספות (לא "main"): אותם כללים כמו ב-firestore.rules. מסמך לא מוכר נפסל. */
+function cleanExtraSetting(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw) || typeof raw.id !== 'string') return null;
+  const updatedAt = isInt(raw.updatedAt) ? raw.updatedAt : Date.now();
+  if (raw.id === 'paymentMethods') {
+    const list = (v: unknown) => (Array.isArray(v) && v.length <= 12 && v.every((x) => isNonEmpty(x, 30)) ? (v as string[]) : null);
+    const income = list(raw.income);
+    const expense = list(raw.expense);
+    return income && expense ? { id: raw.id, data: { income, expense, updatedAt } } : null;
+  }
+  if (raw.id === 'debtCategories') {
+    const hidden = raw.hidden;
+    return Array.isArray(hidden) && hidden.length <= 40 && hidden.every((x) => isNonEmpty(x, 60))
+      ? { id: raw.id, data: { hidden: hidden as string[], updatedAt } }
+      : null;
+  }
+  if (LOGO_ID.test(raw.id)) return isLogoData(raw.data) ? { id: raw.id, data: { data: raw.data, updatedAt } } : null;
+  return null;
+}
+
 function cleanList(raw: unknown, clean: (v: unknown) => RestoreDoc | null): { docs: RestoreDoc[]; invalid: number } {
   if (raw === undefined) return { docs: [], invalid: 0 };
   if (!Array.isArray(raw)) return { docs: [], invalid: 1 };
@@ -267,6 +304,12 @@ export function parseBackup(text: string): ParseResult {
   const household = cleanList(data.householdTransactions, cleanTransaction);
 
   const settingsList = Array.isArray(data.settings) ? data.settings : [];
+  const attachments = cleanList(data.attachments, cleanAttachmentDoc);
+  // "main" מטופל בנפרד (בחירה מפורשת להחליף). שאר מסמכי ההגדרות מוכרים רק אם הם מהסוגים המותרים.
+  const extra = cleanList(
+    settingsList.filter((x) => !(isObj(x) && x.id === 'main')),
+    cleanExtraSetting,
+  );
   const settingsDoc = settingsList.find((s) => isObj(s) && s.id === 'main');
   const settings = settingsDoc === undefined ? null : cleanSettings(settingsDoc);
 
@@ -279,14 +322,16 @@ export function parseBackup(text: string): ParseResult {
     shoppingItems: shopping.docs,
     businessTransactions: business.docs,
     householdTransactions: household.docs,
+    attachments: attachments.docs,
+    extraSettings: extra.docs,
     settings,
     invalid:
-      businesses.invalid + categories.invalid + debts.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
+      businesses.invalid + categories.invalid + debts.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid + attachments.invalid +
       (settingsDoc !== undefined && settings === null ? 1 : 0),
   };
   const total =
     plan.businesses.length + plan.categories.length + plan.debts.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
-    plan.businessTransactions.length + plan.householdTransactions.length;
+    plan.businessTransactions.length + plan.householdTransactions.length + plan.attachments.length + plan.extraSettings.length;
   if (total === 0 && !plan.settings) return { ok: false, error: 'בקובץ אין נתונים לשחזור.' };
   return { ok: true, plan };
 }

@@ -45,7 +45,7 @@ users/{uid}/categories/{id}          קטגוריות (scope: business | househo
 users/{uid}/businessTransactions/{id}    פעולות עסק
 users/{uid}/householdTransactions/{id}   פעולות משק בית
 users/{uid}/budgets/{categoryId}     תקציב חודשי לקטגוריית הוצאה (מזהה המסמך = מזהה הקטגוריה)
-users/{uid}/titheRecords/{id}        שמור לעתיד (המעשרות מחושבים כרגע מהפעולות)
+(titheRecords הוסר: המעשרות מחושבים מהפעולות)
 ```
 
 עסק ומשק בית נשמרים באוספים נפרדים. אין הכנסה "מהעסק" שנשמרת במשק הבית: היא נגזרת בכל פעם
