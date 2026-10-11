@@ -363,6 +363,19 @@ service cloud.firestore {
         allow delete: if isOwner(uid);
       }
 
+      // תמונות מצורפות לפעולה (קבלה, תלוש): מסמך אחד לכל פעולה, עד שלוש תמונות.
+      match /attachments/{transactionId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+                              && request.resource.data.keys().hasOnly(['images', 'updatedAt'])
+                              && request.resource.data.keys().hasAll(['images', 'updatedAt'])
+                              && request.resource.data.images is list
+                              && request.resource.data.images.size() >= 1
+                              && request.resource.data.images.size() <= 3
+                              && request.resource.data.updatedAt is int;
+        allow delete: if isOwner(uid);
+      }
+
       match /debts/{debtId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid) && validDebt(request.resource.data, debtId);

@@ -222,6 +222,7 @@ const USER_COLLECTIONS = [
   'businesses',
   'categories',
   'debts',
+  'attachments',
   'budgets',
   'tasks',
   'shoppingItems',

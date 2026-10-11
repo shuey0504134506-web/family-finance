@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { AttachmentsField } from './AttachmentsField';
+import { getAttachments, saveAttachments } from '../../services/attachmentService';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
 import { choiceKey, choiceText, choicesFor, validateCustomMethod, type PaymentChoice } from '../../domain/payment';
 import { saveCustomMethods } from '../../services/paymentMethodsService';
@@ -160,6 +162,32 @@ function TransactionForm({
   // פרטים נוספים (תאריך, מטבע, אמצעי תשלום, מעשר) מוסתרים בהוספה, ופתוחים בעריכה.
   const [showDetails, setShowDetails] = useState(existing !== null);
 
+  // תמונות מצורפות (קבלה, תלוש). בעריכה נטענות מהחשבון; נשמרות רק אם השתנו ורק אם נטענו בהצלחה.
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const savedAttachments = useRef<string[]>([]);
+  const [attLoading, setAttLoading] = useState(existing !== null);
+  const [attFailed, setAttFailed] = useState(false);
+  useEffect(() => {
+    if (!existing) return undefined;
+    let cancelled = false;
+    getAttachments(user.uid, id)
+      .then((images) => {
+        if (cancelled) return;
+        savedAttachments.current = images;
+        setAttachments(images);
+        setAttLoading(false);
+        if (images.length > 0) setShowDetails(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAttFailed(true);
+        setAttLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user.uid, id, existing]);
+
   // קטגוריות שנוספו עכשיו מהטופס, כדי שיופיעו מיד גם לפני שהמנוי מתעדכן
   const [added, setAdded] = useState<Array<{ id: string; name: string }>>([]);
   const [addingCategory, setAddingCategory] = useState(false);
@@ -282,6 +310,11 @@ function TransactionForm({
     saveTransaction(user.uid, scope, transaction).catch(() =>
       reportFailure('לא הצלחנו לסנכרן פעולה אחרונה, והיא לא נשמרה בשרת. יש לבדוק ולהזין אותה שוב.'),
     );
+    if (!attLoading && !attFailed && JSON.stringify(attachments) !== JSON.stringify(savedAttachments.current)) {
+      saveAttachments(user.uid, id, attachments).catch(() =>
+        reportFailure('לא הצלחנו לשמור את התמונות המצורפות. יש לנסות שוב.'),
+      );
+    }
     leave(transaction.yearMonth);
   };
 
@@ -514,6 +547,8 @@ function TransactionForm({
               <span>זהו תשלום מעשר</span>
             </label>
           )}
+
+          <AttachmentsField images={attachments} onChange={setAttachments} loading={attLoading} failed={attFailed} />
 
             </div>
           )}

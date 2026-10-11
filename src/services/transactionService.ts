@@ -13,6 +13,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { deleteAttachments } from './attachmentService';
 import { monthDateRange, yearMonthOfDate, type YearMonth } from '../domain/dates';
 import type { Scope, Transaction, TransactionRecord } from '../domain/types';
 
@@ -76,6 +77,8 @@ export function saveTransaction(uid: string, scope: Scope, transaction: Transact
 }
 
 export function deleteTransaction(uid: string, scope: Scope, id: string): Promise<void> {
+  // התמונות המצורפות נמחקות יחד עם הפעולה. כישלון בהן לא מונע את מחיקת הפעולה.
+  deleteAttachments(uid, id).catch(() => undefined);
   return deleteDoc(doc(transactionsCollection(uid, scope), id));
 }
 
