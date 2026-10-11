@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from './icons';
+import { ChevronRight, SearchIcon } from './icons';
 
 /**
  * כותרת למסכים פנימיים: חץ חזרה (בצד ימין, כמקובל ב-RTL) וכותרת.
  * חזרה = חזרה לאחור בהיסטוריה, כמו כפתור Back של אנדרואיד. אם אין לאן
  * לחזור (פתיחה ישירה של המסך), חוזרים למסך הבית.
  */
-export function ScreenHeader({ title, backTo }: { title: string; backTo?: string }) {
+export function ScreenHeader({ title, backTo, search }: { title: string; backTo?: string; search?: boolean }) {
   const navigate = useNavigate();
 
   const goBack = () => {
@@ -26,7 +26,13 @@ export function ScreenHeader({ title, backTo }: { title: string; backTo?: string
           <ChevronRight />
         </button>
         <h1 className="screen-title">{title}</h1>
-        <span className="screen-header-spacer" aria-hidden="true" />
+        {search ? (
+          <button type="button" className="icon-btn" aria-label="חיפוש" onClick={() => navigate('/search')}>
+            <SearchIcon />
+          </button>
+        ) : (
+          <span className="screen-header-spacer" aria-hidden="true" />
+        )}
       </div>
     </header>
   );

@@ -1,12 +1,10 @@
 import { Navigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
-import { AppHeader } from '../../components/AppHeader';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
-import { ScreenBack } from './ScreenBack';
 import { useTitheRows } from './useTitheRows';
-import { Icon } from '../../components/Icon';
 
 /**
  * מסך מעשרות. החוב מצטבר מתחילת הנתונים ועד סוף החודש הנבחר, ואינו מתאפס בתחילת חודש.
@@ -28,12 +26,8 @@ export function TitheScreen() {
 
   return (
     <div className="app-shell scope-household">
-      <AppHeader />
+      <ScreenHeader title="מעשרות" />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to="/household" label="חזרה" />
-        <h1 className="scope-title">
-          <Icon name="tithe" /> מעשרות
-        </h1>
         <p className="muted small">במעשרות נספרות רק פעולות במטבע הראשי. פעולות במטבע אחר אינן נכללות.</p>
 
         {error ? (

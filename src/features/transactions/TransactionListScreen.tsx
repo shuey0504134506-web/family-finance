@@ -2,7 +2,9 @@ import { CURRENCY_NAMES, foreignTotals, isPrimaryCurrency } from '../../domain/c
 import { useMemo } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
-import { AppHeader } from '../../components/AppHeader';
+import { formatMonthYear } from '../../domain/dates';
+import { MonthSwitcher } from '../../components/MonthSwitcher';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { Icon } from '../../components/Icon';
 import { businessIdOf } from '../../domain/spaces';
 import { totalsOf, transferFromBusinesses } from '../../domain/summary';
@@ -13,7 +15,6 @@ import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
-import { ScreenBack } from '../tithes/ScreenBack';
 import { TransactionList } from './TransactionList';
 
 /**
@@ -37,7 +38,7 @@ function Content({ type }: { type: TransactionType }) {
   const month = useMonth();
   const space = useSpace();
   const scope = space.scope;
-  const { countedIds, nameOf } = useSpaces();
+  const { countedIds } = useSpaces();
 
   const needsBusinessNet = scope === 'household' && type === 'income' && countedIds.length > 0;
 
@@ -65,16 +66,12 @@ function Content({ type }: { type: TransactionType }) {
   const isIncome = type === 'income';
   const total = (isIncome ? ownTotal.incomeAgorot : ownTotal.expenseAgorot) + fromBusiness;
   const loading = main.loading || (needsBusinessNet && business.loading);
-  const scopeName = nameOf(space);
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <AppHeader />
+      <ScreenHeader title={isIncome ? 'הכנסות' : 'הוצאות'} search />
       <main className="content" aria-busy={loading}>
-        <ScreenBack to={`/${space.key}`} label="חזרה" />
-        <h1 className="scope-title">
-          <Icon name={isIncome ? 'income' : 'expense'} /> {isIncome ? 'הכנסות' : 'הוצאות'} · {scopeName}
-        </h1>
+        <MonthSwitcher label={formatMonthYear(month.selected)} />
 
         {main.error ? (
           <div className="card error-card" role="alert">
