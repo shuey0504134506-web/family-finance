@@ -3474,3 +3474,12 @@ a.btn,
 /* לוגו האפליקציה במסך הפתיחה: האייקון עצמו ממלא את הריבוע */
 .welcome-screen .welcome-logo { width: 88px; height: 88px; padding: 0; overflow: hidden; border-radius: 26px; }
 .welcome-screen .welcome-logo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* מסך נעילה: רקע הנוף של האפליקציה (מ-body::before) ולוגו */
+.lock-screen {
+  background:
+    linear-gradient(to bottom, rgba(247, 243, 234, 0.8), rgba(247, 243, 234, 0.9)),
+    #f7f3ea url('./assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+}
+.lock-card { background: rgba(255, 255, 255, 0.82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.lock-logo { display: block; width: 72px; height: 72px; margin: 0 auto; border-radius: 22px; box-shadow: 0 8px 20px rgba(15, 42, 71, 0.16); }

@@ -66,6 +66,7 @@ function LockScreen() {
   return (
     <main className="lock-screen" aria-label="האפליקציה נעולה">
       <div className="lock-card">
+        <img className="lock-logo" src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={72} height={72} draggable={false} />
         <h1 className="center-title">האפליקציה נעולה</h1>
         {usePassword ? (
           <PasswordUnlock busy={busy} onSubmit={(pw) => run(() => unlockWithPassword(pw))} />
