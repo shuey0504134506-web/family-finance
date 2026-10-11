@@ -110,7 +110,7 @@ export function HomeScreen() {
   const businessLossLabel = manyBusinesses ? 'הפסד מהעסקים' : 'הפסד מהעסק';
 
   return (
-    <div className={`app-shell has-hero scope-${scope}`} {...swipe}>
+    <div className={`app-shell has-hero home-clean scope-${scope}`} {...swipe}>
       <AppHeader />
 
       <main className="content" aria-busy={loading}>
@@ -211,6 +211,7 @@ export function HomeScreen() {
               icon="budget"
               title="תקציב"
               tone={budgetSummary.kind === 'set' && budgetSummary.overAgorot > 0 ? 'bad' : undefined}
+              progress={budgetSummary.kind === 'set' && budgetSummary.budgetAgorot > 0 ? budgetSummary.usedAgorot / budgetSummary.budgetAgorot : undefined}
               onClick={() => navigate(`/${space.key}/budget`)}
             >
               {active.loading ? (
@@ -234,6 +235,11 @@ export function HomeScreen() {
                 icon="tithe"
                 title="מעשרות"
                 tone={titheCurrent && titheCurrent.cumulative.remainingAgorot > 0 ? 'bad' : undefined}
+                progress={
+                  titheCurrent && titheCurrent.cumulative.requiredAgorot > 0
+                    ? titheCurrent.cumulative.paidAgorot / titheCurrent.cumulative.requiredAgorot
+                    : undefined
+                }
                 onClick={() => navigate('/tithes')}
               >
                 {tithe.loading || !titheCurrent ? (

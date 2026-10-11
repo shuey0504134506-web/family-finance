@@ -16,10 +16,12 @@ interface TileProps {
   icon: 'income' | 'expense';
   agorot: number;
   loading: boolean;
+  /** אורך הפס הדק בשורה, 0 עד 1 */
+  ratio: number;
   onOpen?: () => void;
 }
 
-function Tile({ className, label, icon, agorot, loading, onOpen }: TileProps) {
+function Tile({ className, label, icon, agorot, loading, ratio, onOpen }: TileProps) {
   const content = (
     <>
       <div className="tile-title">
@@ -27,6 +29,9 @@ function Tile({ className, label, icon, agorot, loading, onOpen }: TileProps) {
       </div>
       <div className="tile-amount">
         {loading ? <span className="skeleton">—</span> : <Amount agorot={agorot} />}
+      </div>
+      <div className="row-bar" aria-hidden="true">
+        <i style={{ width: `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%` }} />
       </div>
       {onOpen && <div className="tile-hint">לרשימה</div>}
     </>
@@ -44,6 +49,8 @@ function Tile({ className, label, icon, agorot, loading, onOpen }: TileProps) {
 
 /** שתי המשבצות הגדולות: סך הכנסות וסך הוצאות של החודש. לחיצה פותחת את הרשימה. */
 export function TotalsTiles({ incomeAgorot, expenseAgorot, loading, onOpenIncome, onOpenExpense }: Props) {
+  // הפס של ההכנסות תמיד מלא, והפס של ההוצאות מראה איזה חלק מההכנסות הן אכלו.
+  const expenseRatio = incomeAgorot > 0 ? expenseAgorot / incomeAgorot : expenseAgorot > 0 ? 1 : 0;
   return (
     <div className="tiles">
       <Tile
@@ -51,6 +58,7 @@ export function TotalsTiles({ incomeAgorot, expenseAgorot, loading, onOpenIncome
         label="סך הכנסות"
         icon="income"
         agorot={incomeAgorot}
+        ratio={incomeAgorot > 0 ? 1 : 0}
         loading={loading}
         onOpen={onOpenIncome}
       />
@@ -59,6 +67,7 @@ export function TotalsTiles({ incomeAgorot, expenseAgorot, loading, onOpenIncome
         label="סך הוצאות"
         icon="expense"
         agorot={expenseAgorot}
+        ratio={expenseRatio}
         loading={loading}
         onOpen={onOpenExpense}
       />

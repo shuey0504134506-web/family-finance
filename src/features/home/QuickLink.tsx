@@ -9,12 +9,15 @@ export function QuickLink({
   icon,
   title,
   tone,
+  progress,
   children,
   onClick,
 }: {
   icon: IconName;
   title: string;
   tone?: 'bad' | 'good';
+  /** אורך הפס הדק, 0 עד 1. בלי ערך אין פס. */
+  progress?: number;
   children: ReactNode;
   onClick: () => void;
 }) {
@@ -24,6 +27,11 @@ export function QuickLink({
         <Icon name={icon} /> {title}
       </span>
       <span className={`quick-link-sub${tone ? ` tone-${tone}` : ''}`}>{children}</span>
+      {progress !== undefined && (
+        <span className={`row-bar${tone ? ` row-bar-${tone}` : ''}`} aria-hidden="true">
+          <i style={{ width: `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%` }} />
+        </span>
+      )}
     </button>
   );
 }
