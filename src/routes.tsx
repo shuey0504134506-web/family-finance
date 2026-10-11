@@ -7,7 +7,6 @@ import { LoginScreen } from './features/auth/LoginScreen';
 import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { HomeScreen } from './features/home/HomeScreen';
-import { SwipeHistory } from './features/navigation/SwipeHistory';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
 import { RemindersHost } from './features/lists/RemindersHost';
@@ -98,7 +97,6 @@ function HomeRedirect() {
 export function AppRoutes() {
   return (
     <>
-    <SwipeHistory />
     <Routes>
       <Route element={<PublicOnly />}>
         <Route path="/welcome" element={<WelcomeScreen />} />
