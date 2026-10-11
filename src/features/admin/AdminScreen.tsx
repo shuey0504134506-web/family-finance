@@ -184,7 +184,13 @@ function Messages() {
         setList(m);
         setError(null);
       })
-      .catch(() => setError('לא הצלחנו לטעון את ההודעות.'));
+      .catch((e: { code?: string }) =>
+        setError(
+          e.code === 'functions/not-found' || e.code === 'functions/unavailable'
+            ? 'פונקציות ההודעות עוד לא פורסמו. יש להריץ שוב את "פריסת פונקציות השרת" ב-Actions.'
+            : `לא הצלחנו לטעון את ההודעות${e.code ? ` (${e.code})` : ''}.`,
+        ),
+      );
   }, []);
   useEffect(load, [load]);
 
