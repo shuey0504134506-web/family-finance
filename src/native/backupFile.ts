@@ -26,6 +26,7 @@ export async function saveBackupFile(filename: string, content: string): Promise
     });
     return 'documents';
   }
+  suppressLock();
   const blob = new Blob([content], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

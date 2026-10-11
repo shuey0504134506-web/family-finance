@@ -8,6 +8,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { AutoBackupControl } from './AutoBackupControl';
 
 function download(filename: string, content: string, type: string) {
+  suppressLock();
   // BOM בתחילת CSV כדי שאקסל יזהה עברית נכון.
   const blob = new Blob([type.startsWith('text/csv') ? `\uFEFF${content}` : content], { type });
   const url = URL.createObjectURL(blob);
