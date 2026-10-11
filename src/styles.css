@@ -3520,3 +3520,6 @@ a.btn,
 .att-remove { position: absolute; top: -8px; inset-inline-start: -8px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: #b8442f; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
 .att-add { width: auto; align-self: flex-start; }
 .att-full { display: block; max-width: 100%; max-height: 70vh; margin: 0 auto 12px; border-radius: 12px; }
+
+.att-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.att-actions .btn { width: auto; flex: 1 1 130px; }

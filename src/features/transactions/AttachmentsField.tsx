@@ -16,6 +16,7 @@ export function AttachmentsField({
   failed: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [viewing, setViewing] = useState<number | null>(null);
   const full = images.length >= MAX_ATTACHMENTS;
@@ -67,14 +68,34 @@ export function AttachmentsField({
               ))}
             </ul>
           )}
-          <button type="button" className="btn btn-secondary att-add" disabled={full} onClick={() => input.current?.click()}>
-            {full ? `הגעת למקסימום (${MAX_ATTACHMENTS} תמונות)` : images.length ? 'הוספת תמונה נוספת' : 'הוספת תמונה'}
-          </button>
+          {full ? (
+            <div className="muted small">הגעת למקסימום ({MAX_ATTACHMENTS} תמונות)</div>
+          ) : (
+            <div className="att-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => camera.current?.click()}>
+                צילום עכשיו
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => input.current?.click()}>
+                בחירה מהמכשיר
+              </button>
+            </div>
+          )}
           <input
             ref={input}
             type="file"
             accept="image/*"
             multiple
+            hidden
+            onChange={(e) => {
+              void onFiles(e.target.files);
+              e.target.value = '';
+            }}
+          />
+          <input
+            ref={camera}
+            type="file"
+            accept="image/*"
+            capture="environment"
             hidden
             onChange={(e) => {
               void onFiles(e.target.files);
