@@ -19,6 +19,7 @@ export function MenuScreen() {
     ...(space.scope === 'household' ? [{ to: '/tithes', label: 'מעשרות' }] : []),
     { to: `/${key}/tasks`, label: 'רשימת משימות' },
     { to: `/${key}/shopping`, label: 'רשימת קניות' },
+    { to: '/help', label: 'עזרה' },
   ];
 
   return (

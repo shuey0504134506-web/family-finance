@@ -23,6 +23,7 @@ import { CategoriesScreen } from './features/categories/CategoriesScreen';
 import { SearchScreen } from './features/search/SearchScreen';
 import { SummaryScreen } from './features/summary/SummaryScreen';
 import { DebtsScreen } from './features/debts/DebtsScreen';
+import { HelpScreen } from './features/help/HelpScreen';
 import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
@@ -126,6 +127,7 @@ export function AppRoutes() {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
         <Route path="/tithes" element={<TitheScreen />} />
+        <Route path="/help" element={<HelpScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Route>
 
