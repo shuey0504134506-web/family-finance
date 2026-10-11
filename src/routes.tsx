@@ -22,6 +22,7 @@ import { BudgetScreen } from './features/budget/BudgetScreen';
 import { CategoriesScreen } from './features/categories/CategoriesScreen';
 import { SearchScreen } from './features/search/SearchScreen';
 import { SummaryScreen } from './features/summary/SummaryScreen';
+import { DebtsScreen } from './features/debts/DebtsScreen';
 import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
@@ -117,6 +118,7 @@ export function AppRoutes() {
           <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
           <Route path="/:scope/budget" element={<BudgetScreen />} />
           <Route path="/:scope/menu" element={<MenuScreen />} />
+          <Route path="/:scope/debts" element={<DebtsScreen />} />
           <Route path="/:scope/tasks" element={<TasksScreen />} />
           <Route path="/:scope/shopping" element={<ShoppingScreen />} />
         </Route>

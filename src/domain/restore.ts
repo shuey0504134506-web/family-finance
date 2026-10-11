@@ -11,6 +11,7 @@ export interface RestoreDoc {
 export interface RestorePlan {
   businesses: RestoreDoc[];
   categories: RestoreDoc[];
+  debts: RestoreDoc[];
   budgets: RestoreDoc[];
   tasks: RestoreDoc[];
   shoppingItems: RestoreDoc[];
@@ -32,6 +33,7 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 const isStr = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max;
 const isNonEmpty = (v: unknown, max: number): v is string => isStr(v, max) && v.length > 0;
 const MAX_AGOROT = 100_000_000_000;
+const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 /**
  * משאיר רק את המפתחות שחוקי האבטחה מתירים. מחזיר null אם חסר מפתח חובה.
@@ -86,6 +88,40 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     isStr(d.note, 1000) &&
     (d.titheStatus === 'liable' || d.titheStatus === 'exempt') &&
     typeof d.isTithePayment === 'boolean' &&
+    isInt(d.createdAt) && isInt(d.updatedAt);
+  return ok ? { id: d.id as string, data: d } : null;
+}
+
+/** חוב: אותם כללים כמו ב-firestore.rules (validDebt). */
+function cleanDebt(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw)) return null;
+  const d = pick(raw, ['id', 'scope', 'direction', 'name', 'amountAgorot', 'category', 'paymentMethod', 'date', 'note', 'payments', 'createdAt', 'updatedAt']);
+  if (!d) return null;
+  if (raw.currency !== undefined) {
+    if (!isCurrencyCode(raw.currency)) return null;
+    d.currency = raw.currency;
+  }
+  if (raw.paymentLabel !== undefined) {
+    if (!isNonEmpty(raw.paymentLabel, 30)) return null;
+    d.paymentLabel = raw.paymentLabel;
+  }
+  if (raw.dueDate !== undefined) {
+    if (typeof raw.dueDate !== 'string' || !DATE_RE.test(raw.dueDate)) return null;
+    d.dueDate = raw.dueDate;
+  }
+  if ((d.paymentMethod === 'other') !== (d.paymentLabel !== undefined)) return null;
+  const ok =
+    isNonEmpty(d.id, 100) &&
+    (d.scope === 'business' || d.scope === 'household') &&
+    (d.direction === 'owe' || d.direction === 'owed') &&
+    isNonEmpty(d.name, 80) &&
+    isInt(d.amountAgorot) && d.amountAgorot > 0 && d.amountAgorot <= MAX_AGOROT &&
+    isNonEmpty(d.category, 40) &&
+    ['cash', 'credit', 'direct', 'check', 'transfer', 'other'].includes(d.paymentMethod as string) &&
+    typeof d.date === 'string' && DATE_RE.test(d.date) &&
+    isStr(d.note, 1000) &&
+    Array.isArray(d.payments) && d.payments.length <= 500 &&
+    d.payments.every((p) => isObj(p) && isNonEmpty(p.id, 100) && isInt(p.amountAgorot) && p.amountAgorot > 0 && typeof p.date === 'string' && DATE_RE.test(p.date)) &&
     isInt(d.createdAt) && isInt(d.updatedAt);
   return ok ? { id: d.id as string, data: d } : null;
 }
@@ -223,6 +259,7 @@ export function parseBackup(text: string): ParseResult {
   const data = parsed.data;
   const businesses = cleanList(data.businesses, cleanBusiness);
   const categories = cleanList(data.categories, cleanCategory);
+  const debts = cleanList(data.debts, cleanDebt);
   const budgets = cleanList(data.budgets, cleanBudget);
   const tasks = cleanList(data.tasks, cleanTask);
   const shopping = cleanList(data.shoppingItems, cleanItem);
@@ -236,6 +273,7 @@ export function parseBackup(text: string): ParseResult {
   const plan: RestorePlan = {
     businesses: businesses.docs,
     categories: categories.docs,
+    debts: debts.docs,
     budgets: budgets.docs,
     tasks: tasks.docs,
     shoppingItems: shopping.docs,
@@ -243,11 +281,11 @@ export function parseBackup(text: string): ParseResult {
     householdTransactions: household.docs,
     settings,
     invalid:
-      businesses.invalid + categories.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
+      businesses.invalid + categories.invalid + debts.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid +
       (settingsDoc !== undefined && settings === null ? 1 : 0),
   };
   const total =
-    plan.businesses.length + plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+    plan.businesses.length + plan.categories.length + plan.debts.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
     plan.businessTransactions.length + plan.householdTransactions.length;
   if (total === 0 && !plan.settings) return { ok: false, error: 'בקובץ אין נתונים לשחזור.' };
   return { ok: true, plan };

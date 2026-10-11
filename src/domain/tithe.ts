@@ -188,3 +188,30 @@ export function buildTitheInputs(
   entry(options.lastYearMonth);
   return [...byMonth.values()].filter((row) => row.yearMonth <= options.lastYearMonth);
 }
+
+export interface TitheRecipient {
+  /** שם בית העסק / הנמען. ריק = ללא שם. */
+  name: string;
+  totalAgorot: Agorot;
+  count: number;
+  /** התאריך האחרון, YYYY-MM-DD */
+  lastDate: string;
+}
+
+type RecipientTx = Pick<Transaction, 'type' | 'amountAgorot' | 'isTithePayment' | 'counterparty' | 'date'>;
+
+/** למי ניתנו מעשרות: הוצאות מסומנות "תשלום מעשר", מקובצות לפי בית עסק, מהגדול לקטן. */
+export function titheRecipients(items: readonly RecipientTx[]): TitheRecipient[] {
+  const map = new Map<string, TitheRecipient>();
+  for (const t of items) {
+    if (t.type !== 'expense' || !t.isTithePayment) continue;
+    const name = (t.counterparty ?? '').trim();
+    const key = name.toLocaleLowerCase();
+    const row = map.get(key) ?? { name, totalAgorot: 0, count: 0, lastDate: '' };
+    row.totalAgorot += t.amountAgorot;
+    row.count += 1;
+    if (t.date > row.lastDate) row.lastDate = t.date;
+    map.set(key, row);
+  }
+  return [...map.values()].sort((a, b) => b.totalAgorot - a.totalAgorot || a.name.localeCompare(b.name, 'he'));
+}

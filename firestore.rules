@@ -52,6 +52,43 @@ service cloud.firestore {
              && data.updatedAt is int;
     }
 
+    // ---------- חובות: users/{uid}/debts/{debtId} ----------
+
+    function validDebt(data, debtId) {
+      return data.keys().hasOnly([
+               'id', 'scope', 'businessId', 'direction', 'name', 'amountAgorot', 'currency',
+               'category', 'paymentMethod', 'paymentLabel', 'date', 'dueDate', 'note',
+               'payments', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'id', 'scope', 'direction', 'name', 'amountAgorot', 'category', 'paymentMethod',
+               'date', 'note', 'payments', 'createdAt', 'updatedAt'
+             ])
+             && data.id == debtId
+             && data.scope in ['business', 'household']
+             && validOptionalBusinessId(data)
+             && data.direction in ['owe', 'owed']
+             && isNonEmptyString(data.name, 80)
+             && data.amountAgorot is int
+             && data.amountAgorot > 0
+             && data.amountAgorot <= 100000000000
+             && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
+             && isNonEmptyString(data.category, 40)
+             && data.paymentMethod in ['cash', 'credit', 'direct', 'check', 'transfer', 'other']
+             && ((data.paymentMethod == 'other') == data.keys().hasAny(['paymentLabel']))
+             && (!data.keys().hasAny(['paymentLabel']) || isNonEmptyString(data.paymentLabel, 30))
+             && data.date is string
+             && data.date.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+             && (!data.keys().hasAny(['dueDate'])
+                 || (data.dueDate is string
+                     && data.dueDate.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')))
+             && isShortString(data.note, 1000)
+             && data.payments is list
+             && data.payments.size() <= 500
+             && data.createdAt is int
+             && data.updatedAt is int;
+    }
+
     // ---------- אמצעי תשלום אישיים: users/{uid}/settings/paymentMethods ----------
 
     function validPaymentMethods(data) {
@@ -311,6 +348,15 @@ service cloud.firestore {
         allow create: if isOwner(uid) && validTransaction(request.resource.data, transactionId);
         allow update: if isOwner(uid)
                       && validTransaction(request.resource.data, transactionId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isOwner(uid);
+      }
+
+      match /debts/{debtId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validDebt(request.resource.data, debtId);
+        allow update: if isOwner(uid)
+                      && validDebt(request.resource.data, debtId)
                       && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if isOwner(uid);
       }

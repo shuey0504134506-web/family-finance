@@ -3209,3 +3209,24 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   top: 0;
   z-index: 30;
 }
+
+/* טקסט בתוך עמודות גרף ההשוואה */
+.chart-inbar { font-size: 8px; fill: #fff; font-weight: 600; pointer-events: none; }
+
+/* תיבות סימון: גודל וצבע אחידים בכל האפליקציה (ללא כיווץ ב-flex כשהטקסט ארוך) */
+input[type='checkbox'],
+.check-row input {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--business, #0f2a47);
+}
+
+/* חובות */
+.debt-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.debt-card { display: flex; flex-direction: column; gap: 8px; }
+.link-btn { background: none; border: 0; padding: 0 4px; color: var(--business); font-weight: 600; text-decoration: underline; }

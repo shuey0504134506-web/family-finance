@@ -112,7 +112,7 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
   };
 
-  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs] = await Promise.all([
+  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts] = await Promise.all([
     read<Transaction>('businessTransactions'),
     read<Transaction>('householdTransactions'),
     read<{ id: string; name?: string }>('businesses'),
@@ -121,6 +121,7 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     read<object>('tasks'),
     read<object>('shoppingItems'),
     read<object>('settings'),
+    read<object>('debts'),
   ]);
 
   const businessNames = new Map(businesses.map((b) => [b.id, (b as { name?: string }).name ?? '']));
@@ -138,6 +139,7 @@ export async function exportAllData(uid: string): Promise<ExportResult> {
     businesses,
     categories,
     budgets,
+    debts,
     tasks,
     shoppingItems,
     businessTransactions: businessTx,
@@ -164,6 +166,7 @@ const BATCH_SIZE = 400;
 const RESTORE_COLLECTIONS = [
   ['businesses', 'businesses'],
   ['categories', 'categories'],
+  ['debts', 'debts'],
   ['budgets', 'budgets'],
   ['tasks', 'tasks'],
   ['shoppingItems', 'shoppingItems'],
@@ -183,7 +186,7 @@ export interface NewDataPlan {
  */
 export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
   requireOnline();
-  const result: RestorePlan = { ...plan, businesses: [], categories: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
+  const result: RestorePlan = { ...plan, businesses: [], categories: [], debts: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [] };
   let alreadyExisting = 0;
   for (const [key, name] of RESTORE_COLLECTIONS) {
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
@@ -218,6 +221,7 @@ const USER_COLLECTIONS = [
   'householdTransactions',
   'businesses',
   'categories',
+  'debts',
   'budgets',
   'tasks',
   'shoppingItems',

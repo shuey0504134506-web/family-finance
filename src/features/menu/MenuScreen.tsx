@@ -8,11 +8,13 @@ export function MenuScreen() {
   const space = useSpace();
   const key = space.key;
 
-  const rows = [
+  const rows: { to: string; label: string; state?: { spaceKey: string } }[] = [
     { to: `/${key}/list/income`, label: 'הכנסות' },
     { to: `/${key}/list/expense`, label: 'הוצאות' },
     { to: `/${key}/budget`, label: 'תקציב' },
-    { to: '/summary', label: 'סיכומים', state: { spaceKey: key } },
+    { to: '/summary', label: 'סיכומים והשוואות', state: { spaceKey: key } },
+    { to: `/${key}/debts`, label: 'חובות' },
+    ...(space.scope === 'household' ? [{ to: '/tithes', label: 'מעשרות' }] : []),
     { to: `/${key}/tasks`, label: 'רשימת משימות' },
     { to: `/${key}/shopping`, label: 'רשימת קניות' },
   ];

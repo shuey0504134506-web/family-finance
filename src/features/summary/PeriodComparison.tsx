@@ -20,7 +20,18 @@ const MAX_SERIES = PALETTE.length;
 
 const WIDTH = 360;
 const HEIGHT = 210;
-const PAD = { top: 10, bottom: 26, left: 6, right: 6 };
+const PAD = { top: 10, bottom: 26, left: 38, right: 6 };
+
+/** קיצור מספר לציר ולתוך העמודות: 12,500 -> 12.5K. הקלט באגורות. */
+function compactShekels(agorot: number): string {
+  const v = Math.abs(agorot) / 100;
+  const trim = (n: number) => String(Math.round(n * 10) / 10);
+  if (v >= 1_000_000) return `${trim(v / 1_000_000)}M`;
+  if (v >= 1000) return `${trim(v / 1000)}K`;
+  return String(Math.round(v));
+}
+
+const CHAR_W = 4.6; // רוחב משוער לתו בגודל הגופן שבתוך העמודות
 
 /**
  * השוואה בין תקופות (חודשים או שנים): גרף עמודות מוערם לפי קטגוריה, מקרא וטבלה
@@ -93,7 +104,7 @@ export function PeriodComparison({
   const max = Math.max(1, ...columnTotals);
   const plotHeight = HEIGHT - PAD.top - PAD.bottom;
   const slot = (WIDTH - PAD.left - PAD.right) / Math.max(1, columns.length);
-  const barWidth = Math.min(38, slot - 8);
+  const barWidth = Math.min(56, slot - 8);
   const scale = (v: number) => (v <= 0 ? 0 : plotHeight * (v / max));
   const current = active === null ? null : columns[active];
 
@@ -144,6 +155,11 @@ export function PeriodComparison({
             {[0, 0.5, 1].map((f) => (
               <line key={f} x1={PAD.left} x2={WIDTH - PAD.right} y1={PAD.top + plotHeight * (1 - f)} y2={PAD.top + plotHeight * (1 - f)} className={f === 0 ? 'chart-axis' : 'cmp-grid'} />
             ))}
+            {[0, 0.5, 1].map((f) => (
+              <text key={`t${f}`} x={PAD.left - 4} y={PAD.top + plotHeight * (1 - f) + 3} textAnchor="end" className="chart-tick">
+                {compactShekels(max * f)}
+              </text>
+            ))}
             {columns.map((col, ci) => {
               const cx = PAD.left + slot * ci + slot / 2;
               let y = PAD.top + plotHeight;
@@ -154,7 +170,26 @@ export function PeriodComparison({
                     const h = scale(s.values[ci]);
                     if (h <= 0) return null;
                     y -= h;
-                    return <rect key={s.id} x={cx - barWidth / 2} y={y} width={barWidth} height={h} fill={s.color} stroke="#fff" strokeWidth={0.6} opacity={active === null || active === ci ? 1 : 0.55} />;
+                    const opacity = active === null || active === ci ? 1 : 0.55;
+                    const amountText = compactShekels(s.values[ci]);
+                    const maxChars = Math.floor((barWidth - 4) / CHAR_W);
+                    const showName = h >= 26 && s.name.length <= maxChars;
+                    const showAmount = h >= 13 && amountText.length <= maxChars;
+                    return (
+                      <g key={s.id} opacity={opacity}>
+                        <rect x={cx - barWidth / 2} y={y} width={barWidth} height={h} fill={s.color} stroke="#fff" strokeWidth={0.6} />
+                        {showAmount && (
+                          <text x={cx} y={showName ? y + h / 2 - 1 : y + h / 2 + 3} textAnchor="middle" className="chart-inbar">
+                            {showName ? s.name : amountText}
+                          </text>
+                        )}
+                        {showAmount && showName && (
+                          <text x={cx} y={y + h / 2 + 9} textAnchor="middle" className="chart-inbar">
+                            {amountText}
+                          </text>
+                        )}
+                      </g>
+                    );
                   })}
                   <text x={cx} y={HEIGHT - 8} textAnchor="middle" className="chart-tick">
                     {col.short}

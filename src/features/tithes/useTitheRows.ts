@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { buildTitheInputs, titheByMonth, type TitheMonthRow } from '../../domain/tithe';
+import { buildTitheInputs, titheByMonth, titheRecipients, type TitheMonthRow, type TitheRecipient } from '../../domain/tithe';
 import { businessIdOf } from '../../domain/spaces';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useSpaces } from '../spaces/SpacesContext';
@@ -13,6 +13,7 @@ import { useSettings } from '../settings/SettingsContext';
  */
 export function useTitheRows(enabled: boolean): {
   rows: TitheMonthRow[];
+  recipients: TitheRecipient[];
   loading: boolean;
   error: Error | null;
   hasBusiness: boolean;
@@ -48,8 +49,14 @@ export function useTitheRows(enabled: boolean): {
     [household.items, countedBusinessItems, month.selected, settings],
   );
 
+  const recipients = useMemo(
+    () => titheRecipients([...household.items, ...(settings.countBusinessTithePayments ? countedBusinessItems : [])]),
+    [household.items, countedBusinessItems, settings.countBusinessTithePayments],
+  );
+
   return {
     rows,
+    recipients,
     loading: enabled && (household.loading || business.loading),
     error: household.error ?? business.error,
     hasBusiness,

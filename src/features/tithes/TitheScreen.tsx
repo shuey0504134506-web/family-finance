@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { AppHeader } from '../../components/AppHeader';
-import { formatMonthYear } from '../../domain/dates';
+import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { ScreenBack } from './ScreenBack';
@@ -15,7 +15,7 @@ import { Icon } from '../../components/Icon';
 export function TitheScreen() {
   const settings = useSettings();
   const month = useMonth();
-  const { rows, loading, error, hasBusiness, hasHousehold } = useTitheRows(true);
+  const { rows, recipients, loading, error, hasBusiness, hasHousehold } = useTitheRows(true);
 
   if (!hasHousehold) return <Navigate to="/" replace />;
 
@@ -128,6 +128,29 @@ export function TitheScreen() {
                   </dd>
                 </div>
               </dl>
+            </section>
+
+            <section className="card" aria-label="למי ניתנו מעשרות">
+              <h2 className="card-title">למי ניתנו מעשרות</h2>
+              {recipients.length === 0 ? (
+                <p className="muted">עדיין לא נרשמו תשלומי מעשר.</p>
+              ) : (
+                <ul className="tithe-months">
+                  {recipients.map((r) => (
+                    <li key={r.name || '__none__'}>
+                      <span>
+                        {r.name || 'ללא שם'}
+                        <span className="muted small">
+                          {' '}
+                          · {r.count} {r.count === 1 ? 'תשלום' : 'תשלומים'} · אחרון {formatDisplayDate(r.lastDate)}
+                        </span>
+                      </span>
+                      <Amount agorot={r.totalAgorot} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="muted small">מצטבר מתחילת הנתונים ועד סוף {formatMonthYear(month.selected)}.</p>
             </section>
 
             {rows.length > 1 && (

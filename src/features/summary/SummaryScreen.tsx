@@ -120,7 +120,7 @@ export function SummaryScreen() {
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <ScreenHeader title="סיכומים" />
+      <ScreenHeader title="סיכומים והשוואות" />
       <main className="content" aria-busy={loading}>
         <MonthSwitcher label={periodLabel} stepMonths={period === 'month' ? 1 : 12} unit={period === 'month' ? 'חודש' : 'שנה'} />
 
