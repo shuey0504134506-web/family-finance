@@ -2767,7 +2767,7 @@ html,
 body,
 #root {
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 .app-shell,
 .content {
@@ -3201,4 +3201,11 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   font-size: 0.9rem;
   min-width: 24px;
   min-height: 24px;
+}
+
+/* הכותרת נשארת במקומה בגלילה בכל המסכים */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
