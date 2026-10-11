@@ -31,4 +31,17 @@ export const markNewAccount = (uid: string): void => {
 export const isNewAccount = (uid: string): boolean => newAccountUid === uid;
 export const clearNewAccount = (): void => {
   newAccountUid = null;
+  lockSession = null;
 };
+
+/**
+ * מצב הנעילה בהפעלה הנוכחית. מסכים כמו מדיניות הפרטיות נמצאים מחוץ לעץ המסכים המחוברים,
+ * ולכן הכניסה אליהם והיציאה מהם מפרקת ובונה מחדש את רכיב הנעילה. בלי זיכרון כאן, הבנייה מחדש
+ * נחשבת "הפעלה" ונועלת. הזיכרון נמחק ביציאה מהחשבון.
+ */
+let lockSession: { uid: string; locked: boolean } | null = null;
+export const rememberLockState = (uid: string, locked: boolean): void => {
+  lockSession = { uid, locked };
+};
+export const rememberedLockState = (uid: string): boolean | null =>
+  lockSession && lockSession.uid === uid ? lockSession.locked : null;

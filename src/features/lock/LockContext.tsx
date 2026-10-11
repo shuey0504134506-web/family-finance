@@ -23,7 +23,7 @@ import {
   type LockTiming,
 } from '../../domain/appLock';
 import { reloadedForLangChange } from '../../i18n/lang';
-import { isLockSuppressed, isNewAccount } from '../../services/lockSuppress';
+import { isLockSuppressed, isNewAccount, rememberLockState, rememberedLockState } from '../../services/lockSuppress';
 import { useAuth } from '../auth/AuthContext';
 import { verifyAccountPassword } from '../../services/accountService';
 import { loadLockConfig, patchLockConfig, hashSecret, verifySecret } from '../../services/appLockStorage';
@@ -57,8 +57,10 @@ export function LockProvider({ user, children }: { user: User; children: ReactNo
   const [config, setConfig] = useState<LockConfig>(() => loadLockConfig(uid));
   // בהפעלה נועלים, אלא אם הסיסמה הוקלדה זה עתה בכניסה לחשבון.
   const [locked, setLocked] = useState(
-    () => !justRegistered && !isNewAccount(uid) && !reloadedForLangChange && lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now()),
+    () => rememberedLockState(uid) ?? (!justRegistered && !isNewAccount(uid) && !reloadedForLangChange && lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now())),
   );
+  // זוכרים את המצב, כדי שמעבר דרך מסך מחוץ לעץ המחובר (מדיניות פרטיות) לא ייחשב הפעלה חדשה.
+  useEffect(() => rememberLockState(uid, locked), [uid, locked]);
   const configRef = useRef(config);
   configRef.current = config;
 
