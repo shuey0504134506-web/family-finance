@@ -461,7 +461,6 @@ export const EN: Record<string, string> = {
   "לוחצים על \"הוספת עסק\". העסק מופיע בכפתורים שבתחתית המסך.": "Tap \"Add business\". The business appears in the buttons at the bottom of the screen.",
   "בתחתית מסך הבית יש כפתור לכל עסק ולמשק הבית. לוחצים על העסק.": "At the bottom of the home screen there is a button for each business and for the household. Tap the business.",
   "המסך מתחלף לעסק: הכנסות, הוצאות ותקציב שלו בלבד. גם גרירה הצידה במסך הבית עוברת ביניהם.": "The screen switches to the business: only its income, expenses and budget. Dragging sideways on the home screen also switches between them.",
-  "החודש אנחנו בפלוס": "This month we are in the plus",
   "בתפריט נכנסים ל\"תקציב\".": "In the menu, open \"Budget\".",
   "בוחרים חודשי או שנתי, ולוחצים על \"הגדרת תקציב\".": "Choose monthly or annual, and tap \"Set budget\".",
   "לא הוגדר": "Not set",
