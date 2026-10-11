@@ -3527,3 +3527,14 @@ a.btn,
 /* קבוצות כפתורים (חובות ועוד): מרווח רגיל ביניהם ומעל הקבוצה */
 .form-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 .form-actions .btn { flex: 1 1 120px; width: auto; }
+
+/* קטגוריה עם ✕ לניהול: נראית כגלולה אחת, הבחירה והסימן הם שני כפתורים נפרדים */
+.chip-option.chip-with-x { display: inline-flex; align-items: center; padding: 0; overflow: hidden; }
+.chip-with-x .chip-main { border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; min-height: 44px; padding: 0; padding-inline-start: 16px; padding-inline-end: 6px; }
+.chip-with-x .chip-x { align-self: stretch; min-width: 34px; padding: 0; padding-inline-start: 4px; padding-inline-end: 10px; color: inherit; opacity: 0.55; font-size: 0.8rem; }
+.chip-with-x .chip-x:hover { opacity: 1; }
+.dialog-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.dialog-actions p { margin: 0; }
+@media (max-width: 400px) { .chip-with-x .chip-main { min-height: 40px; padding-inline-start: 12px; padding-inline-end: 4px; } }
+.category-dialog-name { margin: 0 0 4px; font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+.dialog-actions .btn { margin: 0; }

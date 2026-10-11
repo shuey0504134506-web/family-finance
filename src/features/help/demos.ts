@@ -29,9 +29,9 @@ export const EDIT_DELETE_STEPS: WalkthroughStep[] = [
 ];
 
 export const CATEGORIES_STEPS: WalkthroughStep[] = [
-  st('נכנסים להגדרות דרך הגלגל בפינה.', 'home-gear'),
-  st('פותחים את "ניהול האפליקציה".', 'settings-manage'),
-  st('לוחצים על "ניהול קטגוריות". שם מוסיפים קטגוריה, משנים שם ומוחקים.', 'manage-categories'),
+  st('נכנסים להוספת הוצאה (או הכנסה).', 'home-add-expense'),
+  st('ליד כל קטגוריה יש ✕. לוחצים עליו.', 'cat-x'),
+  st('נפתח חלון: שינוי שם, השבתה או מחיקה. אותו דבר גם בקטגוריות של חובות.', 'cat-dialog'),
 ];
 
 export const ADD_BUSINESS_STEPS: WalkthroughStep[] = [

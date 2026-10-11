@@ -19,7 +19,6 @@ import { AutoBackupHost } from './features/settings/AutoBackupHost';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
 import { BudgetScreen } from './features/budget/BudgetScreen';
-import { CategoriesScreen } from './features/categories/CategoriesScreen';
 import { SearchScreen } from './features/search/SearchScreen';
 import { SummaryScreen } from './features/summary/SummaryScreen';
 import { DebtsScreen } from './features/debts/DebtsScreen';
@@ -123,7 +122,6 @@ export function AppRoutes() {
           <Route path="/:scope/tasks" element={<TasksScreen />} />
           <Route path="/:scope/shopping" element={<ShoppingScreen />} />
         </Route>
-        <Route path="/categories" element={<CategoriesScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
         <Route path="/tithes" element={<TitheScreen />} />

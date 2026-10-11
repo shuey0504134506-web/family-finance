@@ -37,6 +37,13 @@ describe('חובות', () => {
     expect(list.filter((c) => c === 'אחר')).toHaveLength(1);
   });
 
+  it('קטגוריות שהוסרו לא מוצגות, חוץ מזו של החוב הנערך', () => {
+    const list = debtCategories([{ category: 'חבר' }], ['חבר', 'אחר']);
+    expect(list).not.toContain('חבר');
+    expect(list).not.toContain('אחר');
+    expect(debtCategories([{ category: 'חבר' }], ['חבר'], 'חבר')).toContain('חבר');
+  });
+
   const ok = { name: 'דנה', amountAgorot: 500, category: 'אחר', date: '2026-10-01', dueDate: '', note: '' };
   it('טופס תקין ללא שגיאות, וסוגי שגיאות', () => {
     expect(validateDebt(ok)).toEqual({});

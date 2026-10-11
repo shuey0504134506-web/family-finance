@@ -7,6 +7,8 @@ import { saveCustomMethods } from '../../services/paymentMethodsService';
 import { defaultsKey, readFormDefaults } from '../../services/formDefaults';
 import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencySymbol, getCurrency } from '../../domain/currency';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { CategoryChip } from '../../components/CategoryChip';
+import { CategoryDialog } from '../../components/CategoryDialog';
 import { Field } from '../../components/Field';
 import { Icon } from '../../components/Icon';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -24,7 +26,7 @@ import {
   type TransactionType,
 } from '../../domain/types';
 import { useCategories } from '../../hooks/useCategories';
-import { createCategory } from '../../services/categoryService';
+import { createCategory, deleteCategory, updateCategory } from '../../services/categoryService';
 import { newId } from '../../services/ids';
 import {
   getTransaction,
@@ -245,12 +247,24 @@ function TransactionForm({
     return first ? [first, ...options.filter((c) => c.id !== first.id)] : options;
   }, [options, lastKey]);
 
+  const [managing, setManaging] = useState<string | null>(null);
+  const managed = managing ? categories.find((c) => c.id === managing) : undefined;
+  const failCategory = () => reportFailure('לא הצלחנו לסנכרן את שינוי הקטגוריות. יש לנסות שוב.');
+
   const onAddCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return setCategoryError('יש להזין שם לקטגוריה.');
     if (name.length > 60) return setCategoryError('השם ארוך מדי (עד 60 תווים).');
     const same = options.find((c) => c.name.trim() === name);
-    if (same) {
+    const dormant = categories.find(
+      (c) => !c.active && inSpace(c, space) && c.type === draft.type && c.name.trim() === name,
+    );
+    if (!same && dormant) {
+      // קטגוריה מושבתת באותו שם: מפעילים אותה מחדש במקום ליצור כפילות
+      updateCategory(user.uid, dormant, { active: true }).catch(failCategory);
+      setAdded((previous) => [...previous, { id: dormant.id, name: dormant.name }]);
+      update('categoryId', dormant.id);
+    } else if (same) {
       // כבר קיימת קטגוריה בשם הזה: בוחרים אותה במקום ליצור כפילות
       update('categoryId', same.id);
     } else {
@@ -354,19 +368,46 @@ function TransactionForm({
             >
               {categoriesLoading && options.length === 0 && <span className="muted small">טוען…</span>}
               {orderedOptions.map((c) => (
-                <button
+                <CategoryChip
                   key={c.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.categoryId === c.id}
-                  className={`chip-option${draft.categoryId === c.id ? ' is-active' : ''}`}
-                  onClick={() => update('categoryId', c.id)}
-                >
-                  {c.name}
-                </button>
+                  label={c.name}
+                  selected={draft.categoryId === c.id}
+                  onSelect={() => update('categoryId', c.id)}
+                  onManage={categories.some((x) => x.id === c.id) ? () => setManaging(c.id) : undefined}
+                />
               ))}
             </div>
             {errors.category && <div className="field-error">{errors.category}</div>}
+            {managed && (
+              <CategoryDialog
+                name={managed.name}
+                active={managed.active}
+                onClose={() => setManaging(null)}
+                nameError={(n) => {
+                  const name = n.trim();
+                  if (!name || name.length > 60) return 'שם לא תקין.';
+                  const taken = categories.some(
+                    (x) => x.id !== managed.id && inSpace(x, space) && x.type === managed.type && x.name.trim() === name,
+                  );
+                  return taken ? 'כבר קיימת קטגוריה בשם הזה.' : null;
+                }}
+                onRename={(n) => {
+                  updateCategory(user.uid, managed, { name: n }).catch(failCategory);
+                  setAdded((previous) => previous.map((x) => (x.id === managed.id ? { ...x, name: n } : x)));
+                }}
+                onToggleActive={() => {
+                  if (managed.active && draft.categoryId === managed.id) update('categoryId', '');
+                  updateCategory(user.uid, managed, { active: !managed.active }).catch(failCategory);
+                  if (managed.active) setAdded((previous) => previous.filter((x) => x.id !== managed.id));
+                }}
+                onDelete={() => {
+                  if (draft.categoryId === managed.id) update('categoryId', '');
+                  setAdded((previous) => previous.filter((x) => x.id !== managed.id));
+                  deleteCategory(user.uid, managed.id).catch(failCategory);
+                }}
+                deleteText="למחוק את הקטגוריה? פעולות שכבר נרשמו בה נשארות עם שמה, והתקציב שלה יימחק."
+              />
+            )}
             {addingCategory ? (
               <div className="inline-add">
                 <input

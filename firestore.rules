@@ -99,6 +99,15 @@ service cloud.firestore {
              && data.updatedAt is int;
     }
 
+    // ---------- קטגוריות חובות שהוסרו: users/{uid}/settings/debtCategories ----------
+
+    function validDebtCategories(data) {
+      return data.keys().hasOnly(['hidden', 'updatedAt'])
+             && data.keys().hasAll(['hidden', 'updatedAt'])
+             && data.hidden is list && data.hidden.size() <= 40
+             && data.updatedAt is int;
+    }
+
     // ---------- לוגו עסק: users/{uid}/settings/logo_{businessId} ----------
 
     function validLogo(data) {
@@ -304,6 +313,7 @@ service cloud.firestore {
         allow create, update: if isOwner(uid)
                               && ((settingsId == 'main' && validSettings(request.resource.data))
                                   || (settingsId == 'paymentMethods' && validPaymentMethods(request.resource.data))
+                                  || (settingsId == 'debtCategories' && validDebtCategories(request.resource.data))
                                   || (settingsId.matches('logo_.{1,64}') && validLogo(request.resource.data)));
         allow delete: if isOwner(uid);
       }

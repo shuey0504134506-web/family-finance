@@ -81,11 +81,21 @@ export function debtTotals(debts: readonly Debt[]): DebtTotals[] {
   return CURRENCY_CODES.filter((c) => map.has(c)).map((c) => map.get(c) as DebtTotals);
 }
 
-/** קטגוריות להצגה: ברירות המחדל, ואחריהן כאלה שכבר נוספו בחובות קיימים. */
-export function debtCategories(debts: readonly Pick<Debt, 'category'>[]): string[] {
+/** כמה קטגוריות מוסרות נשמרות לכל היותר (מונע מסמך גדול מדי). */
+export const MAX_HIDDEN_DEBT_CATEGORIES = 40;
+
+/**
+ * קטגוריות להצגה: ברירות המחדל, ואחריהן כאלה שכבר נוספו בחובות קיימים.
+ * קטגוריה שהוסרה לא מוצגת, חוץ מ-keep (הקטגוריה של החוב שנערך כעת).
+ */
+export function debtCategories(
+  debts: readonly Pick<Debt, 'category'>[],
+  hidden: readonly string[] = [],
+  keep?: string,
+): string[] {
   const list: string[] = [...DEFAULT_DEBT_CATEGORIES];
   for (const d of debts) if (d.category && !list.includes(d.category)) list.push(d.category);
-  return list;
+  return list.filter((c) => c === keep || !hidden.includes(c));
 }
 
 export interface DebtDraftErrors {

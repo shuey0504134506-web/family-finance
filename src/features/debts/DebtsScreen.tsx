@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Amount } from '../../components/Amount';
+import { CategoryChip } from '../../components/CategoryChip';
+import { CategoryDialog } from '../../components/CategoryDialog';
 import { Field } from '../../components/Field';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencyOf, getCurrency, type CurrencyCode } from '../../domain/currency';
@@ -20,10 +22,13 @@ import { choiceKey, choiceText, choicesFor, parseChoiceKey, paymentLabelOf } fro
 import { DEFAULT_BUSINESS_ID, inSpace } from '../../domain/spaces';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
 import { useDebts } from '../../hooks/useDebts';
+import { useHiddenDebtCategories } from '../../hooks/useHiddenDebtCategories';
+import { saveHiddenDebtCategories } from '../../services/debtCategoriesService';
 import { deleteDebt, saveDebt } from '../../services/debtService';
 import { newId } from '../../services/ids';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useSpaces } from '../spaces/SpacesContext';
+import { useSyncNotice } from '../sync/SyncNotice';
 import { useSpace } from '../spaces/SpaceRoute';
 
 type Filter = 'open' | 'settled';
@@ -319,7 +324,14 @@ function DebtForm({
   const [note, setNote] = useState(initial?.note ?? '');
   const [errors, setErrors] = useState<ReturnType<typeof validateDebt>>({});
 
-  const categories = useMemo(() => debtCategories(debts), [debts]);
+  const { reportFailure } = useSyncNotice();
+  const hiddenCategories = useHiddenDebtCategories(user.uid);
+  const [managing, setManaging] = useState<string | null>(null);
+  const categories = useMemo(
+    () => debtCategories(debts, hiddenCategories, initial?.category),
+    [debts, hiddenCategories, initial?.category],
+  );
+  const failCategory = () => reportFailure('לא הצלחנו לסנכרן את שינוי הקטגוריות. יש לנסות שוב.');
   const choice = parseChoiceKey(payment);
   const methods = useMemo(() => choicesFor('expense', custom.expense, choice), [custom.expense, choice]);
   const chosenCategory = addingCategory ? newCategory.trim() : category;
@@ -338,6 +350,10 @@ function DebtForm({
     });
     setErrors(found);
     if (Object.keys(found).length > 0 || amount === null) return;
+    // קטגוריה שהוסרה והוזנה שוב בשמה: חוזרת לרשימה
+    if (hiddenCategories.includes(chosenCategory)) {
+      saveHiddenDebtCategories(user.uid, hiddenCategories.filter((h) => h !== chosenCategory)).catch(failCategory);
+    }
     const now = Date.now();
     // שדות חדשים מושמטים כשהם ברירת מחדל, כדי שכללי Firestore ישנים לא ידחו את השמירה.
     const debt: Debt = {
@@ -400,24 +416,34 @@ function DebtForm({
         </span>
         <div className={`chip-group${errors.category ? ' chip-group-error' : ''}`} role="radiogroup" aria-labelledby="debt-cat-label">
           {categories.map((c) => (
-            <button
+            <CategoryChip
               key={c}
-              type="button"
-              role="radio"
-              aria-checked={!addingCategory && category === c}
-              className={`chip-option${!addingCategory && category === c ? ' is-active' : ''}`}
-              onClick={() => {
+              label={c}
+              selected={!addingCategory && category === c}
+              onSelect={() => {
                 setAddingCategory(false);
                 setCategory(c);
               }}
-            >
-              {c}
-            </button>
+              onManage={() => setManaging(c)}
+            />
           ))}
           <button type="button" className={`chip-option${addingCategory ? ' is-active' : ''}`} onClick={() => setAddingCategory(true)}>
             + חדשה
           </button>
         </div>
+        {managing && (
+          <CategoryDialog
+            name={managing}
+            onClose={() => setManaging(null)}
+            deleteLabel="הסרה"
+            confirmLabel="כן, להסיר"
+            deleteText="להסיר את הקטגוריה מהרשימה? חובות שכבר נרשמו בה נשארים איתה. כדי להחזיר אותה, מוסיפים קטגוריה באותו שם."
+            onDelete={() => {
+              if (category === managing) setCategory('');
+              saveHiddenDebtCategories(user.uid, [...hiddenCategories.filter((h) => h !== managing), managing]).catch(failCategory);
+            }}
+          />
+        )}
         {addingCategory && <Field label="שם הקטגוריה" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} />}
         {errors.category && <div className="field-error">{errors.category}</div>}
       </div>
