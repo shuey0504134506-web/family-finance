@@ -336,7 +336,7 @@ function AdminContent() {
                     </div>
                   ) : (
                     <div className="form-actions">
-                      <button type="button" className="btn btn-secondary" onClick={() => setPayingUid(u.uid)}>
+                      <button type="button" className="btn btn-outline" onClick={() => setPayingUid(u.uid)}>
                         {u.payment ? 'עריכת תשלום' : 'דרישת תשלום'}
                       </button>
                       {u.status !== 'approved' && u.status !== 'blocked' && (
@@ -345,7 +345,7 @@ function AdminContent() {
                         </button>
                       )}
                       {u.status === 'blocked' ? (
-                        <button type="button" className="btn btn-secondary" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>
+                        <button type="button" className="btn btn-outline" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>
                           ביטול חסימה
                         </button>
                       ) : (
