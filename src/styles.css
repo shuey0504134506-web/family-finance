@@ -3514,3 +3514,15 @@ a.btn,
   align-items: center;
   justify-content: center;
 }
+
+/* כפתורים בהדגמות: גובה קבוע ביחס למסך האמיתי (לא נמתחים למלא את המקום הפנוי) */
+.mk-btn {
+  flex: none;
+  height: 30px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mk-row .mk-btn { flex: 1; }
+.mk-tab, .mk-field, .mk-tx { flex: none; }
