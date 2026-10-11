@@ -4,6 +4,7 @@ import { Modal } from '../../components/Modal';
 import {
   ensureApprovalRequest,
   subscribeApproval,
+  type AdminNotice,
   type ApprovalSnapshot,
   type PaymentNotice,
 } from '../../services/approvalService';
@@ -56,6 +57,38 @@ function PaymentStrip({ payment }: { payment: PaymentNotice }) {
         </Modal>
       ) : null}
     </>
+  );
+}
+
+const seenKey = (uid: string) => `ff.notice.seen.${uid}`;
+
+/** הודעה מהמנהל: קופצת עד שהמשתמש לוחץ "הבנתי". נזכרת במכשיר, כך שלא חוזרת על עצמה. */
+function NoticePopup({ uid, notice }: { uid: string; notice: AdminNotice }) {
+  const [seen, setSeen] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(seenKey(uid));
+    } catch {
+      return null;
+    }
+  });
+  if (seen === notice.id) return null;
+  const dismiss = () => {
+    try {
+      localStorage.setItem(seenKey(uid), notice.id);
+    } catch {
+      // אחסון חסום: ההודעה תוצג שוב בפתיחה הבאה
+    }
+    setSeen(notice.id);
+  };
+  return (
+    <Modal title={notice.title || 'הודעה ממנהל האפליקציה'} onClose={() => undefined}>
+      <div className="stack">
+        <p style={{ whiteSpace: 'pre-wrap' }}>{notice.text}</p>
+        <button type="button" className="btn btn-primary" onClick={dismiss}>
+          הבנתי
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -155,6 +188,7 @@ export function ApprovalGate({
   return (
     <>
       <UsageTracker uid={uid} />
+      {gate.notice ? <NoticePopup uid={uid} notice={gate.notice} /> : null}
       {soon && payment ? <PaymentStrip payment={payment} /> : null}
       {children}
     </>

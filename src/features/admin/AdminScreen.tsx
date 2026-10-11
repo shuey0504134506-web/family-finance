@@ -7,6 +7,7 @@ import {
   deleteAccountByAdmin,
   loadAdminOverview,
   setAccountStatus,
+  sendNotice,
   setPaymentRequest,
   type AdminOverview,
   type AdminUserRow,
@@ -112,6 +113,60 @@ function PaymentForm({
   );
 }
 
+function NoticeForm({
+  target,
+  existing,
+  onDone,
+  onCancel,
+}: {
+  /** מזהה חשבון, או 'all' */
+  target: string;
+  existing?: boolean;
+  onDone: (message: string) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (remove: boolean) => {
+    if (!remove && !text.trim()) {
+      setError('יש לכתוב הודעה.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const sent = await sendNotice(target, title.trim(), remove ? '' : text.trim());
+      onDone(remove ? 'ההודעה הוסרה.' : target === 'all' ? `ההודעה נשלחה ל-${sent} חשבונות.` : 'ההודעה נשלחה. תקפוץ אצל המשתמש כשיפתח את האפליקציה.');
+    } catch {
+      setError('השליחה נכשלה. יש לבדוק חיבור ולנסות שוב.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stack" role="group" aria-label="שליחת הודעה">
+      <label className="field-label" htmlFor={`notice-title-${target}`}>כותרת (לא חובה)</label>
+      <input id={`notice-title-${target}`} className="input" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+      <label className="field-label" htmlFor={`notice-text-${target}`}>
+        {target === 'all' ? 'הודעה לכל החשבונות המאושרים' : 'הודעה'}
+      </label>
+      <textarea id={`notice-text-${target}`} className="input" rows={4} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} />
+      <p className="muted small">ההודעה קופצת מיד אם האפליקציה פתוחה, או בפתיחה הבאה, ונשארת עד שהמשתמש לוחץ "הבנתי".</p>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <div className="form-actions">
+        <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void run(false)}>שליחה</button>
+        {existing ? (
+          <button type="button" className="btn btn-outline" disabled={busy} onClick={() => void run(true)}>הסרת ההודעה הקיימת</button>
+        ) : null}
+        <button type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>ביטול</button>
+      </div>
+    </div>
+  );
+}
+
 function dateTime(ms: number | null): string {
   if (!ms) return 'אף פעם';
   const d = new Date(ms);
@@ -138,6 +193,7 @@ function AdminContent() {
   const [confirmAll, setConfirmAll] = useState(false);
   const [payingUid, setPayingUid] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -252,6 +308,20 @@ function AdminContent() {
                   )}
                 </div>
               )}
+              {noticeFor === 'all' ? (
+                <NoticeForm
+                  target="all"
+                  onCancel={() => setNoticeFor(null)}
+                  onDone={(m) => {
+                    setNoticeFor(null);
+                    setNotice(m);
+                  }}
+                />
+              ) : (
+                <button type="button" className="btn btn-outline" onClick={() => setNoticeFor('all')}>
+                  הודעה לכל החשבונות
+                </button>
+              )}
               {notice ? <p className="muted small" role="status">{notice}</p> : null}
               {actionError ? <p className="form-error" role="alert">{actionError}</p> : null}
               <h3 className="subhead">כניסות לאפליקציה, 14 ימים אחרונים</h3>
@@ -288,6 +358,7 @@ function AdminContent() {
                     <span className="txc-chips">
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
                       <span className="txc-chip">{STATUS_LABEL[u.status]}</span>
+                      {u.notice ? <span className="txc-chip">הודעה פעילה</span> : null}
                       {u.payment ? (
                         <span className="txc-chip">
                           {u.payment.dueAt <= data.generatedAt ? 'נעול לתשלום' : `תשלום עד ${dateOnly(u.payment.dueAt)}`}
@@ -301,7 +372,18 @@ function AdminContent() {
                   <div className="txc-note">
                     פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון · פתיחות בשבוע: {u.opens7d}
                   </div>
-                  {isAdminEmail(u.email) ? null : payingUid === u.uid ? (
+                  {isAdminEmail(u.email) ? null : noticeFor === u.uid ? (
+                    <NoticeForm
+                      target={u.uid}
+                      existing={Boolean(u.notice)}
+                      onCancel={() => setNoticeFor(null)}
+                      onDone={(m) => {
+                        setNoticeFor(null);
+                        setNotice(m);
+                        load();
+                      }}
+                    />
+                  ) : payingUid === u.uid ? (
                     <PaymentForm
                       row={u}
                       onCancel={() => setPayingUid(null)}
@@ -338,6 +420,9 @@ function AdminContent() {
                     <div className="form-actions">
                       <button type="button" className="btn btn-outline" onClick={() => setPayingUid(u.uid)}>
                         {u.payment ? 'עריכת תשלום' : 'דרישת תשלום'}
+                      </button>
+                      <button type="button" className="btn btn-outline" onClick={() => setNoticeFor(u.uid)}>
+                        הודעה
                       </button>
                       {u.status !== 'approved' && u.status !== 'blocked' && (
                         <button type="button" className="btn btn-primary" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>

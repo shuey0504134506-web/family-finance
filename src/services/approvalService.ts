@@ -14,9 +14,22 @@ export interface PaymentNotice {
   message: string;
 }
 
+export interface AdminNotice {
+  id: string;
+  title: string;
+  text: string;
+}
+
 export interface ApprovalSnapshot {
   state: ApprovalState;
   payment: PaymentNotice | null;
+  notice: AdminNotice | null;
+}
+
+function parseNotice(raw: unknown): AdminNotice | null {
+  const n = raw as Partial<AdminNotice> | null | undefined;
+  if (!n || typeof n.id !== 'string' || typeof n.text !== 'string' || !n.text) return null;
+  return { id: n.id, title: typeof n.title === 'string' ? n.title : '', text: n.text };
 }
 
 function parsePayment(raw: unknown): PaymentNotice | null {
@@ -64,6 +77,7 @@ export function subscribeApproval(
       onState({
         state: snap.exists() ? parse(snap.data().status) : 'none',
         payment: snap.exists() ? parsePayment(snap.data().payment) : null,
+        notice: snap.exists() ? parseNotice(snap.data().notice) : null,
       }),
     () => onUnavailable(),
   );

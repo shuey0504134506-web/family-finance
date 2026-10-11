@@ -40,7 +40,7 @@ async function approvalStatuses(uids) {
     const snaps = await db.getAll(...refs);
     snaps.forEach((snap, k) => {
       const d = snap.exists ? snap.data() : {};
-      out.set(uids[i + k], { status: d.status ?? 'none', payment: d.payment ?? null });
+      out.set(uids[i + k], { status: d.status ?? 'none', payment: d.payment ?? null, notice: d.notice ?? null });
     });
   }
   return out;
@@ -80,6 +80,7 @@ async function statsFor(user, now) {
     disabled: Boolean(user.disabled),
     status: 'none',
     payment: null,
+    notice: null,
     opens7d: 0,
     txTotal: b + h,
     tx7d,
@@ -108,6 +109,7 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
     const a = statuses.get(r.uid);
     r.status = a?.status ?? 'none';
     r.payment = a?.payment ?? null;
+    r.notice = a?.notice ?? null;
   }
   const usage = await usageDays(rows.map((r) => r.uid));
   const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
@@ -263,4 +265,46 @@ exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, asy
   await Promise.all([db.collection('approvals').doc(uid).delete(), db.collection('usage').doc(uid).delete()]);
   await admin.auth().deleteUser(uid);
   return { ok: true };
+});
+
+/**
+ * הודעה שקופצת אצל המשתמש ברגע שהוא פותח את האפליקציה (או מיד, אם היא פתוחה).
+ * uid = 'all' שולח לכל החשבונות המאושרים. text ריק = הסרת ההודעה מחשבון אחד.
+ */
+exports.adminSendNotice = onCall({ region: REGION, timeoutSeconds: 120 }, async (request) => {
+  requireAdmin(request);
+  const { uid, title, text } = request.data ?? {};
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const body = clean(text, 1000);
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+
+  if (uid !== 'all') {
+    const target = await admin.auth().getUser(uid).catch(() => null);
+    if (!target) throw new HttpsError('not-found', 'החשבון לא נמצא.');
+    const ref = db.collection('approvals').doc(uid);
+    if (!body) {
+      await ref.set({ notice: FieldValue.delete() }, { merge: true });
+      return { sent: 0 };
+    }
+    await ref.set({ notice: { id: String(Date.now()), title: clean(title, 80), text: body, createdAt: Date.now() } }, { merge: true });
+    return { sent: 1 };
+  }
+
+  if (!body) throw new HttpsError('invalid-argument', 'יש לכתוב הודעה.');
+  const adminUids = new Set();
+  for (const email of ADMIN_EMAILS) {
+    const u = await admin.auth().getUserByEmail(email).catch(() => null);
+    if (u) adminUids.add(u.uid);
+  }
+  const snap = await db.collection('approvals').where('status', '==', 'approved').get();
+  const notice = { id: String(Date.now()), title: clean(title, 80), text: body, createdAt: Date.now() };
+  const docs = snap.docs.filter((d) => !adminUids.has(d.id));
+  for (let i = 0; i < docs.length; i += 400) {
+    const batch = db.batch();
+    docs.slice(i, i + 400).forEach((d) => batch.set(d.ref, { notice }, { merge: true }));
+    await batch.commit();
+  }
+  return { sent: docs.length };
 });

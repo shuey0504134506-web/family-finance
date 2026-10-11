@@ -11,6 +11,13 @@ export interface PaymentRequest {
   message: string;
 }
 
+export interface AdminNoticeInfo {
+  id: string;
+  title: string;
+  text: string;
+  createdAt: number;
+}
+
 export type UsageLevel = 'high' | 'medium' | 'low' | 'idle';
 
 export interface AdminUserRow {
@@ -21,6 +28,7 @@ export interface AdminUserRow {
   disabled: boolean;
   status: ApprovalStatus;
   payment: PaymentRequest | null;
+  notice: AdminNoticeInfo | null;
   /** פתיחות האפליקציה ב-7 הימים האחרונים */
   opens7d: number;
   txTotal: number;
@@ -80,4 +88,10 @@ export async function loadPendingCount(): Promise<number> {
 /** מחיקה סופית של חשבון וכל הנתונים שלו. */
 export async function deleteAccountByAdmin(uid: string): Promise<void> {
   await httpsCallable(functions(), 'adminDeleteAccount')({ uid });
+}
+
+/** שליחת הודעה שקופצת אצל המשתמש. uid='all' = לכל החשבונות המאושרים. text ריק = הסרה מחשבון אחד. */
+export async function sendNotice(uid: string | 'all', title: string, text: string): Promise<number> {
+  const result = await httpsCallable<unknown, { sent: number }>(functions(), 'adminSendNotice')({ uid, title, text });
+  return result.data.sent;
 }
