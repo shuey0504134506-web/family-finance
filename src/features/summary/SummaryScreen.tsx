@@ -6,8 +6,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { previousAnnualPeriod, type AnnualPeriod } from '../../domain/annual';
 import { addMonths, formatMonthYear } from '../../domain/dates';
-import { formatPercentChange, percentChange } from '../../domain/compare';
-import { categoryBreakdown, periodTotals, type PeriodTotals } from '../../domain/periods';
+import { categoryBreakdown, periodTotals } from '../../domain/periods';
 import { businessIdOf } from '../../domain/spaces';
 import { useAnnualPeriod } from '../../hooks/useAnnualPeriod';
 import { useCategories } from '../../hooks/useCategories';
@@ -42,7 +41,6 @@ export function SummaryScreen() {
   const { categories } = useCategories(user.uid);
 
   const { period: annual, ready: annualReady } = useAnnualPeriod(user.uid, scope, month.selected, settings.annualMode);
-  const previousAnnual = useMemo(() => previousAnnualPeriod(annual, settings.annualMode), [annual, settings.annualMode]);
   // נטענת ההיסטוריה עד סוף התקופה השנתית הנבחרת: מספיקה לחודש, לחודש הקודם, לשנה ולשנה הקודמת.
   const upTo = annual.endYm;
   const hasBusinessSpace = spaces.some((s) => s.scope === 'business');
@@ -56,10 +54,6 @@ export function SummaryScreen() {
     () => (period === 'month' ? [month.selected] : annual.months),
     [period, month.selected, annual],
   );
-  const previousMonths = useMemo(
-    () => (period === 'month' ? [addMonths(month.selected, -1)] : previousAnnual.months),
-    [period, month.selected, previousAnnual],
-  );
 
   // בעסק: רק הפעולות של העסק הנבחר. בבית: רק העסקים שנספרים במכשיר הזה.
   const businessForCalc = useMemo(() => {
@@ -71,10 +65,6 @@ export function SummaryScreen() {
   const totals = useMemo(
     () => periodTotals(scope, household.items, businessForCalc, currentMonths, mode),
     [scope, household.items, businessForCalc, currentMonths, mode],
-  );
-  const previous = useMemo(
-    () => periodTotals(scope, household.items, businessForCalc, previousMonths, mode),
-    [scope, household.items, businessForCalc, previousMonths, mode],
   );
 
   const scopeItems = scope === 'business' ? businessForCalc : household.items;
@@ -116,7 +106,6 @@ export function SummaryScreen() {
   }, [period, monthCount, yearCount, month.selected, annual, settings.annualMode]);
 
   const periodLabel = period === 'month' ? formatMonthYear(month.selected) : annual.label;
-  const previousLabel = period === 'month' ? formatMonthYear(previousMonths[0]) : previousAnnual.label;
 
   return (
     <div className={`app-shell scope-${scope}`}>
@@ -197,8 +186,6 @@ export function SummaryScreen() {
             <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />
             <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={categoryName} tone="income" />
 
-            <Comparison current={totals} previous={previous} previousLabel={previousLabel} />
-
             <PeriodComparison
               title={period === 'month' ? 'השוואה בין חודשים' : 'השוואה בין שנים'}
               unitLabel={period === 'month' ? 'חודשים' : 'שנים'}
@@ -213,37 +200,6 @@ export function SummaryScreen() {
         )}
       </main>
     </div>
-  );
-}
-
-function Comparison({ current, previous, previousLabel }: { current: PeriodTotals; previous: PeriodTotals; previousLabel: string }) {
-  const rows = [
-    { label: 'הכנסות', now: current.incomeAgorot, before: previous.incomeAgorot, goodWhenUp: true },
-    { label: 'הוצאות', now: current.expenseAgorot, before: previous.expenseAgorot, goodWhenUp: false },
-    { label: 'יתרה', now: current.balanceAgorot, before: previous.balanceAgorot, goodWhenUp: true },
-  ];
-  return (
-    <section className="card">
-      <h2 className="card-title">השוואה ל{previousLabel}</h2>
-      <ul className="compare-list">
-        {rows.map((row) => {
-          const change = percentChange(row.before, row.now);
-          const improved = change === null || change === 0 ? null : change > 0 === row.goodWhenUp;
-          return (
-            <li key={row.label}>
-              <span>{row.label}</span>
-              <span className="compare-values">
-                <Amount agorot={row.before} /> ← <Amount agorot={row.now} />
-              </span>
-              <span className={`compare-change${improved === null ? '' : improved ? ' tone-income' : ' tone-expense'}`}>
-                {formatPercentChange(change)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="muted small">"—" מוצג כשבתקופה הקודמת הסכום היה אפס, ולכן אי אפשר לחשב אחוז.</p>
-    </section>
   );
 }
 
