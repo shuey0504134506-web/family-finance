@@ -432,6 +432,7 @@ export const EN: Record<string, string> = {
   "גיבוי ושחזור": "Backup and restore",
   "לא הצלחנו לסנכרן את השינוי. יש לנסות שוב.": "We couldn't sync the change. Please try again.",
   "שם עסק": "Business name",
+  "לא הצלחנו להכין או לשמור את הקובץ. יש לבדוק את החיבור ולנסות שוב.": "We couldn't prepare or save the file. Check your connection and try again.",
   "לא הצלחנו לשמור את האמצעי. יש לנסות שוב.": "We couldn't save the method. Please try again.",
   "לא הצלחנו לשמור את האמצעי החדש. יש לנסות שוב.": "We couldn't save the new method. Please try again.",
   "כבר קיים אמצעי בשם הזה.": "A method with this name already exists.",

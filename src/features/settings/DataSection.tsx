@@ -1,3 +1,4 @@
+import { saveFile } from '../../native/saveFile';
 import { suppressLock } from '../../services/lockSuppress';
 import { useRef, useState } from 'react';
 import { transactionsToCsv } from '../../domain/export';
@@ -6,20 +7,6 @@ import { applyRestore, exportAllData, planNewData } from '../../services/account
 import { describeError } from '../../services/authErrors';
 import { useReadyAuth } from '../auth/AuthContext';
 import { AutoBackupControl } from './AutoBackupControl';
-
-function download(filename: string, content: string, type: string) {
-  suppressLock();
-  // BOM בתחילת CSV כדי שאקסל יזהה עברית נכון.
-  const blob = new Blob([type.startsWith('text/csv') ? `\uFEFF${content}` : content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 const countOf = (plan: RestorePlan) =>
   plan.categories.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
@@ -40,14 +27,17 @@ export function DataSection() {
     try {
       const { backup, transactions } = await exportAllData(user.uid);
       const stamp = new Date().toISOString().slice(0, 10);
-      if (kind === 'json') {
-        download(`גיבוי-ניהול-כספים-${stamp}.json`, JSON.stringify(backup, null, 2), 'application/json');
-      } else {
-        download(`פעולות-${stamp}.csv`, transactionsToCsv(transactions), 'text/csv;charset=utf-8');
-      }
-      setMessage(`הקובץ הורד למכשיר (${transactions.length} פעולות).`);
+      const outcome =
+        kind === 'json'
+          ? await saveFile(`finance-backup-${stamp}.json`, JSON.stringify(backup, null, 2), 'application/json')
+          : // BOM בתחילת הקובץ כדי שאקסל יזהה עברית נכון.
+            await saveFile(`finance-transactions-${stamp}.csv`, `\uFEFF${transactionsToCsv(transactions)}`, 'text/csv;charset=utf-8');
+      if (outcome === 'cancelled') setMessage('');
+      else if (outcome === 'shared') setMessage(`הקובץ מוכן (${transactions.length} פעולות). בחלון שנפתח אפשר לבחור "שמירה בקבצים", Drive, מייל או וואטסאפ.`);
+      else if (outcome === 'saved-documents') setMessage(`הקובץ נשמר בתיקיית המסמכים (Documents) של המכשיר (${transactions.length} פעולות).`);
+      else setMessage(`הקובץ הורד למכשיר (${transactions.length} פעולות).`);
     } catch {
-      setError('לא הצלחנו לקרוא את הנתונים. יש לבדוק את החיבור ולנסות שוב.');
+      setError('לא הצלחנו להכין או לשמור את הקובץ. יש לבדוק את החיבור ולנסות שוב.');
     } finally {
       setBusy(null);
     }

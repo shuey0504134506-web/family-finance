@@ -83,7 +83,7 @@ export function HomeScreen() {
   );
 
   // יתרת מעשרות: רק במשק הבית, ורק בחודש שהתחיל
-  const showTithe = scope === 'household' && month.status !== 'future';
+  const showTithe = scope === 'household';
   const tithe = useTitheRows(showTithe);
   const titheCurrent = tithe.rows[tithe.rows.length - 1];
 
@@ -153,7 +153,7 @@ export function HomeScreen() {
           onOpenExpense={() => navigate(`/${space.key}/list/expense`)}
         />
 
-        {!loading && !active.error && month.status !== 'future' && (
+        {!loading && !active.error && (
           <MultiCurrencySummary
             items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
             primaryIncomeAgorot={totals.incomeAgorot}
@@ -161,7 +161,7 @@ export function HomeScreen() {
           />
         )}
 
-        {month.status !== 'future' && !active.error && (
+        {!active.error && (
           <div className="add-actions">
             <button
               type="button"
@@ -205,7 +205,7 @@ export function HomeScreen() {
           </section>
         )}
 
-        {month.status !== 'future' && (
+        {(
           <div className="quick-links">
             <QuickLink
               icon="budget"

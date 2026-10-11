@@ -11,7 +11,6 @@ import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
-import { notStartedText } from '../home/homeText';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 import { ScreenBack } from '../tithes/ScreenBack';
@@ -83,10 +82,6 @@ function Content({ type }: { type: TransactionType }) {
             <button type="button" className="btn btn-secondary" onClick={main.retry}>
               ניסיון חוזר
             </button>
-          </div>
-        ) : month.status === 'future' ? (
-          <div className="card notice-card" role="status">
-            {notStartedText(month.selected, month.current)}
           </div>
         ) : loading ? (
           <div className="card notice-card" role="status">
