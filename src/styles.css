@@ -3109,3 +3109,13 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
 .cmp-table-wrap {
   max-width: 100%;
 }
+.cmp-table thead th:first-child,
+.cmp-table tfoot th {
+  position: sticky;
+  inset-inline-start: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.cmp-table tbody th {
+  z-index: 1;
+}
