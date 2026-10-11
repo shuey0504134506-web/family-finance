@@ -3158,3 +3158,19 @@ input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+/* טופס הוספה: פרטים נוספים מקופלים */
+.details-toggle {
+  align-self: flex-start;
+  min-height: 44px;
+  font-weight: 600;
+}
+.tx-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+}

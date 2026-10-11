@@ -5,6 +5,7 @@ import { APP_NAME, APP_VERSION } from '../../config/appInfo';
 import { AccordionItem } from './Accordion';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
+import { FormDefaultsSection } from './FormDefaultsSection';
 import { LanguageCurrencySection } from './LanguageCurrencySection';
 import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
@@ -30,6 +31,10 @@ export function SettingsScreen() {
 
           <AccordionItem id="mode" title="ייעוד האפליקציה" open={openId === 'mode'} onToggle={toggle}>
             <PurposeSection />
+          </AccordionItem>
+
+          <AccordionItem id="defaults" title="ברירות מחדל להוספה" open={openId === 'defaults'} onToggle={toggle}>
+            <FormDefaultsSection />
           </AccordionItem>
 
           <AccordionItem id="lang" title="שפה" open={openId === 'lang'} onToggle={toggle}>

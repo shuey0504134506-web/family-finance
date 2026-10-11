@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { readFormDefaults } from '../../services/formDefaults';
 import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencySymbol, getCurrency } from '../../domain/currency';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Field } from '../../components/Field';
@@ -58,11 +59,11 @@ function AddLoader({ space, type }: { space: Space; type: TransactionType }) {
       date: month.selected === month.current ? todayIso() : `${month.selected}-01`,
       counterparty: '',
       categoryId: '',
-      paymentMethod: 'cash',
+      paymentMethod: readFormDefaults().paymentMethod ?? 'cash',
       note: '',
       titheStatus: 'liable',
       isTithePayment: false,
-      currency: getCurrency(),
+      currency: readFormDefaults().currency ?? getCurrency(),
     }),
     // ערכי ברירת המחדל נקבעים פעם אחת בפתיחה. שינוי חודש בזמן הקלדה לא יאפס את הטופס.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,6 +152,8 @@ function TransactionForm({
   const [errors, setErrors] = useState<DraftErrors>({});
   // מונע שליחה כפולה גם אם לוחצים מהר מכפי שהמסך מתעדכן.
   const submitted = useRef(false);
+  // פרטים נוספים (תאריך, מטבע, אמצעי תשלום, מעשר) מוסתרים בהוספה, ופתוחים בעריכה.
+  const [showDetails, setShowDetails] = useState(existing !== null);
 
   // קטגוריות שנוספו עכשיו מהטופס, כדי שיופיעו מיד גם לפני שהמנוי מתעדכן
   const [added, setAdded] = useState<Array<{ id: string; name: string }>>([]);
@@ -225,6 +228,7 @@ function TransactionForm({
 
     const found = validateDraft(draft, options.map((c) => c.id));
     setErrors(found);
+    if (found.date || found.paymentMethod) setShowDetails(true);
     if (Object.keys(found).length > 0) return;
 
     const category = options.find((c) => c.id === draft.categoryId);
@@ -257,26 +261,6 @@ function TransactionForm({
       <ScreenHeader title={title} />
       <main className="content">
         <form className="card form-card" onSubmit={onSubmit} noValidate>
-          <div className="field">
-            <span className="field-label" id="tx-currency-label">
-              מטבע
-            </span>
-            <div className="chip-group" role="radiogroup" aria-labelledby="tx-currency-label">
-              {CURRENCY_CODES.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.currency === code}
-                  className={`chip-option${draft.currency === code ? ' is-active' : ''}`}
-                  onClick={() => update('currency', code)}
-                >
-                  {CURRENCY_SYMBOLS[code]} {code}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <Field
             label={`סכום (${currencySymbol(draft.currency)})`}
             inputMode="decimal"
@@ -286,14 +270,6 @@ function TransactionForm({
             value={draft.amountText}
             onChange={(e) => update('amountText', e.target.value)}
             error={errors.amount}
-          />
-
-          <Field
-            label="תאריך"
-            type="date"
-            value={draft.date}
-            onChange={(e) => update('date', e.target.value)}
-            error={errors.date}
           />
 
           <Field
@@ -369,6 +345,57 @@ function TransactionForm({
           </div>
 
           <div className="field">
+            <label htmlFor="tx-note">הערה (לא חובה)</label>
+            <textarea
+              id="tx-note"
+              className={`input textarea${errors.note ? ' input-error' : ''}`}
+              rows={3}
+              value={draft.note}
+              onChange={(e) => update('note', e.target.value)}
+            />
+            {errors.note && <div className="field-error">{errors.note}</div>}
+          </div>
+
+          <button
+            type="button"
+            className="link-btn details-toggle"
+            aria-expanded={showDetails}
+            aria-controls="tx-details"
+            onClick={() => setShowDetails((v) => !v)}
+          >
+            {showDetails ? 'הסתרת פרטים נוספים' : 'פרטים נוספים'}
+          </button>
+          {showDetails && (
+            <div id="tx-details" className="tx-details">
+          <Field
+            label="תאריך"
+            type="date"
+            value={draft.date}
+            onChange={(e) => update('date', e.target.value)}
+            error={errors.date}
+          />
+
+          <div className="field">
+            <span className="field-label" id="tx-currency-label">
+              מטבע
+            </span>
+            <div className="chip-group" role="radiogroup" aria-labelledby="tx-currency-label">
+              {CURRENCY_CODES.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.currency === code}
+                  className={`chip-option${draft.currency === code ? ' is-active' : ''}`}
+                  onClick={() => update('currency', code)}
+                >
+                  {CURRENCY_SYMBOLS[code]} {code}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
             <span className="field-label" id="tx-payment-label">
               אמצעי תשלום
             </span>
@@ -414,17 +441,8 @@ function TransactionForm({
             </label>
           )}
 
-          <div className="field">
-            <label htmlFor="tx-note">הערה (לא חובה)</label>
-            <textarea
-              id="tx-note"
-              className={`input textarea${errors.note ? ' input-error' : ''}`}
-              rows={3}
-              value={draft.note}
-              onChange={(e) => update('note', e.target.value)}
-            />
-            {errors.note && <div className="field-error">{errors.note}</div>}
-          </div>
+            </div>
+          )}
 
           <button type="submit" className="btn btn-primary">
             {existing ? 'שמירת שינויים' : 'שמירה'}
