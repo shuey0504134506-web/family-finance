@@ -70,9 +70,9 @@ export function WalkthroughPlayer({ steps, label }: { steps: readonly Walkthroug
         </div>
         {spot && (
           <span key={`a${index}`} className={`walk-arrow walk-arrow-${spot.dir}`} style={{ left: spot.left, top: spot.top }}>
-            <svg viewBox="0 0 56 70" width="44" height="56" fill="none" stroke="#d62828" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-              <path className="walk-arrow-line" d="M16 4 C 8 18, 26 24, 20 38 C 17 46, 28 50, 28 58" />
-              <path className="walk-arrow-head" d="M28 62 L14 46 M28 62 L43 49" />
+            <svg viewBox="0 0 60 112" width="36" height="68" fill="none" stroke="#d62828" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+              <line className="walk-arrow-line" x1="30" y1="4" x2="30" y2="102" />
+              <polyline className="walk-arrow-head" points="12,82 30,104 48,82" />
             </svg>
           </span>
         )}

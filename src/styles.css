@@ -3440,13 +3440,13 @@ input[type='checkbox'],
 .walk-screen { height: 100%; animation: walk-in 0.35s ease; }
 @keyframes walk-in { from { opacity: 0; } to { opacity: 1; } }
 
-/* חץ אדום בכתב יד: נמשך בהדרגה ואז מתנדנד לכיוון הכפתור */
+/* חץ אדום קלאסי (קו דק וראש פתוח): נמשך בהדרגה ואז מתנדנד לכיוון הכפתור */
 .walk-arrow { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 3; }
-.walk-arrow svg { position: absolute; left: -22px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)); }
-.walk-arrow-down svg { top: -56px; animation: walk-bob-down 0.9s ease-in-out 0.8s infinite; }
-.walk-arrow-up svg { top: 0; transform: rotate(180deg); animation: walk-bob-up 0.9s ease-in-out 0.8s infinite; }
-.walk-arrow-line { stroke-dasharray: 110; stroke-dashoffset: 110; animation: walk-draw 0.55s ease-out 0.15s forwards; }
-.walk-arrow-head { stroke-dasharray: 50; stroke-dashoffset: 50; animation: walk-draw 0.25s ease-out 0.62s forwards; }
+.walk-arrow svg { position: absolute; left: -18px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25)); }
+.walk-arrow-down svg { top: -63px; animation: walk-bob-down 0.9s ease-in-out 0.8s infinite; }
+.walk-arrow-up svg { top: -5px; transform: rotate(180deg); animation: walk-bob-up 0.9s ease-in-out 0.8s infinite; }
+.walk-arrow-line { stroke-dasharray: 100; stroke-dashoffset: 100; animation: walk-draw 0.45s ease-out 0.1s forwards; }
+.walk-arrow-head { stroke-dasharray: 60; stroke-dashoffset: 60; animation: walk-draw 0.25s ease-out 0.5s forwards; }
 @keyframes walk-draw { to { stroke-dashoffset: 0; } }
 @keyframes walk-bob-down { 0%, 100% { translate: 0 -4px; } 50% { translate: 0 3px; } }
 @keyframes walk-bob-up { 0%, 100% { translate: 0 4px; } 50% { translate: 0 -3px; } }
