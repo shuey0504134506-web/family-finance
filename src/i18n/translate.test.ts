@@ -42,4 +42,13 @@ describe('תרגום לאנגלית', () => {
       expect(b, he).toBe(a);
     }
   });
+
+  it('כותרות מסך עם שם המרחב מתורגמות', () => {
+    setLangForTest('en');
+    expect(translateText('הכנסות · ביתנו האהוב')).toBe('Income · ביתנו האהוב');
+    expect(translateText('חובות · ביתנו האהוב')).toBe('Debts · ביתנו האהוב');
+    expect(translateText('מעשרות · ביתנו האהוב')).toBe("Ma'aserot · ביתנו האהוב");
+    expect(translateText('הוספת הוצאה · ביתנו האהוב')).toBe('Add expense · ביתנו האהוב');
+    expect(translateText('סיכומים והשוואות')).toBe('Summaries & comparisons');
+  });
 });
