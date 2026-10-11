@@ -1,4 +1,4 @@
-/** כפתור קטגוריה בטופס: הבחירה, ולצידה ✕ שפותח את חלון ההשבתה והמחיקה. */
+/** כפתור קטגוריה בטופס: הבחירה, ולצידה ✕ שפותח את חלון שינוי השם והמחיקה. */
 export function CategoryChip({
   label,
   selected,
@@ -16,7 +16,7 @@ export function CategoryChip({
         {label}
       </button>
       {onManage && (
-        <button type="button" className="chip-x" aria-label="השבתה או מחיקה של הקטגוריה" onClick={onManage}>
+        <button type="button" className="chip-x" aria-label="ניהול הקטגוריה" onClick={onManage}>
           ✕
         </button>
       )}

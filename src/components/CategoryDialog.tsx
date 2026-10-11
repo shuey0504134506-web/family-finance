@@ -4,15 +4,13 @@ import { Modal } from './Modal';
 type Step = 'menu' | 'rename' | 'delete';
 
 /**
- * חלון ניהול של קטגוריה אחת: שינוי שם, השבתה ומחיקה.
- * בחובות אין שינוי שם והשבתה, רק הסרה מהרשימה (onDisable ו-onRename לא מועברים).
+ * חלון ניהול של קטגוריה אחת: שינוי שם ומחיקה.
+ * בחובות אין שינוי שם, רק הסרה מהרשימה (onRename לא מועבר).
  */
 export function CategoryDialog({
   name,
-  active = true,
   onClose,
   onRename,
-  onToggleActive,
   onDelete,
   deleteLabel = 'מחיקה',
   confirmLabel = 'כן, למחוק',
@@ -20,10 +18,8 @@ export function CategoryDialog({
   nameError,
 }: {
   name: string;
-  active?: boolean;
   onClose: () => void;
   onRename?: (name: string) => void;
-  onToggleActive?: () => void;
   onDelete: () => void;
   deleteLabel?: string;
   confirmLabel?: string;
@@ -52,24 +48,9 @@ export function CategoryDialog({
               שינוי שם
             </button>
           )}
-          {onToggleActive && (
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                onToggleActive();
-                onClose();
-              }}
-            >
-              {active ? 'השבתה' : 'הפעלה'}
-            </button>
-          )}
           <button type="button" className="btn btn-danger-outline" onClick={() => setStep('delete')}>
             {deleteLabel}
           </button>
-          {onToggleActive && (
-            <p className="muted small">קטגוריה מושבתת לא מוצעת בפעולות חדשות. כדי להחזיר אותה, מוסיפים קטגוריה באותו שם.</p>
-          )}
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             ביטול
           </button>

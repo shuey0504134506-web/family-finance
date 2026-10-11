@@ -381,7 +381,6 @@ function TransactionForm({
             {managed && (
               <CategoryDialog
                 name={managed.name}
-                active={managed.active}
                 onClose={() => setManaging(null)}
                 nameError={(n) => {
                   const name = n.trim();
@@ -394,11 +393,6 @@ function TransactionForm({
                 onRename={(n) => {
                   updateCategory(user.uid, managed, { name: n }).catch(failCategory);
                   setAdded((previous) => previous.map((x) => (x.id === managed.id ? { ...x, name: n } : x)));
-                }}
-                onToggleActive={() => {
-                  if (managed.active && draft.categoryId === managed.id) update('categoryId', '');
-                  updateCategory(user.uid, managed, { active: !managed.active }).catch(failCategory);
-                  if (managed.active) setAdded((previous) => previous.filter((x) => x.id !== managed.id));
                 }}
                 onDelete={() => {
                   if (draft.categoryId === managed.id) update('categoryId', '');

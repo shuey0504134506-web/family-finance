@@ -31,7 +31,7 @@ export const EDIT_DELETE_STEPS: WalkthroughStep[] = [
 export const CATEGORIES_STEPS: WalkthroughStep[] = [
   st('נכנסים להוספת הוצאה (או הכנסה).', 'home-add-expense'),
   st('ליד כל קטגוריה יש ✕. לוחצים עליו.', 'cat-x'),
-  st('נפתח חלון: שינוי שם, השבתה או מחיקה. אותו דבר גם בקטגוריות של חובות.', 'cat-dialog'),
+  st('נפתח חלון: שינוי שם או מחיקה. בקטגוריות של חובות אפשר להסיר.', 'cat-dialog'),
 ];
 
 export const ADD_BUSINESS_STEPS: WalkthroughStep[] = [
