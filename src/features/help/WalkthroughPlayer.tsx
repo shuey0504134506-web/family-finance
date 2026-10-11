@@ -1,13 +1,22 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
+import { getLang } from '../../i18n/lang';
+import scenes from './scenes.json';
 
 export interface WalkthroughStep {
   /** הכיתוב שמסביר מה לעשות בשלב הזה */
   caption: string;
-  /** המסך המצויר בשלב הזה. הרכיב המודגש מסומן ב-className "mk-hl" והחץ האדום מצביע עליו. */
-  screen: ReactNode;
-  /** כיוון החץ. ברירת מחדל: מלמעלה למטה, ובחלק העליון של המסך מלמטה למעלה. */
-  arrow?: 'down' | 'up';
+  /** מזהה הצילום של המסך האמיתי (scenes.json). החץ מצביע על האלמנט שנמדד בו. */
+  scene: string;
+}
+
+interface Scene {
+  img: string;
+  /** מיקום היעד, כשבר מגודל המסך */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 const STEP_MS = 3400;
@@ -15,22 +24,23 @@ const STEP_MS = 3400;
 const prefersReducedMotion = (): boolean =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-interface ArrowSpot {
-  left: number;
-  top: number;
-  dir: 'down' | 'up';
-}
+const sceneFor = (id: string): { scene: Scene; lang: 'he' | 'en' } | null => {
+  const all = scenes as Record<string, Record<string, Scene>>;
+  const lang = getLang();
+  const own = all[lang]?.[id];
+  if (own) return { scene: own, lang };
+  const fallback = all.he?.[id];
+  return fallback ? { scene: fallback, lang: 'he' } : null;
+};
 
 /**
- * הדגמה מונפשת: טלפון מצויר, חץ אדום בכתב יד שמצביע על מה שצריך ללחוץ, כיתוב לכל שלב,
- * וחיצים לעבור בין השלבים. מתנגן אוטומטית בלולאה, ואפשר לעצור. מי שביקש פחות תנועה
- * מקבל הדגמה שמתקדמת רק בלחיצה.
+ * הדגמה מונפשת: צילום של המסך האמיתי של האפליקציה, חץ אדום בכתב יד שמצביע בדיוק על
+ * מה שצריך ללחוץ (המיקום נמדד מהמסך האמיתי בעת הצילום), כיתוב לכל שלב וחיצים לעבור בין השלבים.
+ * מתנגן אוטומטית בלולאה, ואפשר לעצור. מי שביקש פחות תנועה מקבל הדגמה שמתקדמת רק בלחיצה.
  */
 export function WalkthroughPlayer({ steps, label }: { steps: readonly WalkthroughStep[]; label: string }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(() => !prefersReducedMotion());
-  const [spot, setSpot] = useState<ArrowSpot | null>(null);
-  const phoneRef = useRef<HTMLDivElement>(null);
   const last = steps.length - 1;
 
   useEffect(() => {
@@ -41,21 +51,16 @@ export function WalkthroughPlayer({ steps, label }: { steps: readonly Walkthroug
 
   const step = steps[index];
 
-  // מיקום החץ נמדד מהמסך המצויר עצמו, כך שהוא תמיד מצביע על הפריט המודגש.
-  useLayoutEffect(() => {
-    const phone = phoneRef.current;
-    const target = phone?.querySelector<HTMLElement>('.mk-hl');
-    if (!phone || !target) {
-      setSpot(null);
-      return;
-    }
-    const p = phone.getBoundingClientRect();
-    const t = target.getBoundingClientRect();
-    const centerY = t.top - p.top + t.height / 2;
-    const dir = step.arrow ?? (centerY < p.height * 0.3 ? 'up' : 'down');
-    const left = Math.min(p.width - 34, Math.max(34, t.left - p.left + t.width / 2));
-    setSpot({ left, top: dir === 'down' ? t.top - p.top - 2 : t.bottom - p.top + 2, dir });
-  }, [index, step]);
+  const found = sceneFor(step.scene);
+  const target = found?.scene;
+  // יעד בחלק העליון של המסך: החץ מגיע מלמטה כלפי מעלה. אחרת מלמעלה כלפי מטה.
+  const dir: 'down' | 'up' = target && target.y + target.h / 2 < 0.3 ? 'up' : 'down';
+  const spot = target
+    ? {
+        left: Math.min(0.88, Math.max(0.12, target.x + target.w / 2)) * 100,
+        top: (dir === 'down' ? target.y : target.y + target.h) * 100,
+      }
+    : null;
 
   const go = (next: number) => {
     setPlaying(false);
@@ -64,12 +69,28 @@ export function WalkthroughPlayer({ steps, label }: { steps: readonly Walkthroug
 
   return (
     <div className="walk" role="group" aria-label={label}>
-      <div className="walk-phone" ref={phoneRef} aria-hidden="true">
-        <div className="walk-screen" key={`s${index}`}>
-          {step.screen}
-        </div>
+      <div className="walk-phone" aria-hidden="true">
+        {found && target && (
+          <>
+            <img
+              key={`s${index}`}
+              className="walk-screen"
+              src={`${import.meta.env.BASE_URL}help/${found.lang}/${target.img}`}
+              alt=""
+              width={540}
+              height={960}
+              loading="lazy"
+              draggable={false}
+            />
+            <span
+              key={`r${index}`}
+              className="walk-ring"
+              style={{ left: `${target.x * 100}%`, top: `${target.y * 100}%`, width: `${target.w * 100}%`, height: `${target.h * 100}%` }}
+            />
+          </>
+        )}
         {spot && (
-          <span key={`a${index}`} className={`walk-arrow walk-arrow-${spot.dir}`} style={{ left: spot.left, top: spot.top }}>
+          <span key={`a${index}`} className={`walk-arrow walk-arrow-${dir}`} style={{ left: `${spot.left}%`, top: `${spot.top}%` }}>
             <svg viewBox="0 0 60 112" width="36" height="68" fill="none" stroke="#d62828" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
               <line className="walk-arrow-line" x1="30" y1="4" x2="30" y2="102" />
               <polyline className="walk-arrow-head" points="12,82 30,104 48,82" />
