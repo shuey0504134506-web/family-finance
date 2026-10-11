@@ -65,10 +65,14 @@ function HelpEntry({ item, open, onToggle }: { item: HelpItem; open: boolean; on
         <div id={panelId} className="help-body">
           <p>{item.body}</p>
           {item.steps && <WalkthroughPlayer steps={item.steps} label={`הדגמה: ${item.title}`} />}
-          {item.link && (
-            <Link className="chip-btn" to={item.link.to}>
-              {item.link.label} ←
-            </Link>
+          {item.links && (
+            <div className="help-links">
+              {item.links.map((link) => (
+                <Link key={link.to + link.label} className="chip-btn" to={link.to}>
+                  {link.label} ←
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}
