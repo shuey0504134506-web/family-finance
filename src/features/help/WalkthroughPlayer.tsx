@@ -21,9 +21,6 @@ interface Scene {
 
 const STEP_MS = 3400;
 
-const prefersReducedMotion = (): boolean =>
-  typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 const sceneFor = (id: string): { scene: Scene; lang: 'he' | 'en' } | null => {
   const all = scenes as Record<string, Record<string, Scene>>;
   const lang = getLang();
@@ -36,11 +33,11 @@ const sceneFor = (id: string): { scene: Scene; lang: 'he' | 'en' } | null => {
 /**
  * הדגמה מונפשת: צילום של המסך האמיתי של האפליקציה, חץ אדום בכתב יד שמצביע בדיוק על
  * מה שצריך ללחוץ (המיקום נמדד מהמסך האמיתי בעת הצילום), כיתוב לכל שלב וחיצים לעבור בין השלבים.
- * מתנגן אוטומטית בלולאה, ואפשר לעצור. מי שביקש פחות תנועה מקבל הדגמה שמתקדמת רק בלחיצה.
+ * מתנגן אוטומטית בלולאה, ואפשר לעצור. מי שביקש פחות תנועה מקבל חץ נייח, בלי הנפשה.
  */
 export function WalkthroughPlayer({ steps, label }: { steps: readonly WalkthroughStep[]; label: string }) {
   const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
+  const [playing, setPlaying] = useState(true);
   const last = steps.length - 1;
 
   useEffect(() => {
