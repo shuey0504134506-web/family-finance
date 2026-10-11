@@ -6,6 +6,7 @@ import { inSpace, type Space } from '../../domain/spaces';
 import { deleteBoughtItems, deleteShoppingItem, saveShoppingItem } from '../../services/listService';
 import { newId } from '../../services/ids';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { useLists } from './ListsContext';
@@ -19,6 +20,7 @@ export function ShoppingScreen() {
 }
 
 function ShoppingBody({ space, uid }: { space: Space; uid: string }) {
+  const { nameOf } = useSpaces();
   const { items, loading, error } = useLists();
   const { reportFailure } = useSyncNotice();
   const [name, setName] = useState('');
@@ -45,7 +47,7 @@ function ShoppingBody({ space, uid }: { space: Space; uid: string }) {
 
   return (
     <div className="app-shell">
-      <ScreenHeader title="רשימת קניות" />
+      <ScreenHeader title={`רשימת קניות · ${nameOf(space)}`} />
       <main className="content" aria-busy={loading}>
         <ScopeSwitch space={space} page="shopping" />
 

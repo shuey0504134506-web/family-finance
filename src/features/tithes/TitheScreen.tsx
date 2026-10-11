@@ -3,6 +3,8 @@ import { Amount } from '../../components/Amount';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
 import { useMonth } from '../month/MonthContext';
+import { useSpaces } from '../spaces/SpacesContext';
+import { HOUSEHOLD_SPACE } from '../../domain/spaces';
 import { useSettings } from '../settings/SettingsContext';
 import { useTitheRows } from './useTitheRows';
 
@@ -12,6 +14,7 @@ import { useTitheRows } from './useTitheRows';
  */
 export function TitheScreen() {
   const settings = useSettings();
+  const { nameOf } = useSpaces();
   const month = useMonth();
   const { rows, recipients, loading, error, hasBusiness, hasHousehold } = useTitheRows(true);
 
@@ -26,7 +29,7 @@ export function TitheScreen() {
 
   return (
     <div className="app-shell scope-household">
-      <ScreenHeader title="מעשרות" />
+      <ScreenHeader title={`מעשרות · ${nameOf(HOUSEHOLD_SPACE)}`} />
       <main className="content" aria-busy={loading}>
         <p className="muted small">במעשרות נספרות רק פעולות במטבע הראשי. פעולות במטבע אחר אינן נכללות.</p>
 

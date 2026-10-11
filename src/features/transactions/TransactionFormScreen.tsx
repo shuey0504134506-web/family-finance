@@ -31,6 +31,7 @@ import {
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSpace } from '../spaces/SpaceRoute';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 
 const isType = (value: string | undefined): value is TransactionType =>
@@ -146,6 +147,7 @@ function TransactionForm({
 }) {
   const navigate = useNavigate();
   const { user } = useReadyAuth();
+  const { nameOf } = useSpaces();
   const month = useMonth();
   const scope = space.scope;
   const { reportFailure } = useSyncNotice();
@@ -285,7 +287,7 @@ function TransactionForm({
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <ScreenHeader title={title} />
+      <ScreenHeader title={`${title} · ${nameOf(space)}`} />
       <main className="content">
         <form className="card form-card" onSubmit={onSubmit} noValidate>
           <Field

@@ -38,7 +38,7 @@ function Content({ type }: { type: TransactionType }) {
   const month = useMonth();
   const space = useSpace();
   const scope = space.scope;
-  const { countedIds } = useSpaces();
+  const { countedIds, nameOf } = useSpaces();
 
   const needsBusinessNet = scope === 'household' && type === 'income' && countedIds.length > 0;
 
@@ -69,7 +69,7 @@ function Content({ type }: { type: TransactionType }) {
 
   return (
     <div className={`app-shell scope-${scope}`}>
-      <ScreenHeader title={isIncome ? 'הכנסות' : 'הוצאות'} search />
+      <ScreenHeader title={`${isIncome ? 'הכנסות' : 'הוצאות'} · ${nameOf(space)}`} search />
       <main className="content" aria-busy={loading}>
         <MonthSwitcher label={formatMonthYear(month.selected)} />
 

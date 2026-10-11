@@ -23,6 +23,7 @@ import { useDebts } from '../../hooks/useDebts';
 import { deleteDebt, saveDebt } from '../../services/debtService';
 import { newId } from '../../services/ids';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSpace } from '../spaces/SpaceRoute';
 
 type Filter = 'open' | 'settled';
@@ -31,6 +32,7 @@ type Filter = 'open' | 'settled';
 export function DebtsScreen() {
   const { user } = useReadyAuth();
   const space = useSpace();
+  const { nameOf } = useSpaces();
   const { debts: all, loading, error } = useDebts(user.uid);
   const debts = useMemo(() => all.filter((d) => inSpace(d, space)), [all, space]);
   const [filter, setFilter] = useState<Filter>('open');
@@ -51,7 +53,7 @@ export function DebtsScreen() {
 
   return (
     <div className={`app-shell scope-${space.scope}`}>
-      <ScreenHeader title="חובות" />
+      <ScreenHeader title={`חובות · ${nameOf(space)}`} />
       <main className="content" aria-busy={loading}>
         {error && (
           <div className="card error-card" role="alert">

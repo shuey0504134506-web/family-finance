@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ChevronLeft } from '../../components/icons';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { useSpaces } from '../spaces/SpacesContext';
 import { useSpace } from '../spaces/SpaceRoute';
 
 /** תפריט ראשי: מסך מלא עם אותה כותרת וחזרה כמו בהגדרות ובחיפוש. */
 export function MenuScreen() {
   const space = useSpace();
+  const { nameOf } = useSpaces();
   const key = space.key;
 
   const rows: { to: string; label: string; state?: { spaceKey: string } }[] = [
@@ -21,7 +23,7 @@ export function MenuScreen() {
 
   return (
     <div className="app-shell">
-      <ScreenHeader title="תפריט" />
+      <ScreenHeader title={`תפריט · ${nameOf(space)}`} />
       <main className="content">
         <nav className="acc-list" aria-label="תפריט">
           {rows.map((row) => (
