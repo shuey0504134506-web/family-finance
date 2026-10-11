@@ -59,17 +59,24 @@ service cloud.firestore {
       allow read, delete: if false;
     }
 
+    // חשבון המנהל (לפי האימייל המחובר). משמש רק לקריאת הודעות בזמן אמת; כל פעולת ניהול אחרת בפונקציות שרת.
+    function isAdminUser() {
+      return request.auth != null && request.auth.token.email in ['shuey0504134506@gmail.com'];
+    }
+
     // הודעות ממשתמש למנהל: messages/{id} = {uid, text, createdAt}. המשתמש יוצר וקורא את שלו בלבד.
-    // המנהל קורא ועונה דרך פונקציות השרת (התשובה נכתבת שם: reply, repliedAt). חסום לא יכול לשלוח.
+    // המנהל קורא בזמן אמת, וענה דרך פונקציות השרת (התשובה נכתבת שם: reply, repliedAt). חסום לא יכול לשלוח.
     // גם חשבון שננעל לתשלום או ממתין לאישור יכול לפנות למנהל.
     match /messages/{messageId} {
       allow create: if request.auth != null
-                    && request.resource.data.keys().hasOnly(['uid', 'text', 'createdAt'])
+                    && request.resource.data.keys().hasOnly(['uid', 'text', 'createdAt', 'email'])
+                    && (!request.resource.data.keys().hasAny(['email'])
+                        || request.resource.data.email == request.auth.token.email)
                     && request.resource.data.uid == request.auth.uid
                     && isNonEmptyString(request.resource.data.text, 2000)
                     && request.resource.data.createdAt is int
                     && get(approvalPath(request.auth.uid)).data.status in ['approved', 'pending'];
-      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isAdminUser();
       allow update, delete: if false;
     }
 

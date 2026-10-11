@@ -20,10 +20,10 @@ export function ContactAdmin() {
       <p className="muted">לשליחת הודעה למנהל האפליקציה יש להתחבר לחשבון. אפשר גם לפנות בטלפון שלמעלה.</p>
     );
   }
-  return <Form uid={user.uid} />;
+  return <Form uid={user.uid} email={user.email} />;
 }
 
-function Form({ uid }: { uid: string }) {
+function Form({ uid, email }: { uid: string; email: string | null }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +42,7 @@ function Form({ uid }: { uid: string }) {
     setError(null);
     setSent(false);
     try {
-      await sendMessageToAdmin(uid, text);
+      await sendMessageToAdmin(uid, email, text);
       setText('');
       setSent(true);
     } catch {

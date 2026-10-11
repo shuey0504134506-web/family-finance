@@ -15,9 +15,10 @@ export interface UserMessage {
   repliedAt: number | null;
 }
 
-export async function sendMessageToAdmin(uid: string, text: string): Promise<void> {
+export async function sendMessageToAdmin(uid: string, email: string | null, text: string): Promise<void> {
   await addDoc(collection(db, 'messages'), {
     uid,
+    ...(email ? { email } : {}),
     text: text.trim().slice(0, MAX_MESSAGE_LENGTH),
     createdAt: Date.now(),
   });

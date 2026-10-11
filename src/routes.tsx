@@ -1,6 +1,8 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { FullScreenMessage } from './components/FullScreenMessage';
 import { useAuth } from './features/auth/AuthContext';
+import { AdminMessageHost } from './features/admin/AdminMessageHost';
+import { isAdminEmail } from './config/admin';
 import { ApprovalGate } from './features/auth/ApprovalGate';
 import { CompleteSetupScreen } from './features/auth/CompleteSetupScreen';
 import { ForgotPasswordScreen } from './features/auth/ForgotPasswordScreen';
@@ -76,6 +78,7 @@ function RequireAccount() {
               <ListsProvider uid={state.user.uid}>
                 <LockGate>
                   <RemindersHost />
+                  {isAdminEmail(state.user.email) ? <AdminMessageHost /> : null}
                   <AutoBackupHost />
                   <Outlet />
                 </LockGate>

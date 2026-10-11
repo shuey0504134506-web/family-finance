@@ -1,5 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from '../firebase/config';
+import { collection, limit, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
+import { app, db } from '../firebase/config';
 
 export type ApprovalStatus = 'approved' | 'pending' | 'blocked' | 'none';
 
@@ -95,9 +96,30 @@ export interface AdminMessage {
   repliedAt: number | null;
 }
 
-export async function loadAdminMessages(): Promise<AdminMessage[]> {
-  const result = await httpsCallable<void, { messages: AdminMessage[] }>(functions(), 'adminListMessages')();
-  return result.data.messages;
+/**
+ * הודעות המשתמשים בזמן אמת (200 האחרונות). הקריאה מותרת בכללי Firestore לחשבון המנהל בלבד.
+ * email נשמר בהודעה בעת השליחה (והכללים מוודאים שהוא האימייל של השולח).
+ */
+export function subscribeAdminMessages(onData: (list: AdminMessage[]) => void, onError: () => void): Unsubscribe {
+  return onSnapshot(
+    query(collection(db, 'messages'), orderBy('createdAt', 'desc'), limit(200)),
+    (snap) =>
+      onData(
+        snap.docs.map((d) => {
+          const m = d.data();
+          return {
+            id: d.id,
+            uid: typeof m.uid === 'string' ? m.uid : '',
+            email: typeof m.email === 'string' ? m.email : '',
+            text: typeof m.text === 'string' ? m.text : '',
+            createdAt: typeof m.createdAt === 'number' ? m.createdAt : 0,
+            reply: typeof m.reply === 'string' ? m.reply : '',
+            repliedAt: typeof m.repliedAt === 'number' ? m.repliedAt : null,
+          };
+        }),
+      ),
+    () => onError(),
+  );
 }
 
 /** מענה להודעה. התשובה גם קופצת אצל המשתמש. */

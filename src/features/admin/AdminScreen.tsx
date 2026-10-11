@@ -6,7 +6,6 @@ import {
   approveExistingAccounts,
   deleteAccountByAdmin,
   deleteMessage,
-  loadAdminMessages,
   replyToMessage,
   type AdminMessage,
   loadAdminOverview,
@@ -19,7 +18,9 @@ import {
   type PaymentRequest,
   type UsageLevel,
 } from '../../services/adminService';
+import { AccordionItem } from '../settings/Accordion';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useAdminMessages } from './useAdminMessages';
 
 const USAGE_LABEL: Record<UsageLevel, string> = {
   high: 'שימוש גבוה',
@@ -171,37 +172,20 @@ function NoticeForm({
   );
 }
 
-function Messages() {
-  const [list, setList] = useState<AdminMessage[] | null>(null);
+function Messages({ list, loadError, search }: { list: AdminMessage[] | null; loadError: boolean; search: string }) {
   const [error, setError] = useState<string | null>(null);
   const [replyId, setReplyId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => {
-    loadAdminMessages()
-      .then((m) => {
-        setList(m);
-        setError(null);
-      })
-      .catch((e: { code?: string }) =>
-        setError(
-          e.code === 'functions/not-found' || e.code === 'functions/unavailable'
-            ? 'פונקציות ההודעות עוד לא פורסמו. יש להריץ שוב את "פריסת פונקציות השרת" ב-Actions.'
-            : `לא הצלחנו לטעון את ההודעות${e.code ? ` (${e.code})` : ''}.`,
-        ),
-      );
-  }, []);
-  useEffect(load, [load]);
-
   const send = async (m: AdminMessage) => {
     if (!draft.trim()) return;
     setBusy(true);
+    setError(null);
     try {
       await replyToMessage(m.id, draft.trim());
       setReplyId(null);
       setDraft('');
-      load();
     } catch {
       setError('המענה לא נשלח. יש לנסות שוב.');
     } finally {
@@ -211,9 +195,9 @@ function Messages() {
 
   const remove = async (m: AdminMessage) => {
     setBusy(true);
+    setError(null);
     try {
       await deleteMessage(m.id);
-      load();
     } catch {
       setError('המחיקה נכשלה.');
     } finally {
@@ -221,19 +205,26 @@ function Messages() {
     }
   };
 
-  const open = list?.filter((m) => !m.reply).length ?? 0;
+  const q = search.trim().toLowerCase();
+  const shown = (list ?? []).filter(
+    (m) => !q || `${m.email} ${m.text} ${m.reply}`.toLowerCase().includes(q),
+  );
   return (
-    <section className="card" aria-label="הודעות ממשתמשים">
-      <h2 className="card-title">הודעות ממשתמשים{list ? ` (${open} ללא מענה)` : ''}</h2>
+    <div className="stack">
+      {loadError ? (
+        <p className="form-error" role="alert">
+          לא הצלחנו לטעון את ההודעות. ייתכן שכללי Firestore החדשים עוד לא פורסמו.
+        </p>
+      ) : null}
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      {list && list.length === 0 ? <p className="muted">אין הודעות.</p> : null}
+      {list && shown.length === 0 ? <p className="muted">{q ? 'לא נמצאו הודעות.' : 'אין הודעות.'}</p> : null}
       <ul className="tx-list" aria-label="הודעות">
-        {(list ?? []).map((m) => (
+        {shown.map((m) => (
           <li key={m.id} className="txc">
             <div className="txc-top">
               <span className="txc-title" dir="ltr">{m.email || m.uid}</span>
             </div>
-            <div className="txc-note">{dateTime(m.createdAt)}</div>
+            <div className="txc-note">{dateTime(m.createdAt)}{m.reply ? '' : ' · ללא מענה'}</div>
             <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
             {m.reply ? (
               <div className="txc-note" style={{ whiteSpace: 'pre-wrap' }}>
@@ -262,7 +253,20 @@ function Messages() {
           </li>
         ))}
       </ul>
-    </section>
+    </div>
+  );
+}
+
+function SearchBox({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <input
+      type="search"
+      className="input"
+      aria-label={label}
+      placeholder={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
   );
 }
 
@@ -293,6 +297,12 @@ function AdminContent() {
   const [payingUid, setPayingUid] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>('summary');
+  const [accountSearch, setAccountSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
+  const messages = useAdminMessages();
+  const unanswered = messages.list?.filter((m) => !m.reply).length ?? 0;
+  const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -356,6 +366,11 @@ function AdminContent() {
     }
   };
 
+  const aq = accountSearch.trim().toLowerCase();
+  const filteredUsers = (data?.users ?? []).filter(
+    (u) => !aq || `${u.email} ${STATUS_LABEL[u.status]} ${USAGE_LABEL[u.usage]}`.toLowerCase().includes(aq),
+  );
+
   return (
     <div className="app-shell">
       <ScreenHeader title="ניהול מתקדם" />
@@ -373,8 +388,9 @@ function AdminContent() {
           </div>
         ) : data ? (
           <>
-            <section className="card" aria-label="סיכום כללי">
-              <h2 className="card-title">סיכום כללי</h2>
+            <div className="acc-list">
+              <AccordionItem id="summary" title="סיכום כללי" open={openId === 'summary'} onToggle={toggle}>
+                <div className="stack">
               <dl className="detail-list">
                 <div><dt>חשבונות</dt><dd>{data.totals.accounts}</dd></div>
                 <div><dt>נכנסו ב-24 שעות</dt><dd>{data.totals.active24h}</dd></div>
@@ -407,23 +423,19 @@ function AdminContent() {
                   )}
                 </div>
               )}
-              {noticeFor === 'all' ? (
-                <NoticeForm
-                  target="all"
-                  onCancel={() => setNoticeFor(null)}
-                  onDone={(m) => {
-                    setNoticeFor(null);
-                    setNotice(m);
-                  }}
-                />
-              ) : (
-                <button type="button" className="btn btn-outline" onClick={() => setNoticeFor('all')}>
-                  הודעה לכל החשבונות
-                </button>
-              )}
               {notice ? <p className="muted small" role="status">{notice}</p> : null}
               {actionError ? <p className="form-error" role="alert">{actionError}</p> : null}
-              <h3 className="subhead">כניסות לאפליקציה, 14 ימים אחרונים</h3>
+              {data.truncated ? <p className="muted small">מוצגים 1,000 החשבונות הראשונים בלבד.</p> : null}
+              <p className="muted small">עודכן ב-{dateTime(data.generatedAt)}. מוצגים מספרים כלליים בלבד, בלי סכומים ובלי תוכן הפעולות.</p>
+              <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
+                {loading ? 'מרענן…' : 'רענון'}
+              </button>
+
+                </div>
+              </AccordionItem>
+
+              <AccordionItem id="activity" title="כניסות לאפליקציה (14 ימים)" open={openId === 'activity'} onToggle={toggle}>
+                <div className="stack">
               <ul className="share-list" aria-label="פתיחות לפי יום">
                 {data.daily.map((d) => {
                   const max = Math.max(1, ...data.daily.map((x) => x.opens));
@@ -440,17 +452,36 @@ function AdminContent() {
                   );
                 })}
               </ul>
-              {data.truncated ? <p className="muted small">מוצגים 1,000 החשבונות הראשונים בלבד.</p> : null}
-              <p className="muted small">עודכן ב-{dateTime(data.generatedAt)}. מוצגים מספרים כלליים בלבד, בלי סכומים ובלי תוכן הפעולות.</p>
-              <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
-                {loading ? 'מרענן…' : 'רענון'}
-              </button>
-            </section>
+                </div>
+              </AccordionItem>
 
-            <Messages />
+              <AccordionItem id="messages" title={`הודעות ממשתמשים${unanswered > 0 ? ` (${unanswered} ללא מענה)` : ""}`} open={openId === 'messages'} onToggle={toggle}>
+                <div className="stack">
+                {noticeFor === 'all' ? (
+                  <NoticeForm
+                    target="all"
+                    onCancel={() => setNoticeFor(null)}
+                    onDone={(m) => {
+                      setNoticeFor(null);
+                      setNotice(m);
+                    }}
+                  />
+                ) : (
+                  <button type="button" className="btn btn-outline" onClick={() => setNoticeFor('all')}>
+                    הודעה לכל החשבונות
+                  </button>
+                )}
+                  {notice ? <p className="muted small" role="status">{notice}</p> : null}
+                  <SearchBox value={messageSearch} onChange={setMessageSearch} label="חיפוש בהודעות" />
+                  <Messages list={messages.list} loadError={messages.error} search={messageSearch} />
+                </div>
+              </AccordionItem>
 
+              <AccordionItem id="accounts" title={`חשבונות (${data.users.length})`} open={openId === 'accounts'} onToggle={toggle}>
+                <div className="stack">
+                  <SearchBox value={accountSearch} onChange={setAccountSearch} label="חיפוש חשבון לפי אימייל או סטטוס" />
             <ul className="tx-list" aria-label="חשבונות">
-              {data.users.map((u) => (
+              {filteredUsers.map((u) => (
                 <li key={u.uid} className="txc">
                   <div className="txc-top">
                     <span className="txc-title" dir="ltr">{u.email || u.uid}</span>
@@ -547,6 +578,9 @@ function AdminContent() {
                 </li>
               ))}
             </ul>
+                </div>
+              </AccordionItem>
+            </div>
           </>
         ) : null}
       </main>

@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 /**
@@ -470,5 +470,21 @@ describe('אישור חשבונות', () => {
     await assertSucceeds(setDoc(doc(as('carol'), 'messages/m5'), { uid: 'carol', text: 'שלום', createdAt: 5 }));
     await seed('dave', 'blocked');
     await assertFails(setDoc(doc(as('dave'), 'messages/m6'), { uid: 'dave', text: 'שלום', createdAt: 5 }));
+  });
+
+  it('הודעות: אימייל בהודעה חייב להתאים לשולח, והמנהל קורא הכול', async () => {
+    const admin = () =>
+      env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com' }).firestore();
+    const carol = () => env.authenticatedContext('carol', { email: 'carol@example.com' }).firestore();
+    await seed('carol', 'approved');
+    await assertSucceeds(
+      setDoc(doc(carol(), 'messages/a1'), { uid: 'carol', email: 'carol@example.com', text: 'שלום', createdAt: 5 }),
+    );
+    await assertFails(
+      setDoc(doc(carol(), 'messages/a2'), { uid: 'carol', email: 'other@example.com', text: 'שלום', createdAt: 5 }),
+    );
+    await assertSucceeds(getDoc(doc(admin(), 'messages/a1')));
+    await assertSucceeds(getDocs(collection(admin(), 'messages')));
+    await assertFails(getDoc(doc(bob(), 'messages/a1')));
   });
 });
