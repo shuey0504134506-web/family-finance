@@ -63,7 +63,7 @@ export function SettingsScreen() {
         </div>
 
         {isAdminEmail(user.email) ? (
-          <Link to="/admin" className="btn btn-secondary">
+          <Link to="/admin" className="btn btn-secondary btn-borderless">
             ניהול מתקדם (מנהל)
           </Link>
         ) : null}

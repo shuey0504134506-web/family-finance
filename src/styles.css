@@ -3555,3 +3555,6 @@ a[href$="/privacy"] { display: inline-block; padding: 10px 6px; }
 .btn, .acc-list .btn { font-size: 15px; }
 .logo-row .btn { min-height: 46px; }
 select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 16px; }
+
+/* כפתור בלי מסגרת (למשל "ניהול מתקדם" בהגדרות) */
+.btn.btn-borderless { border-color: transparent; }
