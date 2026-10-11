@@ -10,6 +10,7 @@ import { useSwipe } from '../../hooks/useSwipe';
 import { effectiveMonthly, summarizeBudget } from '../../domain/budget';
 import { neighborSpace } from '../../domain/display';
 import { businessIdOf } from '../../domain/spaces';
+import { useBusinessLogo } from '../../hooks/useBusinessLogo';
 import {
   householdTotals,
   totalsByCategory,
@@ -105,6 +106,7 @@ export function HomeScreen() {
     : household.loading || (countedIds.length > 0 && business.loading);
   const totals = isBusiness ? businessTotals : householdSummary;
   const title = nameOf(space);
+  const logo = useBusinessLogo(user.uid, isBusiness ? space.businessId : '');
   const manyBusinesses = countedIds.length > 1;
   const businessIncomeLabel = manyBusinesses ? 'הכנסה מהעסקים' : 'הכנסה מהעסק';
   const businessLossLabel = manyBusinesses ? 'הפסד מהעסקים' : 'הפסד מהעסק';
@@ -115,7 +117,7 @@ export function HomeScreen() {
 
       <main className="content" aria-busy={loading}>
         <h1 className="scope-title">
-          <Icon name={isBusiness ? 'business' : 'household'} /> {title}
+          {logo ? <img className="scope-logo" src={logo} alt="" width={36} height={36} /> : <Icon name={isBusiness ? 'business' : 'household'} />} {title}
         </h1>
 
         {active.error ? (

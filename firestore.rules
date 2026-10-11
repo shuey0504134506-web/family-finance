@@ -99,6 +99,16 @@ service cloud.firestore {
              && data.updatedAt is int;
     }
 
+    // ---------- לוגו עסק: users/{uid}/settings/logo_{businessId} ----------
+
+    function validLogo(data) {
+      return data.keys().hasOnly(['data', 'updatedAt'])
+             && data.keys().hasAll(['data', 'updatedAt'])
+             && data.data is string && data.data.size() <= 120000
+             && data.data.matches('^data:image/(png|jpeg|webp);base64,.*')
+             && data.updatedAt is int;
+    }
+
     // ---------- הגדרות: users/{uid}/settings/main ----------
 
     function validSettings(data) {
@@ -293,7 +303,8 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid)
                               && ((settingsId == 'main' && validSettings(request.resource.data))
-                                  || (settingsId == 'paymentMethods' && validPaymentMethods(request.resource.data)));
+                                  || (settingsId == 'paymentMethods' && validPaymentMethods(request.resource.data))
+                                  || (settingsId.matches('logo_.{1,64}') && validLogo(request.resource.data)));
         allow delete: if isOwner(uid);
       }
 

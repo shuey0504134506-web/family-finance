@@ -1,4 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useBusinessLogo } from '../../hooks/useBusinessLogo';
+import { saveLogo } from '../../services/logoService';
+import { LogoControl } from './LogoControl';
 import { Field } from '../../components/Field';
 import { businessSpace, validateSpaceName, type Business } from '../../domain/spaces';
 import { addBusiness, deleteBusinessAndData, saveBusiness, saveHouseholdName } from '../../services/businessService';
@@ -16,6 +19,7 @@ export function PurposeSection() {
   const { reportFailure } = useSyncNotice();
   const { businesses, householdName, prefs, setPrefs, spaces } = useSpaces();
   const [newName, setNewName] = useState('');
+  const [newLogo, setNewLogo] = useState<string | null>(null);
   const [addError, setAddError] = useState('');
   const [displayError, setDisplayError] = useState('');
   const [deleting, setDeleting] = useState<Business | null>(null);
@@ -32,8 +36,11 @@ export function PurposeSection() {
       return setAddError('כבר קיים עסק בשם הזה.');
     }
     const sortOrder = Math.max(0, ...businesses.map((b) => b.sortOrder)) + 1;
-    addBusiness(user.uid, newName, sortOrder).saved.catch(fail);
+    const added = addBusiness(user.uid, newName, sortOrder);
+    added.saved.catch(fail);
+    if (newLogo) saveLogo(user.uid, added.id, newLogo).catch(fail);
     setNewName('');
+    setNewLogo(null);
     setAddError('');
   };
 
@@ -87,6 +94,7 @@ export function PurposeSection() {
             fieldLabel="שם עסק"
             onSave={(name) => saveBusiness(user.uid, { ...business, name }).catch(fail)}
           />
+          <BusinessLogo uid={user.uid} businessId={business.id} onFail={fail} />
           <button
             type="button"
             className="btn btn-danger-outline"
@@ -127,6 +135,7 @@ export function PurposeSection() {
           placeholder="שם העסק החדש"
           autoComplete="off"
         />
+        <LogoControl data={newLogo} onChange={setNewLogo} />
         <button type="submit" className="btn btn-secondary">
           הוספת עסק
         </button>
@@ -226,6 +235,23 @@ function NameField({
       onBlur={commit}
       error={error || undefined}
       autoComplete="off"
+    />
+  );
+}
+
+/** לוגו של עסק קיים: משתנה ונשמר מיד. */
+function BusinessLogo({ uid, businessId, onFail }: { uid: string; businessId: string; onFail: () => void }) {
+  const logo = useBusinessLogo(uid, businessId);
+  const [local, setLocal] = useState<string | null | undefined>(undefined);
+  const shown = local === undefined ? logo : local;
+  useEffect(() => setLocal(undefined), [logo]);
+  return (
+    <LogoControl
+      data={shown}
+      onChange={(data) => {
+        setLocal(data);
+        saveLogo(uid, businessId, data).catch(onFail);
+      }}
     />
   );
 }

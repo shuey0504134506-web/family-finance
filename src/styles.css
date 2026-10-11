@@ -3496,3 +3496,10 @@ a.btn,
 
 /* הגדרות עסק: מרווח רגיל בין שם העסק לכפתור המחיקה */
 .business-block { display: flex; flex-direction: column; gap: 12px; }
+
+/* לוגו עסק */
+.logo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logo-preview { width: 56px; height: 56px; border-radius: 14px; object-fit: contain; background: #fff; border: 1px solid var(--border); }
+.logo-empty { display: inline-block; background: var(--surface); border-style: dashed; }
+.logo-row .btn { width: auto; min-height: 40px; padding: 0 14px; }
+.scope-title .scope-logo { width: 36px; height: 36px; border-radius: 10px; object-fit: contain; background: #fff; vertical-align: middle; }
