@@ -448,4 +448,13 @@ describe('אישור חשבונות', () => {
     await assertFails(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx2'), transaction({}, 'tx2')));
     await assertSucceeds(getDoc(doc(as('carol'), 'approvals/carol')));
   });
+
+  it('ספירת שימוש: מאושר כותב לעצמו, אי אפשר לקרוא, וחסום לא כותב', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'usage/alice'), { days: { '2026-10-12': 1 }, updatedAt: 5 }));
+    await assertFails(getDoc(doc(alice(), 'usage/alice')));
+    await assertFails(setDoc(doc(alice(), 'usage/bob'), { days: {}, updatedAt: 5 }));
+    await assertFails(setDoc(doc(alice(), 'usage/alice'), { days: {}, updatedAt: 5, extra: 1 }));
+    await seed('carol', 'blocked');
+    await assertFails(setDoc(doc(as('carol'), 'usage/carol'), { days: {}, updatedAt: 5 }));
+  });
 });

@@ -46,6 +46,21 @@ async function approvalStatuses(uids) {
   return out;
 }
 
+const TZ = 'Asia/Jerusalem';
+const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(ms));
+
+/** ימי השימוש של כל חשבון: usage/{uid}.days = {'YYYY-MM-DD': מספר פתיחות}. */
+async function usageDays(uids) {
+  const db = admin.firestore();
+  const out = new Map();
+  for (let i = 0; i < uids.length; i += 300) {
+    const refs = uids.slice(i, i + 300).map((uid) => db.collection('usage').doc(uid));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((snap, k) => out.set(uids[i + k], snap.exists ? snap.data().days ?? {} : {}));
+  }
+  return out;
+}
+
 async function statsFor(user, now) {
   const base = admin.firestore().collection('users').doc(user.uid);
   const since = now - 7 * DAY;
@@ -65,6 +80,7 @@ async function statsFor(user, now) {
     disabled: Boolean(user.disabled),
     status: 'none',
     payment: null,
+    opens7d: 0,
     txTotal: b + h,
     tx7d,
     usage: usageLevel(tx7d, lastActive, now),
@@ -93,12 +109,27 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
     r.status = a?.status ?? 'none';
     r.payment = a?.payment ?? null;
   }
+  const usage = await usageDays(rows.map((r) => r.uid));
+  const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
+  const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0 }));
+  for (const r of rows) {
+    const d = usage.get(r.uid) ?? {};
+    days.forEach((date, i) => {
+      const n = Number(d[date]) || 0;
+      if (n > 0) {
+        daily[i].activeAccounts += 1;
+        daily[i].opens += n;
+      }
+      if (i >= 7) r.opens7d += n;
+    });
+  }
   rows.sort((a, b) => (b.lastSignInAt ?? 0) - (a.lastSignInAt ?? 0));
 
   const activeWithin = (ms) => rows.filter((r) => r.lastSignInAt && now - r.lastSignInAt < ms).length;
   return {
     generatedAt: now,
     truncated: users.length >= MAX_USERS,
+    daily,
     totals: {
       accounts: rows.length,
       disabled: rows.filter((r) => r.disabled).length,
@@ -205,5 +236,31 @@ exports.adminSetPayment = onCall({ region: REGION }, async (request) => {
   }
   const payment = { dueAt: Math.round(dueAt), amountText: text(amountText, 60), url: link, message: text(message, 1000) };
   await ref.set({ payment }, { merge: true });
+  return { ok: true };
+});
+
+/** מספר החשבונות שממתינים לאישור (קריאה זולה, להצגת תג ליד הכפתור בהגדרות). */
+exports.adminPendingCount = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const pending = await count(admin.firestore().collection('approvals').where('status', '==', 'pending'));
+  return { pending };
+});
+
+/**
+ * מחיקת חשבון סופית: כל הנתונים, רשומות האישור והשימוש, וההתחברות. אין שחזור.
+ */
+exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, async (request) => {
+  requireAdmin(request);
+  const { uid } = request.data ?? {};
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const target = await admin.auth().getUser(uid).catch(() => null);
+  if (!target) throw new HttpsError('not-found', 'החשבון לא נמצא.');
+  if (uid === request.auth.uid || ADMIN_EMAILS.includes(String(target.email ?? '').toLowerCase())) {
+    throw new HttpsError('failed-precondition', 'אי אפשר למחוק את חשבון המנהל.');
+  }
+  const db = admin.firestore();
+  await db.recursiveDelete(db.collection('users').doc(uid));
+  await Promise.all([db.collection('approvals').doc(uid).delete(), db.collection('usage').doc(uid).delete()]);
+  await admin.auth().deleteUser(uid);
   return { ok: true };
 });

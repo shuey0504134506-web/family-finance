@@ -432,7 +432,7 @@ export const EN: Record<string, string> = {
   "גיבוי ושחזור": "Backup and restore",
   "לא הצלחנו לסנכרן את השינוי. יש לנסות שוב.": "We couldn't sync the change. Please try again.",
   "שם עסק": "Business name",
-  "מפעיל האפליקציה רשאי לראות מידע כללי ומצטבר על החשבונות: כתובת האימייל, תאריך ההרשמה, מועד הכניסה האחרונה, מספר הפעולות ורמת השימוש. הוא אינו רואה סכומים, שמות עסקים, קטגוריות או תוכן של פעולות, ויכול לחסום או למחוק חשבון לפי הצורך.": "The app operator may see general, aggregate information about accounts: the email address, registration date, last sign-in, number of entries and usage level. The operator does not see amounts, business names, categories or the content of entries, and may block or delete an account when needed.",
+  "מפעיל האפליקציה רשאי לראות מידע כללי ומצטבר על החשבונות: כתובת האימייל, תאריך ההרשמה, מועד הכניסה האחרונה, מספר הפעולות, מספר פתיחות האפליקציה ליום ורמת השימוש. הוא אינו רואה סכומים, שמות עסקים, קטגוריות או תוכן של פעולות, ויכול לחסום או למחוק חשבון לפי הצורך.": "The app operator may see general, aggregate information about accounts: the email address, registration date, last sign-in, number of entries, number of app opens per day and usage level. The operator does not see amounts, business names, categories or the content of entries, and may block or delete an account when needed.",
   "שער ההמרה ליום הזה עדיין לא נטען": "The exchange rate for this day has not loaded yet",
   "לפי שער {0}": "at the rate of {0}",
   "מתוך זה ב{0}": "Of which in {0}",

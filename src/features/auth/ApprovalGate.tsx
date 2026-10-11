@@ -6,6 +6,7 @@ import {
   type ApprovalSnapshot,
   type PaymentNotice,
 } from '../../services/approvalService';
+import { recordAppOpen } from '../../services/usageService';
 import { suppressLock } from '../../services/lockSuppress';
 import { useAuth } from './AuthContext';
 
@@ -26,6 +27,11 @@ function PayLink({ payment }: { payment: PaymentNotice }) {
       מעבר לתשלום
     </a>
   );
+}
+
+function UsageTracker({ uid }: { uid: string }) {
+  useEffect(() => recordAppOpen(uid), [uid]);
+  return null;
 }
 
 /**
@@ -118,6 +124,7 @@ export function ApprovalGate({
   const soon = payment && payment.dueAt - now <= WARN_BEFORE_MS;
   return (
     <>
+      <UsageTracker uid={uid} />
       {soon && payment ? (
         <div className="payment-strip" role="status">
           <span>

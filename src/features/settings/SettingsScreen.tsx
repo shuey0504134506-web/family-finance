@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { isAdminEmail } from '../../config/admin';
+import { loadPendingCount } from '../../services/adminService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
@@ -20,6 +21,14 @@ import { PasswordForm } from './SecuritySection';
  */
 export function SettingsScreen() {
   const { user } = useReadyAuth();
+  const [pending, setPending] = useState(0);
+  const isAdmin = isAdminEmail(user.email);
+  useEffect(() => {
+    if (!isAdmin) return;
+    loadPendingCount()
+      .then(setPending)
+      .catch(() => setPending(0));
+  }, [isAdmin]);
   const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
 
@@ -64,7 +73,7 @@ export function SettingsScreen() {
 
         {isAdminEmail(user.email) ? (
           <Link to="/admin" className="btn btn-secondary btn-borderless">
-            ניהול מתקדם (מנהל)
+            {pending > 0 ? `ניהול מתקדם (מנהל) · ${pending} ממתינים לאישור` : 'ניהול מתקדם (מנהל)'}
           </Link>
         ) : null}
 

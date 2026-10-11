@@ -46,6 +46,19 @@ service cloud.firestore {
              && !paymentDue(get(approvalPath(uid)).data);
     }
 
+    // ספירת פתיחות האפליקציה ליום: usage/{uid}.days = {'YYYY-MM-DD': מספר}. נקרא בשרת בלבד, לסטטיסטיקה כללית.
+    function validUsage(data) {
+      return data.keys().hasOnly(['days', 'updatedAt'])
+             && data.days is map
+             && data.days.size() <= 800
+             && data.updatedAt is int;
+    }
+
+    match /usage/{uid} {
+      allow create, update: if isReader(uid) && validUsage(request.resource.data);
+      allow read, delete: if false;
+    }
+
     match /approvals/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)

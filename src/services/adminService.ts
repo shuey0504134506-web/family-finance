@@ -21,6 +21,8 @@ export interface AdminUserRow {
   disabled: boolean;
   status: ApprovalStatus;
   payment: PaymentRequest | null;
+  /** פתיחות האפליקציה ב-7 הימים האחרונים */
+  opens7d: number;
   txTotal: number;
   tx7d: number;
   usage: UsageLevel;
@@ -29,6 +31,8 @@ export interface AdminUserRow {
 export interface AdminOverview {
   generatedAt: number;
   truncated: boolean;
+  /** 14 הימים האחרונים: כמה חשבונות פתחו את האפליקציה וכמה פתיחות היו */
+  daily: { date: string; activeAccounts: number; opens: number }[];
   totals: {
     accounts: number;
     disabled: number;
@@ -65,4 +69,15 @@ export async function approveExistingAccounts(): Promise<number> {
 /** הגדרת דרישת תשלום לחשבון. payment = null מסיר אותה. */
 export async function setPaymentRequest(uid: string, payment: PaymentRequest | null): Promise<void> {
   await httpsCallable(functions(), 'adminSetPayment')(payment ? { uid, ...payment } : { uid, dueAt: null });
+}
+
+/** מספר החשבונות הממתינים לאישור (לתג בהגדרות). */
+export async function loadPendingCount(): Promise<number> {
+  const result = await httpsCallable<void, { pending: number }>(functions(), 'adminPendingCount')();
+  return result.data.pending;
+}
+
+/** מחיקה סופית של חשבון וכל הנתונים שלו. */
+export async function deleteAccountByAdmin(uid: string): Promise<void> {
+  await httpsCallable(functions(), 'adminDeleteAccount')({ uid });
 }

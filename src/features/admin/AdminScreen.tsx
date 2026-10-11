@@ -4,6 +4,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { isAdminEmail } from '../../config/admin';
 import {
   approveExistingAccounts,
+  deleteAccountByAdmin,
   loadAdminOverview,
   setAccountStatus,
   setPaymentRequest,
@@ -136,6 +137,7 @@ function AdminContent() {
   const [confirmBlock, setConfirmBlock] = useState<string | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
   const [payingUid, setPayingUid] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -167,6 +169,21 @@ function AdminContent() {
       load();
     } catch {
       setActionError('הפעולה נכשלה. יש לבדוק חיבור ולנסות שוב.');
+    } finally {
+      setBusyUid(null);
+    }
+  };
+
+  const remove = async (row: AdminUserRow) => {
+    setBusyUid(row.uid);
+    setActionError(null);
+    setConfirmDelete(null);
+    try {
+      await deleteAccountByAdmin(row.uid);
+      setNotice('החשבון נמחק.');
+      load();
+    } catch {
+      setActionError('המחיקה נכשלה. יש לבדוק חיבור ולנסות שוב.');
     } finally {
       setBusyUid(null);
     }
@@ -237,6 +254,23 @@ function AdminContent() {
               )}
               {notice ? <p className="muted small" role="status">{notice}</p> : null}
               {actionError ? <p className="form-error" role="alert">{actionError}</p> : null}
+              <h3 className="subhead">כניסות לאפליקציה, 14 ימים אחרונים</h3>
+              <ul className="share-list" aria-label="פתיחות לפי יום">
+                {data.daily.map((d) => {
+                  const max = Math.max(1, ...data.daily.map((x) => x.opens));
+                  return (
+                    <li key={d.date}>
+                      <div className="row-between">
+                        <span>{d.date.slice(8)}/{d.date.slice(5, 7)}</span>
+                        <span>{d.opens} פתיחות · {d.activeAccounts} חשבונות</span>
+                      </div>
+                      <div className="share-bar share-income" aria-hidden="true">
+                        <div style={{ width: `${d.opens === 0 ? 0 : Math.max(2, (d.opens / max) * 100)}%` }} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
               {data.truncated ? <p className="muted small">מוצגים 1,000 החשבונות הראשונים בלבד.</p> : null}
               <p className="muted small">עודכן ב-{dateTime(data.generatedAt)}. מוצגים מספרים כלליים בלבד, בלי סכומים ובלי תוכן הפעולות.</p>
               <button type="button" className="btn btn-secondary" onClick={load} disabled={loading}>
@@ -265,7 +299,7 @@ function AdminContent() {
                     נרשם: {dateTime(u.createdAt)} · כניסה אחרונה: {dateTime(u.lastSignInAt)}
                   </div>
                   <div className="txc-note">
-                    פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון
+                    פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון · פתיחות בשבוע: {u.opens7d}
                   </div>
                   {isAdminEmail(u.email) ? null : payingUid === u.uid ? (
                     <PaymentForm
@@ -276,6 +310,18 @@ function AdminContent() {
                         load();
                       }}
                     />
+                  ) : confirmDelete === u.uid ? (
+                    <div className="txc-confirm" role="alertdialog" aria-label="אישור מחיקה">
+                      <span dir="auto">למחוק לצמיתות את {u.email} וכל הנתונים שלו? אי אפשר לשחזר.</span>
+                      <span className="txc-confirm-actions">
+                        <button type="button" className="btn btn-danger" onClick={() => void remove(u)}>
+                          כן, למחוק
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>
+                          ביטול
+                        </button>
+                      </span>
+                    </div>
                   ) : confirmBlock === u.uid ? (
                     <div className="txc-confirm" role="alertdialog" aria-label="אישור חסימה">
                       <span>לחסום את החשבון? המשתמש ינותק ולא יוכל להיכנס.</span>
@@ -307,6 +353,9 @@ function AdminContent() {
                           חסימה
                         </button>
                       )}
+                      <button type="button" className="btn btn-outline" disabled={busyUid === u.uid} onClick={() => setConfirmDelete(u.uid)}>
+                        מחיקה
+                      </button>
                     </div>
                   )}
                 </li>
