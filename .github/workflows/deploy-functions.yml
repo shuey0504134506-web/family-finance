@@ -33,7 +33,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        run: npx --yes firebase-tools@14 deploy --only functions --project "$PROJECT_ID" --non-interactive
+        run: npx --yes firebase-tools@14 deploy --only functions --project "$PROJECT_ID" --non-interactive --force
 
       - name: מחיקת המפתח הזמני
         if: always()
