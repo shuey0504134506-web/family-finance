@@ -3,6 +3,14 @@ import { app } from '../firebase/config';
 
 export type ApprovalStatus = 'approved' | 'pending' | 'blocked' | 'none';
 
+export interface PaymentRequest {
+  /** מועד הנעילה (אלפיות שנייה) */
+  dueAt: number;
+  amountText: string;
+  url: string;
+  message: string;
+}
+
 export type UsageLevel = 'high' | 'medium' | 'low' | 'idle';
 
 export interface AdminUserRow {
@@ -12,6 +20,7 @@ export interface AdminUserRow {
   lastSignInAt: number | null;
   disabled: boolean;
   status: ApprovalStatus;
+  payment: PaymentRequest | null;
   txTotal: number;
   tx7d: number;
   usage: UsageLevel;
@@ -24,6 +33,7 @@ export interface AdminOverview {
     accounts: number;
     disabled: number;
     pending: number;
+    paymentRequired: number;
     undecided: number;
     active24h: number;
     active7d: number;
@@ -50,4 +60,9 @@ export async function setAccountStatus(uid: string, status: 'approved' | 'pendin
 export async function approveExistingAccounts(): Promise<number> {
   const result = await httpsCallable<void, { approved: number }>(functions(), 'adminApproveExisting')();
   return result.data.approved;
+}
+
+/** הגדרת דרישת תשלום לחשבון. payment = null מסיר אותה. */
+export async function setPaymentRequest(uid: string, payment: PaymentRequest | null): Promise<void> {
+  await httpsCallable(functions(), 'adminSetPayment')(payment ? { uid, ...payment } : { uid, dueAt: null });
 }

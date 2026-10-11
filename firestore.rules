@@ -27,13 +27,23 @@ service cloud.firestore {
       return /databases/$(database)/documents/approvals/$(uid);
     }
 
+    // דרישת תשלום: approvals/{uid}.payment = {dueAt (אלפיות שנייה), ...}. אחרי המועד, אין גישה לנתונים
+    // עד שהמנהל מסיר או מאריך את הדרישה (נכתב בשרת בלבד).
+    function paymentDue(a) {
+      return a.keys().hasAny(['payment']) && a.payment.dueAt <= request.time.toMillis();
+    }
+
     function isReader(uid) {
       // בלי רשומה, get מחזיר ריק והבדיקה נכשלת: סגור כברירת מחדל
-      return isOwner(uid) && get(approvalPath(uid)).data.status == 'approved';
+      return isOwner(uid)
+             && get(approvalPath(uid)).data.status == 'approved'
+             && !paymentDue(get(approvalPath(uid)).data);
     }
 
     function isWriter(uid) {
-      return isOwner(uid) && get(approvalPath(uid)).data.status in ['approved', 'pending'];
+      return isOwner(uid)
+             && get(approvalPath(uid)).data.status in ['approved', 'pending']
+             && !paymentDue(get(approvalPath(uid)).data);
     }
 
     match /approvals/{uid} {

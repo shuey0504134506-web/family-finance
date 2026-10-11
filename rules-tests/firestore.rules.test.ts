@@ -421,4 +421,31 @@ describe('אישור חשבונות', () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice/householdTransactions/tx1'), transaction()));
     await assertSucceeds(getDoc(doc(alice(), 'users/alice/householdTransactions/tx1')));
   });
+
+  it('דרישת תשלום שהמועד שלה עדיין לא הגיע: גישה רגילה', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'approvals/carol'), {
+        status: 'approved',
+        createdAt: 1,
+        payment: { dueAt: Date.now() + 86_400_000, amountText: '50', url: '', message: '' },
+      });
+    });
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol'), userProfile));
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol')));
+  });
+
+  it('דרישת תשלום שהמועד שלה עבר: נעול, אבל אפשר לקרוא את רשומת האישור עצמה', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'approvals/carol'), {
+        status: 'approved',
+        createdAt: 1,
+        payment: { dueAt: Date.now() - 1000, amountText: '50', url: '', message: '' },
+      });
+      await setDoc(doc(ctx.firestore(), 'users/carol/householdTransactions/tx1'), transaction());
+    });
+    await assertFails(getDoc(doc(as('carol'), 'users/carol')));
+    await assertFails(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
+    await assertFails(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx2'), transaction({}, 'tx2')));
+    await assertSucceeds(getDoc(doc(as('carol'), 'approvals/carol')));
+  });
 });

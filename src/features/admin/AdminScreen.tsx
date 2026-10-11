@@ -6,9 +6,11 @@ import {
   approveExistingAccounts,
   loadAdminOverview,
   setAccountStatus,
+  setPaymentRequest,
   type AdminOverview,
   type AdminUserRow,
   type ApprovalStatus,
+  type PaymentRequest,
   type UsageLevel,
 } from '../../services/adminService';
 import { useReadyAuth } from '../auth/AuthContext';
@@ -26,6 +28,88 @@ const STATUS_LABEL: Record<ApprovalStatus, string> = {
   blocked: 'חסום',
   none: 'בלי החלטה',
 };
+
+function dateOnly(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+/** YYYY-MM-DD של התאריך המקומי, לשדה תאריך */
+function inputDate(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** המועד הוא סוף היום שנבחר (23:59 בשעון המכשיר). */
+function endOfDay(value: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 23, 59, 59).getTime();
+}
+
+function PaymentForm({
+  row,
+  onSaved,
+  onCancel,
+}: {
+  row: AdminUserRow;
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const existing = row.payment;
+  const [date, setDate] = useState(existing ? inputDate(existing.dueAt) : '');
+  const [amountText, setAmountText] = useState(existing?.amountText ?? '');
+  const [url, setUrl] = useState(existing?.url ?? '');
+  const [message, setMessage] = useState(existing?.message ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (payment: PaymentRequest | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await setPaymentRequest(row.uid, payment);
+      onSaved();
+    } catch (e) {
+      const msg = (e as { message?: string }).message;
+      setError(msg && /https/.test(msg) ? 'קישור התשלום חייב להתחיל ב-https://' : 'השמירה נכשלה. יש לבדוק את הפרטים ולנסות שוב.');
+      setBusy(false);
+    }
+  };
+
+  const save = () => {
+    const dueAt = endOfDay(date);
+    if (dueAt === null) {
+      setError('יש לבחור מועד נעילה.');
+      return;
+    }
+    void run({ dueAt, amountText: amountText.trim(), url: url.trim(), message: message.trim() });
+  };
+
+  return (
+    <div className="stack" role="group" aria-label="דרישת תשלום">
+      <label className="field-label" htmlFor={`pay-date-${row.uid}`}>נעילה בסוף היום</label>
+      <input id={`pay-date-${row.uid}`} className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <label className="field-label" htmlFor={`pay-amount-${row.uid}`}>סכום (טקסט חופשי, לא חובה)</label>
+      <input id={`pay-amount-${row.uid}`} className="input" maxLength={60} value={amountText} onChange={(e) => setAmountText(e.target.value)} placeholder="לדוגמה: 50 ₪ לחודש" />
+      <label className="field-label" htmlFor={`pay-url-${row.uid}`}>קישור לתשלום (לא חובה)</label>
+      <input id={`pay-url-${row.uid}`} className="input" dir="ltr" inputMode="url" maxLength={500} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
+      <label className="field-label" htmlFor={`pay-msg-${row.uid}`}>הודעה למשתמש (לא חובה)</label>
+      <textarea id={`pay-msg-${row.uid}`} className="input" rows={3} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
+      <p className="muted small">עד מועד הנעילה מוצג למשתמש פס תזכורת בשבוע האחרון. אחריו האפליקציה ננעלת, והנתונים נשמרים.</p>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <div className="form-actions">
+        <button type="button" className="btn btn-primary" disabled={busy} onClick={save}>שמירה</button>
+        {existing ? (
+          <button type="button" className="btn btn-outline" disabled={busy} onClick={() => void run(null)}>הסרת דרישת תשלום</button>
+        ) : null}
+        <button type="button" className="btn btn-secondary" disabled={busy} onClick={onCancel}>ביטול</button>
+      </div>
+    </div>
+  );
+}
 
 function dateTime(ms: number | null): string {
   if (!ms) return 'אף פעם';
@@ -51,6 +135,7 @@ function AdminContent() {
   const [busyUid, setBusyUid] = useState<string | null>(null);
   const [confirmBlock, setConfirmBlock] = useState<string | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
+  const [payingUid, setPayingUid] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -125,6 +210,7 @@ function AdminContent() {
                 <div><dt>נכנסו בחודש</dt><dd>{data.totals.active30d}</dd></div>
                 <div><dt>חשבונות חדשים בשבוע</dt><dd>{data.totals.newLast7d}</dd></div>
                 <div><dt>חסומים</dt><dd>{data.totals.disabled}</dd></div>
+                <div><dt>עם דרישת תשלום</dt><dd>{data.totals.paymentRequired}</dd></div>
                 <div><dt>ממתינים לאישור</dt><dd>{data.totals.pending}</dd></div>
                 <div><dt>בלי החלטה (קיימים)</dt><dd>{data.totals.undecided}</dd></div>
               </dl>
@@ -168,6 +254,11 @@ function AdminContent() {
                     <span className="txc-chips">
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
                       <span className="txc-chip">{STATUS_LABEL[u.status]}</span>
+                      {u.payment ? (
+                        <span className="txc-chip">
+                          {u.payment.dueAt <= data.generatedAt ? 'נעול לתשלום' : `תשלום עד ${dateOnly(u.payment.dueAt)}`}
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                   <div className="txc-note">
@@ -176,7 +267,16 @@ function AdminContent() {
                   <div className="txc-note">
                     פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון
                   </div>
-                  {isAdminEmail(u.email) ? null : confirmBlock === u.uid ? (
+                  {isAdminEmail(u.email) ? null : payingUid === u.uid ? (
+                    <PaymentForm
+                      row={u}
+                      onCancel={() => setPayingUid(null)}
+                      onSaved={() => {
+                        setPayingUid(null);
+                        load();
+                      }}
+                    />
+                  ) : confirmBlock === u.uid ? (
                     <div className="txc-confirm" role="alertdialog" aria-label="אישור חסימה">
                       <span>לחסום את החשבון? המשתמש ינותק ולא יוכל להיכנס.</span>
                       <span className="txc-confirm-actions">
@@ -190,6 +290,9 @@ function AdminContent() {
                     </div>
                   ) : (
                     <div className="form-actions">
+                      <button type="button" className="btn btn-secondary" onClick={() => setPayingUid(u.uid)}>
+                        {u.payment ? 'עריכת תשלום' : 'דרישת תשלום'}
+                      </button>
                       {u.status !== 'approved' && u.status !== 'blocked' && (
                         <button type="button" className="btn btn-primary" disabled={busyUid === u.uid} onClick={() => void change(u, 'approved')}>
                           אישור

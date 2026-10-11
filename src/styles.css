@@ -3558,3 +3558,17 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 
 /* כפתור בלי מסגרת (למשל "ניהול מתקדם" בהגדרות) */
 .btn.btn-borderless { border-color: transparent; }
+
+/* פס תזכורת תשלום מעל האפליקציה (לפני מועד הנעילה) */
+.payment-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  background: #fff4d6;
+  color: #5c4300;
+  font-size: 14px;
+}
+.payment-strip .btn { min-height: 36px; padding: 4px 14px; width: auto; }

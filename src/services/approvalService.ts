@@ -7,6 +7,29 @@ import { db } from '../firebase/config';
  */
 export type ApprovalState = 'approved' | 'pending' | 'blocked' | 'none';
 
+export interface PaymentNotice {
+  dueAt: number;
+  amountText: string;
+  url: string;
+  message: string;
+}
+
+export interface ApprovalSnapshot {
+  state: ApprovalState;
+  payment: PaymentNotice | null;
+}
+
+function parsePayment(raw: unknown): PaymentNotice | null {
+  const p = raw as Partial<PaymentNotice> | null | undefined;
+  if (!p || typeof p.dueAt !== 'number') return null;
+  return {
+    dueAt: p.dueAt,
+    amountText: typeof p.amountText === 'string' ? p.amountText : '',
+    url: typeof p.url === 'string' ? p.url : '',
+    message: typeof p.message === 'string' ? p.message : '',
+  };
+}
+
 function parse(status: unknown): ApprovalState {
   return status === 'approved' || status === 'pending' || status === 'blocked' ? status : 'none';
 }
@@ -32,12 +55,16 @@ export async function ensureApprovalRequest(uid: string): Promise<void> {
  */
 export function subscribeApproval(
   uid: string,
-  onState: (state: ApprovalState) => void,
+  onState: (snapshot: ApprovalSnapshot) => void,
   onUnavailable: () => void,
 ): Unsubscribe {
   return onSnapshot(
     doc(db, 'approvals', uid),
-    (snap) => onState(snap.exists() ? parse(snap.data().status) : 'none'),
+    (snap) =>
+      onState({
+        state: snap.exists() ? parse(snap.data().status) : 'none',
+        payment: snap.exists() ? parsePayment(snap.data().payment) : null,
+      }),
     () => onUnavailable(),
   );
 }

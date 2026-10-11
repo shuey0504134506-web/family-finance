@@ -38,7 +38,10 @@ async function approvalStatuses(uids) {
   for (let i = 0; i < uids.length; i += 300) {
     const refs = uids.slice(i, i + 300).map((uid) => db.collection('approvals').doc(uid));
     const snaps = await db.getAll(...refs);
-    snaps.forEach((snap, k) => out.set(uids[i + k], snap.exists ? snap.data().status : 'none'));
+    snaps.forEach((snap, k) => {
+      const d = snap.exists ? snap.data() : {};
+      out.set(uids[i + k], { status: d.status ?? 'none', payment: d.payment ?? null });
+    });
   }
   return out;
 }
@@ -61,6 +64,7 @@ async function statsFor(user, now) {
     lastSignInAt: lastActive || null,
     disabled: Boolean(user.disabled),
     status: 'none',
+    payment: null,
     txTotal: b + h,
     tx7d,
     usage: usageLevel(tx7d, lastActive, now),
@@ -84,7 +88,11 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
     rows.push(...part);
   }
   const statuses = await approvalStatuses(rows.map((r) => r.uid));
-  for (const r of rows) r.status = statuses.get(r.uid) ?? 'none';
+  for (const r of rows) {
+    const a = statuses.get(r.uid);
+    r.status = a?.status ?? 'none';
+    r.payment = a?.payment ?? null;
+  }
   rows.sort((a, b) => (b.lastSignInAt ?? 0) - (a.lastSignInAt ?? 0));
 
   const activeWithin = (ms) => rows.filter((r) => r.lastSignInAt && now - r.lastSignInAt < ms).length;
@@ -94,6 +102,7 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
     totals: {
       accounts: rows.length,
       disabled: rows.filter((r) => r.disabled).length,
+      paymentRequired: rows.filter((r) => r.payment).length,
       pending: rows.filter((r) => r.status === 'pending').length,
       undecided: rows.filter((r) => r.status === 'none').length,
       active24h: activeWithin(DAY),
@@ -148,7 +157,7 @@ exports.adminApproveExisting = onCall({ region: REGION, timeoutSeconds: 300 }, a
   const db = admin.firestore();
   let approved = 0;
   const todo = users.filter((u) => {
-    const st = statuses.get(u.uid);
+    const st = statuses.get(u.uid)?.status;
     return st === 'none' || st === 'pending';
   });
   for (let i = 0; i < todo.length; i += 400) {
@@ -160,4 +169,41 @@ exports.adminApproveExisting = onCall({ region: REGION, timeoutSeconds: 300 }, a
     await batch.commit();
   }
   return { approved };
+});
+
+/**
+ * דרישת תשלום לחשבון: מועד (נעילה אוטומטית אחריו), סכום, קישור ומלל חופשי.
+ * הכללים בשרת חוסמים את הגישה לנתונים אחרי המועד. dueAt = null מסיר את הדרישה.
+ */
+exports.adminSetPayment = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { uid, dueAt, amountText, url, message } = request.data ?? {};
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const target = await admin.auth().getUser(uid).catch(() => null);
+  if (!target) throw new HttpsError('not-found', 'החשבון לא נמצא.');
+  if (uid === request.auth.uid || ADMIN_EMAILS.includes(String(target.email ?? '').toLowerCase())) {
+    throw new HttpsError('failed-precondition', 'אי אפשר להגדיר תשלום לחשבון המנהל.');
+  }
+  const ref = admin.firestore().collection('approvals').doc(uid);
+  if (dueAt === null) {
+    await ref.set({ payment: admin.firestore.FieldValue.delete() }, { merge: true });
+    return { ok: true };
+  }
+  if (typeof dueAt !== 'number' || !Number.isFinite(dueAt) || dueAt <= 0) {
+    throw new HttpsError('invalid-argument', 'מועד לא תקין.');
+  }
+  const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const link = text(url, 500);
+  if (link) {
+    let ok = false;
+    try {
+      ok = new URL(link).protocol === 'https:';
+    } catch {
+      ok = false;
+    }
+    if (!ok) throw new HttpsError('invalid-argument', 'קישור התשלום חייב להתחיל ב-https://');
+  }
+  const payment = { dueAt: Math.round(dueAt), amountText: text(amountText, 60), url: link, message: text(message, 1000) };
+  await ref.set({ payment }, { merge: true });
+  return { ok: true };
 });
