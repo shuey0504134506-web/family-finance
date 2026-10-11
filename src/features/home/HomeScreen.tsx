@@ -168,14 +168,14 @@ export function HomeScreen() {
               className="btn btn-income"
               onClick={() => navigate(`/${space.key}/add/income`)}
             >
-              <Icon name="plus" /> הכנסה
+              <Icon name="plus" /> הוספת הכנסה
             </button>
             <button
               type="button"
               className="btn btn-expense"
               onClick={() => navigate(`/${space.key}/add/expense`)}
             >
-              <Icon name="plus" /> הוצאה
+              <Icon name="plus" /> הוספת הוצאה
             </button>
           </div>
         )}
