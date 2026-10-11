@@ -80,7 +80,7 @@ export function PurposeSection() {
       <h3 className="subhead">העסקים</h3>
       {businesses.length === 0 && <div className="field-hint">עדיין לא הוגדר עסק.</div>}
       {businesses.map((business) => (
-        <div key={business.id}>
+        <div key={business.id} className="business-block">
           <NameField
             label="שם העסק"
             value={business.name}
