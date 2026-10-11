@@ -12,11 +12,12 @@ import {
 import { loadRates, type RatesSnapshot } from '../services/exchangeRates';
 import { Amount } from './Amount';
 
-type Item = { currency?: CurrencyCode; type: 'income' | 'expense'; amountAgorot: number };
+type Item = { currency?: CurrencyCode; type: 'income' | 'expense'; amountAgorot: number; mainAgorot?: number };
 
 /**
  * סיכום לפי מטבע: מוצג רק כשיש בתקופה פעולות במטבע שאינו הראשי.
  * כפתור "המרה" מביא שער עדכני וממיר את כל הסיכום למטבע אחד, לתצוגה בלבד (שום דבר לא נשמר).
+ * הסכומים הכוללים באפליקציה כבר כוללים המרה לפי שער יום הפעולה.
  */
 export function MultiCurrencySummary({
   items,
@@ -30,6 +31,17 @@ export function MultiCurrencySummary({
 }) {
   const primary = getCurrency();
   const foreign = useMemo(() => foreignTotals(items), [items]);
+  // הסכומים הראשיים כבר כוללים את הפעולות הזרות שהומרו לפי שער יומן; כאן מוצגים לפי מטבע, לכן מפחיתים אותם
+  const included = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    for (const t of items) {
+      if (t.mainAgorot === undefined) continue;
+      if (t.type === 'income') income += t.mainAgorot;
+      else expense += t.mainAgorot;
+    }
+    return { income, expense };
+  }, [items]);
   const [target, setTarget] = useState<CurrencyCode>(primary);
   const [snapshot, setSnapshot] = useState<RatesSnapshot | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
@@ -37,7 +49,11 @@ export function MultiCurrencySummary({
   if (foreign.length === 0) return null;
 
   const rows = [
-    { currency: primary, incomeAgorot: primaryIncomeAgorot, expenseAgorot: primaryExpenseAgorot },
+    {
+      currency: primary,
+      incomeAgorot: primaryIncomeAgorot - included.income,
+      expenseAgorot: primaryExpenseAgorot - included.expense,
+    },
     ...foreign,
   ];
 
@@ -69,11 +85,13 @@ export function MultiCurrencySummary({
           </li>
         ))}
       </ul>
-      <p className="muted small mc-legend">לכל שורה: הכנסות, הוצאות, יתרה.</p>
+      <p className="muted small mc-legend">
+        לכל שורה: הכנסות, הוצאות, יתרה. כל שורה במטבע שלה. פעולות במטבע זר כבר נכללות בסכומים הכוללים, לפי שער יום הפעולה.
+      </p>
 
       <div className="mc-convert">
         <span className="field-label" id="mc-target-label">
-          המרת הכול למטבע אחד
+          המרת הכול למטבע אחד לפי השער העדכני
         </span>
         <div className="chip-group" role="radiogroup" aria-labelledby="mc-target-label">
           {CURRENCY_CODES.map((code) => (

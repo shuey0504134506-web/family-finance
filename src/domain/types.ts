@@ -92,6 +92,11 @@ export interface Transaction {
 export interface TransactionRecord extends Transaction {
   /** true = נשמרה במכשיר וממתינה לאישור מהשרת */
   pendingSync: boolean;
+  /**
+   * שדה נגזר, לא נשמר: שווי פעולה במטבע זר במטבע הראשי, לפי שער יום הפעולה.
+   * חסר בפעולה במטבע הראשי, ובפעולה שעדיין אין לה שער.
+   */
+  mainAgorot?: number;
 }
 
 export interface Category {

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { isPrimaryCurrency } from '../domain/currency';
+import { useEffect, useState } from 'react';
+import { useConvertedTransactions } from './useConvertedTransactions';
 import type { YearMonth } from '../domain/dates';
 import type { Scope, TransactionRecord } from '../domain/types';
 import { subscribeTransactionsUpTo } from '../services/transactionService';
@@ -8,7 +8,7 @@ const EMPTY: TransactionRecord[] = [];
 
 /**
  * כל ההיסטוריה עד סוף החודש הנבחר, בזמן אמת.
- * items = רק המטבע הראשי (לחישובים); all = כל הפעולות.
+ * items = לחישובים (פעולות זרות כבר מומרות לפי שער יומן); all = כל הפעולות במטבע המקורי.
  */
 export function useTransactionsUpTo(
   uid: string,
@@ -36,10 +36,10 @@ export function useTransactionsUpTo(
 
   const isCurrent = state.key === key;
   const all = isCurrent ? state.items : EMPTY;
-  const items = useMemo(() => all.filter(isPrimaryCurrency), [all]);
+  const converted = useConvertedTransactions(all);
   return {
-    items,
-    all,
+    items: converted.items,
+    all: converted.all,
     loading: enabled && !isCurrent,
     error: isCurrent ? state.error : null,
   };

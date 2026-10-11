@@ -33,7 +33,7 @@ export function TitheScreen() {
     <div className="app-shell scope-household">
       <ScreenHeader title={`מעשרות · ${nameOf(HOUSEHOLD_SPACE)}`} />
       <main className="content" aria-busy={loading}>
-        <p className="muted small">במעשרות נספרות רק פעולות במטבע הראשי. פעולות במטבע אחר אינן נכללות.</p>
+        <p className="muted small">פעולות במטבע אחר נכללות אחרי המרה למטבע הראשי, לפי שער יום הפעולה.</p>
 
         {error ? (
           <div className="card error-card" role="alert">

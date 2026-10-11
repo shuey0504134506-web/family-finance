@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
-import { currencyOf } from '../../domain/currency';
+import { currencyOf, getCurrency } from '../../domain/currency';
 import { PencilIcon, TrashIcon } from '../../components/icons';
 import { parseSpaceKey } from '../../domain/spaces';
 import { paymentLabelOf } from '../../domain/payment';
@@ -122,6 +122,13 @@ export function TransactionList({
               </span>
               <Amount agorot={item.amountAgorot} currency={currencyOf(item)} className={isIncome ? 'tone-income' : 'tone-expense'} />
             </div>
+            {item.mainAgorot !== undefined ? (
+              <div className="txc-note txc-converted">
+                ≈ <Amount agorot={item.mainAgorot} /> {`לפי שער ${fullDate(item.date)}`}
+              </div>
+            ) : currencyOf(item) !== getCurrency() ? (
+              <div className="txc-note txc-converted">שער ההמרה ליום הזה עדיין לא נטען</div>
+            ) : null}
             {item.note ? <div className="txc-note">{item.note}</div> : null}
             {item.pendingSync ? (
               <div className="tx-sync tx-sync-pending">נשמר במכשיר – ממתין לסנכרון</div>

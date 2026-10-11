@@ -1,4 +1,4 @@
-import { CURRENCY_NAMES, foreignTotals, isPrimaryCurrency } from '../../domain/currency';
+import { CURRENCY_NAMES, foreignTotals } from '../../domain/currency';
 import { useMemo } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
@@ -52,7 +52,16 @@ function Content({ type }: { type: TransactionType }) {
       ),
     [main.all, type, scope, space.businessId],
   );
-  const ownTotal = useMemo(() => totalsOf(items.filter(isPrimaryCurrency)), [items]);
+  // הסכום הכולל כולל גם פעולות זרות, אחרי המרה לפי שער יום הפעולה
+  const ownTotal = useMemo(
+    () =>
+      totalsOf(
+        main.items.filter(
+          (t) => t.type === type && (scope === 'household' || businessIdOf(t) === space.businessId),
+        ),
+      ),
+    [main.items, type, scope, space.businessId],
+  );
   const foreign = useMemo(() => foreignTotals(items), [items]);
   const fromBusiness = useMemo(() => {
     if (!needsBusinessNet) return 0;
@@ -93,7 +102,7 @@ function Content({ type }: { type: TransactionType }) {
               </div>
               {foreign.map((f) => (
                 <div className="row-between" key={f.currency}>
-                  <span className="muted">ובמטבע {CURRENCY_NAMES[f.currency]}</span>
+                  <span className="muted">{`מתוך זה ב${CURRENCY_NAMES[f.currency]}`}</span>
                   <Amount
                     agorot={isIncome ? f.incomeAgorot : f.expenseAgorot}
                     currency={f.currency}
