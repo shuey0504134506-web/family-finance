@@ -3523,3 +3523,7 @@ a.btn,
 
 .att-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .att-actions .btn { width: auto; flex: 1 1 130px; }
+
+/* קבוצות כפתורים (חובות ועוד): מרווח רגיל ביניהם ומעל הקבוצה */
+.form-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.form-actions .btn { flex: 1 1 120px; width: auto; }
