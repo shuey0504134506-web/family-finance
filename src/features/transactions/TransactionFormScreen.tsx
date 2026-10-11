@@ -199,6 +199,7 @@ function TransactionForm({
   // צורת תשלום / הכנסה: האפשרויות המובנות, אלה שהוספת, ובעריכה גם הערך השמור.
   const custom = useCustomMethods(user.uid);
   const [addingPayment, setAddingPayment] = useState(false);
+  const [managingMethod, setManagingMethod] = useState<string | null>(null);
   const [newPayment, setNewPayment] = useState('');
   const [paymentError, setPaymentError] = useState('');
   const paymentChoices = useMemo(
@@ -457,21 +458,34 @@ function TransactionForm({
             >
               {paymentChoices.map((choice) => {
                 const active = choiceKey(choice) === choiceKey({ method: draft.paymentMethod, label: draft.paymentLabel });
+                const mine = choice.method === 'other' && !!choice.label && custom[draft.type].includes(choice.label);
                 return (
-                  <button
+                  <CategoryChip
                     key={choiceKey(choice)}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    className={`chip-option${active ? ' is-active' : ''}`}
-                    onClick={() => selectPayment(choice)}
-                  >
-                    {choiceText(choice)}
-                  </button>
+                    label={choiceText(choice)}
+                    selected={active}
+                    onSelect={() => selectPayment(choice)}
+                    onManage={mine ? () => setManagingMethod(choice.label ?? null) : undefined}
+                    manageLabel="מחיקת אמצעי התשלום"
+                  />
                 );
               })}
             </div>
             {errors.paymentMethod && <div className="field-error">{errors.paymentMethod}</div>}
+            {managingMethod && (
+              <CategoryDialog
+                title="ניהול אמצעי תשלום"
+                name={managingMethod}
+                onClose={() => setManagingMethod(null)}
+                deleteText="למחוק את האמצעי מהרשימה? פעולות שכבר נרשמו איתו נשארות עם שמו."
+                onDelete={() => {
+                  saveCustomMethods(user.uid, { ...custom, [draft.type]: custom[draft.type].filter((x) => x !== managingMethod) }).catch(() =>
+                    reportFailure('לא הצלחנו לשמור את השינוי. יש לנסות שוב.'),
+                  );
+                  if (draft.paymentMethod === 'other' && draft.paymentLabel === managingMethod) selectPayment({ method: 'cash' });
+                }}
+              />
+            )}
             {addingPayment ? (
               <div className="inline-add">
                 <input

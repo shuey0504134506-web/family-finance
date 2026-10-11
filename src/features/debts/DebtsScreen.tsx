@@ -322,6 +322,7 @@ function DebtForm({
   const [categoryError, setCategoryError] = useState('');
   const [extraCategories, setExtraCategories] = useState<string[]>([]);
   const [addingPayment, setAddingPayment] = useState(false);
+  const [managingMethod, setManagingMethod] = useState<string | null>(null);
   const [newPayment, setNewPayment] = useState('');
   const [paymentError, setPaymentError] = useState('');
   const [payment, setPayment] = useState(
@@ -517,11 +518,30 @@ function DebtForm({
         </span>
         <div className="chip-group" role="radiogroup" aria-labelledby="debt-pay-label">
           {methods.map((m) => (
-            <button key={choiceKey(m)} type="button" role="radio" aria-checked={choiceKey(m) === payment} className={`chip-option${choiceKey(m) === payment ? ' is-active' : ''}`} onClick={() => setPayment(choiceKey(m))}>
-              {choiceText(m)}
-            </button>
+            <CategoryChip
+              key={choiceKey(m)}
+              label={choiceText(m)}
+              selected={choiceKey(m) === payment}
+              onSelect={() => setPayment(choiceKey(m))}
+              onManage={m.method === 'other' && !!m.label && custom.expense.includes(m.label) ? () => setManagingMethod(m.label ?? null) : undefined}
+              manageLabel="מחיקת אמצעי התשלום"
+            />
           ))}
         </div>
+        {managingMethod && (
+          <CategoryDialog
+            title="ניהול אמצעי תשלום"
+            name={managingMethod}
+            onClose={() => setManagingMethod(null)}
+            deleteText="למחוק את האמצעי מהרשימה? פעולות וחובות שכבר נרשמו איתו נשארים עם שמו."
+            onDelete={() => {
+              saveCustomMethods(user.uid, { ...custom, expense: custom.expense.filter((x) => x !== managingMethod) }).catch(() =>
+                reportFailure('לא הצלחנו לשמור את השינוי. יש לנסות שוב.'),
+              );
+              if (parseChoiceKey(payment).label === managingMethod) setPayment(choiceKey({ method: 'cash' }));
+            }}
+          />
+        )}
         {addingPayment ? (
           <div className="inline-add">
             <input

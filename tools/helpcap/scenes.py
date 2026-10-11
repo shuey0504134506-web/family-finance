@@ -96,6 +96,8 @@ scene('summary-compare', [], 'C:select')
 # --- ברירות מחדל
 scene('settings-defaults', [('goto', '#/settings')], 'C:#acc-btn-defaults')
 scene('defaults-pay', [('click', 'C:#acc-btn-defaults')], 'C:[id="def-pay-household.expense"]')
-scene('defaults-custom', [('click', 'B:הוצאות')], 'L:שם האמצעי החדש')
-scene('defaults-custom-name', [('fill', 'L:שם האמצעי החדש', V('ביט', 'Bit'))], 'B:הוספת אמצעי')
-scene('custom-in-form', [('click', 'B:הוספת אמצעי'), ('wait', 400), ('goto', '#/household/add/expense')], 'R:ביט')
+
+# --- אמצעי תשלום חדש בטופס
+scene('method-new', [HOUSE, ('click', 'B:הוספת הוצאה')], 'B:אמצעי חדש')
+scene('method-name', [('click', 'B:אמצעי חדש'), ('fill', 'L:שם האמצעי החדש', V('ביט', 'Bit'))], 'B:הוספה')
+scene('method-added', [('click', 'B:הוספה'), ('wait', 400)], 'R:ביט')

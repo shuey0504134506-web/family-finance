@@ -18,7 +18,7 @@ export const ADD_EXPENSE_STEPS: WalkthroughStep[] = [
 export const ADD_INCOME_STEPS: WalkthroughStep[] = [
   st('במסך הבית לוחצים על "הוספת הכנסה".', 'home-add-income'),
   st('מקלידים את הסכום ואת שם הלקוח או מקור ההכנסה.', 'inc-amount'),
-  st('בוחרים איך קיבלת את הכסף: מזומן, העברה או צ׳ק. אפשר להוסיף צורות משלך בהגדרות.', 'inc-method'),
+  st('בוחרים איך קיבלת את הכסף: מזומן, העברה או צ׳ק. אפשר להוסיף צורה משלך בכפתור "אמצעי חדש".', 'inc-method'),
   st('לוחצים על "שמירה". ההכנסה נכנסת לסיכום החודש.', 'inc-save'),
 ];
 
@@ -121,9 +121,9 @@ export const DEFAULTS_STEPS: WalkthroughStep[] = [
 ];
 
 export const CUSTOM_METHOD_STEPS: WalkthroughStep[] = [
-  st('בהגדרות פותחים את "ברירות מחדל להוספה".', 'settings-defaults'),
-  st('בחלק "אמצעי תשלום משלי" בוחרים הכנסה או הוצאה, כותבים שם (למשל "ביט") ולוחצים הוספה.', 'defaults-custom-name'),
-  st('האמצעי החדש מופיע מעכשיו בטופס ההוספה, בין צורות התשלום.', 'custom-in-form'),
+  st('בטופס הוספת הוצאה (או הכנסה) לוחצים "אמצעי חדש", מתחת לצורות התשלום.', 'method-new'),
+  st('כותבים שם (למשל "ביט") ולוחצים הוספה.', 'method-name'),
+  st('האמצעי החדש נבחר ומופיע בין צורות התשלום. כדי למחוק אותו, לוחצים על ה-✕ שלידו.', 'method-added'),
 ];
 
 export const HIDE_BUSINESS_STEPS: WalkthroughStep[] = [

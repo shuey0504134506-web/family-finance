@@ -4,11 +4,13 @@ export function CategoryChip({
   selected,
   onSelect,
   onManage,
+  manageLabel = 'ניהול הקטגוריה',
 }: {
   label: string;
   selected: boolean;
   onSelect: () => void;
   onManage?: () => void;
+  manageLabel?: string;
 }) {
   return (
     <span className={`chip-option chip-with-x${selected ? ' is-active' : ''}`}>
@@ -16,7 +18,7 @@ export function CategoryChip({
         {label}
       </button>
       {onManage && (
-        <button type="button" className="chip-x" aria-label="ניהול הקטגוריה" onClick={onManage}>
+        <button type="button" className="chip-x" aria-label={manageLabel} onClick={onManage}>
           ✕
         </button>
       )}

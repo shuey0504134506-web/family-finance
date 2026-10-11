@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { FAQ, TIPS, type HelpItem } from './helpContent';
+import { FAQ, SAVINGS, TIPS, type HelpItem } from './helpContent';
 import { WalkthroughPlayer } from './WalkthroughPlayer';
 
-type Tab = 'faq' | 'tips';
+type Tab = 'faq' | 'tips' | 'savings';
 
 /** עזרה: שאלות נפוצות וטיפים, עם הדגמות מונפשות לפעולות מרכזיות. */
 export function HelpScreen() {
@@ -13,7 +13,7 @@ export function HelpScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const items = useMemo(() => {
-    const list = tab === 'faq' ? FAQ : TIPS;
+    const list = tab === 'faq' ? FAQ : tab === 'tips' ? TIPS : SAVINGS;
     const q = query.trim();
     return q ? list.filter((i) => i.title.includes(q) || i.body.includes(q)) : list;
   }, [tab, query]);
@@ -27,6 +27,7 @@ export function HelpScreen() {
             [
               ['faq', 'שאלות נפוצות'],
               ['tips', 'טיפים'],
+              ['savings', 'חיסכון'],
             ] as const
           ).map(([value, label]) => (
             <button key={value} type="button" className={tab === value ? 'is-active' : ''} aria-pressed={tab === value} onClick={() => setTab(value)}>
@@ -39,6 +40,8 @@ export function HelpScreen() {
           <label htmlFor="help-search">חיפוש בעזרה</label>
           <input id="help-search" className="input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
         </div>
+
+        {tab === 'savings' && <p className="muted small">טיפים כלליים בלבד, לא ייעוץ פיננסי או מס.</p>}
 
         {items.length === 0 ? (
           <p className="muted">לא נמצא תוכן מתאים.</p>

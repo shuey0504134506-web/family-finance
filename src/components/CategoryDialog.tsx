@@ -16,6 +16,7 @@ export function CategoryDialog({
   confirmLabel = 'כן, למחוק',
   deleteText,
   nameError,
+  title = 'ניהול קטגוריה',
 }: {
   name: string;
   onClose: () => void;
@@ -26,6 +27,7 @@ export function CategoryDialog({
   deleteText: string;
   /** מחזיר הודעת שגיאה לשם חדש, או null כשהוא תקין */
   nameError?: (name: string) => string | null;
+  title?: string;
 }) {
   const [step, setStep] = useState<Step>('menu');
   const [draft, setDraft] = useState(name);
@@ -39,7 +41,7 @@ export function CategoryDialog({
   };
 
   return (
-    <Modal title="ניהול קטגוריה" onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <p className="category-dialog-name">{name}</p>
       {step === 'menu' && (
         <div className="dialog-actions">
