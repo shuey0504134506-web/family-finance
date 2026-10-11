@@ -1,3 +1,4 @@
+import { suppressLock } from '../../services/lockSuppress';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, PRIVACY_CONTACT_EMAIL, PRIVACY_CONTACT_PHONE } from '../../config/appInfo';
 
@@ -76,14 +77,14 @@ export function PrivacyScreen() {
           <strong>י. נ. ק.</strong>
           <br />
           טלפון:{' '}
-          <a href={`tel:${PRIVACY_CONTACT_PHONE}`} dir="ltr">
+          <a href={`tel:${PRIVACY_CONTACT_PHONE}`} dir="ltr" onClick={() => suppressLock()}>
             {PRIVACY_CONTACT_PHONE}
           </a>
         </p>
         {PRIVACY_CONTACT_EMAIL && (
           <p>
             דואר אלקטרוני:{' '}
-            <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} dir="ltr">
+            <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} dir="ltr" onClick={() => suppressLock()}>
               {PRIVACY_CONTACT_EMAIL}
             </a>
           </p>

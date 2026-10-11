@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { suppressLock } from '../services/lockSuppress';
 
 /**
  * שומר קובץ גיבוי במכשיר.
@@ -9,6 +10,8 @@ import { Capacitor } from '@capacitor/core';
 export async function saveBackupFile(filename: string, content: string): Promise<'documents' | 'download'> {
   if (Capacitor.isNativePlatform()) {
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+    // חלון הרשאה של המערכת מוציא את האפליקציה לרקע לרגע; זו לא עזיבה.
+    suppressLock();
     try {
       await Filesystem.requestPermissions();
     } catch {

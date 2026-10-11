@@ -1,3 +1,4 @@
+import { suppressLock } from '../../services/lockSuppress';
 import { useRef, useState } from 'react';
 import { transactionsToCsv } from '../../domain/export';
 import { MAX_BACKUP_BYTES, parseBackup, type RestorePlan } from '../../domain/restore';
@@ -123,7 +124,10 @@ export function DataSection() {
             e.target.value = '';
           }}
         />
-        <button type="button" className="btn btn-secondary" disabled={busy !== null || restoring} onClick={() => fileInput.current?.click()}>
+        <button type="button" className="btn btn-secondary" disabled={busy !== null || restoring} onClick={() => {
+            suppressLock();
+            fileInput.current?.click();
+          }}>
           בחירת קובץ גיבוי (JSON)
         </button>
         <p className="muted small">השחזור רק מוסיף מה שחסר. פעולות וקטגוריות שכבר קיימות לא נדרסות ולא נמחקות.</p>

@@ -23,6 +23,8 @@ import {
   type LockTiming,
 } from '../../domain/appLock';
 import { reloadedForLangChange } from '../../i18n/lang';
+import { isLockSuppressed, isNewAccount } from '../../services/lockSuppress';
+import { useAuth } from '../auth/AuthContext';
 import { verifyAccountPassword } from '../../services/accountService';
 import { loadLockConfig, patchLockConfig, hashSecret, verifySecret } from '../../services/appLockStorage';
 import { describeError } from '../../services/authErrors';
@@ -48,10 +50,14 @@ const WRONG_CODES = new Set(['auth/invalid-credential', 'auth/wrong-password', '
 
 export function LockProvider({ user, children }: { user: User; children: ReactNode }) {
   const uid = user.uid;
+  const { justRegistered } = useAuth();
+  // חשבון שנוצר זה עתה: אין מה לנעול עדיין, ואין לבקש קוד באמצע ההרשמה.
+  const justRegisteredRef = useRef(justRegistered);
+  justRegisteredRef.current = justRegistered;
   const [config, setConfig] = useState<LockConfig>(() => loadLockConfig(uid));
   // בהפעלה נועלים, אלא אם הסיסמה הוקלדה זה עתה בכניסה לחשבון.
   const [locked, setLocked] = useState(
-    () => !reloadedForLangChange && lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now()),
+    () => !justRegistered && !isNewAccount(uid) && !reloadedForLangChange && lockOnLaunch(loadLockConfig(uid)) && !isFreshSignIn(user.metadata.lastSignInTime, Date.now()),
   );
   const configRef = useRef(config);
   configRef.current = config;
@@ -64,6 +70,7 @@ export function LockProvider({ user, children }: { user: User; children: ReactNo
   // יציאה מהמסך (מעבר לאפליקציה אחרת, נעילת מכשיר, מעבר לשונית אחרת).
   useEffect(() => {
     const onHidden = () => {
+      if (justRegisteredRef.current || isLockSuppressed()) return;
       if (lockOnBackground(loadLockConfig(uid))) setLocked(true);
     };
     const onVisibility = () => {

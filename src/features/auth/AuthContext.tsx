@@ -1,3 +1,4 @@
+import { clearNewAccount, markNewAccount } from '../../services/lockSuppress';
 import {
   createContext,
   useCallback,
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const newUid = await registerAccount(input, password);
       rememberPasswordForLock(newUid, password);
+      markNewAccount(newUid);
       setJustRegistered(true);
     } finally {
       setRegistering(false);
@@ -123,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOutUser = useCallback(async () => {
     setJustRegistered(false);
+    clearNewAccount();
     await logout();
   }, []);
 
