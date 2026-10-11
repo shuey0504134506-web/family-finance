@@ -6,6 +6,7 @@ import { ForgotPasswordScreen } from './features/auth/ForgotPasswordScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
 import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
+import { AdminScreen } from './features/admin/AdminScreen';
 import { HomeScreen } from './features/home/HomeScreen';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
@@ -127,6 +128,7 @@ export function AppRoutes() {
         <Route path="/tithes" element={<TitheScreen />} />
         <Route path="/help" element={<HelpScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
+        <Route path="/admin" element={<AdminScreen />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

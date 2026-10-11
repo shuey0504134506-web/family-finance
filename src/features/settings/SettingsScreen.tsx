@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { isAdminEmail } from '../../config/admin';
+import { useReadyAuth } from '../auth/AuthContext';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
 import { AccordionItem } from './Accordion';
@@ -17,6 +19,7 @@ import { PasswordForm } from './SecuritySection';
  * פרטי חשבון, ייעוד האפליקציה, ניהול האפליקציה, אבטחה, ובסוף מחיקת חשבון.
  */
 export function SettingsScreen() {
+  const { user } = useReadyAuth();
   const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
 
@@ -58,6 +61,14 @@ export function SettingsScreen() {
             <DeleteAccountSection />
           </AccordionItem>
         </div>
+
+        {isAdminEmail(user.email) ? (
+          <div className="acc-list">
+            <Link to="/admin" className="btn btn-outline">
+              ניהול מתקדם (מנהל)
+            </Link>
+          </div>
+        ) : null}
 
         <p className="auth-footer-link">
           <Link to="/privacy">מדיניות פרטיות</Link>

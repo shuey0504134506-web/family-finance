@@ -38,7 +38,7 @@ export const missingFirebaseVars: string[] = [
 
 // כשההגדרה חסרה משתמשים בערכי מקום, כדי שהייבוא לא יקרוס. האפליקציה
 // לא מרכיבה שום רכיב שמשתמש ב-Firebase לפני שבדקה את firebaseReady.
-const app = initializeApp({
+export const app = initializeApp({
   apiKey: values.apiKey ?? 'not-configured',
   authDomain: values.authDomain ?? 'not-configured.firebaseapp.com',
   projectId: values.projectId ?? 'not-configured',

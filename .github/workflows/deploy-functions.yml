@@ -1,0 +1,40 @@
+name: פריסת פונקציות השרת (מסך מנהל)
+
+# רצה ידנית בלבד: לשונית Actions ← שם ה-workflow ← Run workflow.
+# דורשת שני סודות בהגדרות המאגר: FIREBASE_SERVICE_ACCOUNT ו-VITE_FIREBASE_PROJECT_ID.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: התקנת חבילות הפונקציות
+        run: npm install --prefix functions --omit=dev
+
+      - name: כתיבת מפתח השירות לקובץ זמני
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$KEY" ]; then echo "חסר הסוד FIREBASE_SERVICE_ACCOUNT"; exit 1; fi
+          printf '%s' "$KEY" > "$RUNNER_TEMP/sa.json"
+
+      - name: פריסה
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        run: npx --yes firebase-tools@14 deploy --only functions --project "$PROJECT_ID" --non-interactive
+
+      - name: מחיקת המפתח הזמני
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
