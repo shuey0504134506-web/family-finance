@@ -3500,3 +3500,17 @@ input[type='checkbox'],
 .mk-gap { height: 6px; }
 .mk-spacer { flex: 1; }
 .mk-hl { outline: 2.5px solid #d4a64b; outline-offset: 1px; border-radius: 8px; }
+
+/* כפתורי קישור (למשל "להגדרות ←"): הטקסט ממורכז גם בגובה, גם כשהם קישורים ולא כפתורים */
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  text-decoration: none;
+}
+a.btn,
+.btn {
+  align-items: center;
+  justify-content: center;
+}
