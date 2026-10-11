@@ -108,7 +108,7 @@ function Content({ type }: { type: TransactionType }) {
               className={`btn btn-add ${isIncome ? 'btn-income' : 'btn-expense'}`}
               onClick={() => navigate(`/${space.key}/add/${type}`)}
             >
-              <Icon name="plus" /> {isIncome ? 'הוספת הכנסה' : 'הוספת הוצאה'}
+              {isIncome ? 'הוספת הכנסה' : 'הוספת הוצאה'}
             </button>
 
             {needsBusinessNet && fromBusiness !== 0 && (
