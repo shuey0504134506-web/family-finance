@@ -308,7 +308,7 @@ function AdminContent() {
   const [payingUid, setPayingUid] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>('summary');
+  const [openId, setOpenId] = useState<string | null>(null);
   const [accountSearch, setAccountSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const messages = useAdminMessages();
