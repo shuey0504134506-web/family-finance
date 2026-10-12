@@ -3580,3 +3580,7 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 }
 .payment-strip-text { flex: 1 1 auto; min-width: 0; font-weight: 600; }
 .payment-strip-more { flex: 0 0 auto; text-decoration: underline; }
+
+/* חשבון המנהל בראש רשימת החשבונות: מסגרת ותווית */
+.txc.txc-admin { border: 2px solid var(--business); }
+.txc-chip.txc-chip-admin { background: var(--business); color: #fff; border-color: var(--business); font-weight: 600; }

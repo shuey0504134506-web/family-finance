@@ -379,9 +379,10 @@ function AdminContent() {
 
   const emailOf = new Map((data?.users ?? []).map((u) => [u.uid, u.email] as const));
   const aq = accountSearch.trim().toLowerCase();
-  const filteredUsers = (data?.users ?? []).filter(
-    (u) => !aq || `${u.email} ${STATUS_LABEL[u.status]} ${USAGE_LABEL[u.usage]}`.toLowerCase().includes(aq),
-  );
+  // חשבון המנהל תמיד ראשון
+  const filteredUsers = (data?.users ?? [])
+    .filter((u) => !aq || `${u.email} ${STATUS_LABEL[u.status]} ${USAGE_LABEL[u.usage]} ${isAdminEmail(u.email) ? 'חשבון מנהל' : ''}`.toLowerCase().includes(aq))
+    .sort((a, b) => Number(isAdminEmail(b.email)) - Number(isAdminEmail(a.email)));
 
   return (
     <div className="app-shell">
@@ -494,12 +495,13 @@ function AdminContent() {
                   <SearchBox value={accountSearch} onChange={setAccountSearch} label="חיפוש חשבון לפי אימייל או סטטוס" />
             <ul className="tx-list" aria-label="חשבונות">
               {filteredUsers.map((u) => (
-                <li key={u.uid} className="txc">
+                <li key={u.uid} className={`txc${isAdminEmail(u.email) ? ' txc-admin' : ''}`}>
                   <div className="txc-top">
                     <span className="txc-title" dir="ltr">{u.email || u.uid}</span>
                   </div>
                   <div className="txc-mid">
                     <span className="txc-chips">
+                      {isAdminEmail(u.email) ? <span className="txc-chip txc-chip-admin">חשבון מנהל</span> : null}
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
                       <span className="txc-chip">{STATUS_LABEL[u.status]}</span>
                       {u.notice ? <span className="txc-chip">הודעה פעילה</span> : null}
