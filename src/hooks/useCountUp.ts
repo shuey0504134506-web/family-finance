@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { animationsPaused, onAnimationGateChange } from '../services/animationGate';
 import { countDone, countTick } from '../services/feedback';
 
 /** האם מותר להנפיש: דפדפן עם matchMedia, והמשתמש לא ביקש להפחית תנועה. בבדיקות (jsdom) אין הנפשה. */
@@ -51,24 +52,34 @@ export function useCountUp(target: number, enabled = true, durationMs = 1100): n
   return shown;
 }
 
-/** נהיה true ברגע שהאלמנט נכנס למסך (ונשאר true). בלי IntersectionObserver: true מיד. */
+/** נהיה true ברגע שהאלמנט נכנס למסך (ונשאר true), ורק כשהאפליקציה לא נעולה. בלי IntersectionObserver: true מיד. */
 export function useInView<T extends Element>(): [RefObject<T>, boolean] {
   const ref = useRef<T>(null);
   const [seen, setSeen] = useState(() => typeof IntersectionObserver === 'undefined');
   useEffect(() => {
     const el = ref.current;
     if (seen || !el) return;
+    let intersecting = false;
+    const check = () => {
+      if (intersecting && !animationsPaused()) {
+        setSeen(true);
+        cleanup();
+      }
+    };
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setSeen(true);
-          io.disconnect();
-        }
+        intersecting = entries[entries.length - 1].isIntersecting;
+        check();
       },
       { threshold: 0.2 },
     );
+    const off = onAnimationGateChange(check);
+    const cleanup = () => {
+      io.disconnect();
+      off();
+    };
     io.observe(el);
-    return () => io.disconnect();
+    return cleanup;
   }, [seen]);
   return [ref, seen];
 }

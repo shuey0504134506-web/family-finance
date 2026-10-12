@@ -1,4 +1,5 @@
 import { motionAllowed } from '../hooks/useCountUp';
+import { animationsPaused, onAnimationGateChange } from './animationGate';
 
 /**
  * פסי מצב וגרפים מונפשים רק כשהם נכנסים למסך (לפי גלילה). מה שעדיין לא נראה נשאר מכווץ וממתין.
@@ -9,16 +10,27 @@ const SELECTOR = '.row-bar, .budget-bar, .share-bar, .chart-svg';
 
 export function startScrollReveal(): void {
   if (typeof document === 'undefined' || typeof IntersectionObserver === 'undefined' || !motionAllowed()) return;
+  // אלמנטים שנראו בזמן שהאפליקציה נעולה ממתינים עד לפתיחת הנעילה
+  const waiting = new Set<Element>();
+  const reveal = (el: Element) => {
+    el.classList.add('in-view');
+    io.unobserve(el);
+  };
   const io = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
-        e.target.classList.add('in-view');
-        io.unobserve(e.target);
+        if (animationsPaused()) waiting.add(e.target);
+        else reveal(e.target);
       }
     },
     { threshold: 0.2 },
   );
+  onAnimationGateChange(() => {
+    if (animationsPaused()) return;
+    waiting.forEach(reveal);
+    waiting.clear();
+  });
   const seen = new WeakSet<Element>();
   const track = (el: Element) => {
     if (seen.has(el)) return;

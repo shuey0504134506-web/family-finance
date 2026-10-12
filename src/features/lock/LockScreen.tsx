@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Field } from '../../components/Field';
 import { effectiveMethod, needsPasswordFallback } from '../../domain/appLock';
 import { describeError } from '../../services/authErrors';
+import { setAnimationsPaused } from '../../services/animationGate';
 import { requestPasswordReset } from '../../services/authService';
 import { useAuth, useReadyAuth } from '../auth/AuthContext';
 import { useLock, type UnlockResult } from './LockContext';
@@ -10,6 +11,11 @@ import { PatternPad } from './PatternPad';
 /** מכסה את כל המסך כשהאפליקציה נעולה. התוכן שמתחתיו נשאר במקומו, כדי שטופס שהתחלתם למלא לא יימחק. */
 export function LockGate({ children }: { children: ReactNode }) {
   const { locked } = useLock();
+  // כל עוד נעול, ההנפשות והצלילים של המסכים שמאחורי הנעילה לא מתחילים
+  useLayoutEffect(() => {
+    setAnimationsPaused(locked);
+    return () => setAnimationsPaused(false);
+  }, [locked]);
   return (
     <>
       <div style={{ visibility: locked ? 'hidden' : 'visible' }} aria-hidden={locked}>
