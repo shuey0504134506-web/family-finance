@@ -18,6 +18,7 @@ export function isLockSuppressed(now: number = Date.now()): boolean {
 /** לבדיקות בלבד. */
 export function resetLockSuppress(): void {
   until = 0;
+  signIn = null;
 }
 
 /**
@@ -32,7 +33,23 @@ export const isNewAccount = (uid: string): boolean => newAccountUid === uid;
 export const clearNewAccount = (): void => {
   newAccountUid = null;
   lockSession = null;
+  signIn = null;
 };
+
+/**
+ * כניסה או הרשמה שהמשתמש ביצע בהפעלה הנוכחית (הקליד סיסמה זה עתה). נשמר בזיכרון בלבד, בלי תלות
+ * בשעון של השרת או של המכשיר. מונע נעילה מיידית אחרי הכניסה (טעינה איטית, "שמירת סיסמה" של
+ * המערכת וכד'). בהפעלה חדשה של האפליקציה הוא נמחק, והנעילה חלה כרגיל.
+ */
+let signIn: { uid: string; at: number } | null = null;
+export const markSignedIn = (uid: string, now: number = Date.now()): void => {
+  signIn = { uid, at: now };
+};
+export const signedInThisRun = (uid: string): boolean => signIn !== null && signIn.uid === uid;
+/** כניסה לפני זמן קצר: חלונות מערכת שנפתחים מיד אחריה (שמירת סיסמה) לא ייחשבו עזיבה. */
+export const SIGN_IN_GRACE_MS = 3 * 60_000;
+export const signedInRecently = (uid: string, now: number = Date.now()): boolean =>
+  signIn !== null && signIn.uid === uid && now - signIn.at < SIGN_IN_GRACE_MS;
 
 /**
  * מצב הנעילה בהפעלה הנוכחית. מסכים כמו מדיניות הפרטיות נמצאים מחוץ לעץ המסכים המחוברים,
