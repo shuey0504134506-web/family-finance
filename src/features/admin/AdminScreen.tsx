@@ -309,6 +309,7 @@ function AdminContent() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openDay, setOpenDay] = useState<string | null>(null);
   const [accountSearch, setAccountSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const messages = useAdminMessages();
@@ -452,15 +453,38 @@ function AdminContent() {
               <ul className="share-list" aria-label="פתיחות לפי יום">
                 {data.daily.map((d) => {
                   const max = Math.max(1, ...data.daily.map((x) => x.opens));
+                  const isOpen = openDay === d.date;
                   return (
                     <li key={d.date}>
-                      <div className="row-between">
-                        <span>{d.date.slice(8)}/{d.date.slice(5, 7)}</span>
-                        <span>{d.opens} פתיחות · {d.activeAccounts} חשבונות</span>
-                      </div>
-                      <div className="share-bar share-income" aria-hidden="true">
-                        <div style={{ width: `${d.opens === 0 ? 0 : Math.max(2, (d.opens / max) * 100)}%` }} />
-                      </div>
+                      <button
+                        type="button"
+                        className="day-btn"
+                        aria-expanded={isOpen}
+                        disabled={d.opens === 0}
+                        onClick={() => setOpenDay(isOpen ? null : d.date)}
+                      >
+                        <span className="row-between">
+                          <span>{d.date.slice(8)}/{d.date.slice(5, 7)}</span>
+                          <span>{d.opens} פתיחות · {d.activeAccounts} חשבונות</span>
+                        </span>
+                        <span className="share-bar share-income" aria-hidden="true">
+                          <span style={{ width: `${d.opens === 0 ? 0 : Math.max(2, (d.opens / max) * 100)}%` }} />
+                        </span>
+                      </button>
+                      {isOpen ? (
+                        d.accounts ? (
+                          <ul className="day-accounts">
+                            {d.accounts.map((a) => (
+                              <li key={a.uid} className="row-between">
+                                <span className="day-email">{a.email || a.uid}</span>
+                                <span>{a.opens} פתיחות</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="muted small">הפירוט לפי חשבון זמין אחרי פריסה מחדש של פונקציות השרת.</p>
+                        )
+                      ) : null}
                     </li>
                   );
                 })}

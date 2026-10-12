@@ -113,7 +113,7 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
   }
   const usage = await usageDays(rows.map((r) => r.uid));
   const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
-  const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0 }));
+  const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0, accounts: [] }));
   for (const r of rows) {
     const d = usage.get(r.uid) ?? {};
     days.forEach((date, i) => {
@@ -121,10 +121,12 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
       if (n > 0) {
         daily[i].activeAccounts += 1;
         daily[i].opens += n;
+        daily[i].accounts.push({ uid: r.uid, email: r.email, opens: n });
       }
       if (i >= 7) r.opens7d += n;
     });
   }
+  for (const d of daily) d.accounts.sort((a, b) => b.opens - a.opens);
   rows.sort((a, b) => (b.lastSignInAt ?? 0) - (a.lastSignInAt ?? 0));
 
   const activeWithin = (ms) => rows.filter((r) => r.lastSignInAt && now - r.lastSignInAt < ms).length;

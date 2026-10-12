@@ -3588,3 +3588,49 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 /* מסגרת מעט כהה יותר לכרטיסי החשבונות וההודעות בניהול מתקדם */
 .admin-list .txc { border: 1px solid #8f9e97; }
 .admin-list .txc.txc-admin { border: 2px solid var(--business); }
+
+/* סיכום 14 ימים (מנהל): שורת יום לחיצה עם פירוט החשבונות */
+.day-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.day-btn:disabled {
+  cursor: default;
+}
+.day-btn .row-between {
+  display: flex;
+}
+.day-btn .share-bar {
+  display: block;
+}
+.day-btn .share-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+.day-btn.share-income > span,
+.day-btn .share-income > span {
+  background: var(--income);
+}
+.day-accounts {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  display: grid;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.92rem;
+}
+.day-email {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}

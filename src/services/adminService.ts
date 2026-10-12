@@ -41,7 +41,7 @@ export interface AdminOverview {
   generatedAt: number;
   truncated: boolean;
   /** 14 הימים האחרונים: כמה חשבונות פתחו את האפליקציה וכמה פתיחות היו */
-  daily: { date: string; activeAccounts: number; opens: number }[];
+  daily: { date: string; activeAccounts: number; opens: number; accounts?: { uid: string; email: string; opens: number }[] }[];
   totals: {
     accounts: number;
     disabled: number;
