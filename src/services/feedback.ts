@@ -45,7 +45,9 @@ function audio(): AudioContext | null {
 
 // דפדפנים מתירים צליל רק אחרי מגע: מעירים את הצליל במגע הראשון
 if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', () => void audio(), { once: true, passive: true });
+  for (const type of ['pointerdown', 'touchstart', 'keydown'] as const) {
+    window.addEventListener(type, () => void audio(), { once: true, passive: true });
+  }
 }
 
 function blip(freq: number, ms: number, gain: number, type: OscillatorType = 'sine'): void {
