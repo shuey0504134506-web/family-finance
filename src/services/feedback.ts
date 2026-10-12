@@ -88,15 +88,11 @@ export function countTick(progress: number): void {
   }
 }
 
-/** סיום הספירה: צליל "דינג" רך ורטט אחד, פעם אחת גם אם כמה ספירות הסתיימו יחד. */
+/** סיום הספירה: רטט אחד בלבד (בלי צליל), פעם אחת גם אם כמה ספירות הסתיימו יחד. */
 export function countDone(): void {
   clearTimeout(doneTimer);
   doneTimer = setTimeout(() => {
     const prefs = getFeedbackPrefs();
-    if (prefs.sound) {
-      blip(880, 160, 0.05);
-      setTimeout(() => blip(1320, 220, 0.04), 70);
-    }
     if (prefs.haptics) haptic(ImpactStyle.Medium);
   }, 120);
 }
