@@ -3650,13 +3650,13 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 .budget-bar > div,
 .share-bar > div,
 .day-btn .share-bar > span {
-  animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: bar-grow 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cmp-bar {
   transform-box: fill-box;
   transform-origin: bottom;
-  animation: bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: bar-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @media (prefers-reduced-motion: reduce) {
   .row-bar > i,

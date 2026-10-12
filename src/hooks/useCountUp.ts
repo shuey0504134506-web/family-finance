@@ -20,7 +20,7 @@ const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
  * מספר שעולה בהדרגה אל הערך החדש: בטעינה הראשונה מאפס, ובכל שינוי מהערך שהוצג עד עכשיו.
  * הערך הסופי תמיד מדויק (הסכום האמיתי), רק הדרך אליו מונפשת.
  */
-export function useCountUp(target: number, durationMs = 800): number {
+export function useCountUp(target: number, durationMs = 1100): number {
   const animate = motionAllowed();
   const [shown, setShown] = useState(animate ? 0 : target);
   const fromRef = useRef(animate ? 0 : target);
