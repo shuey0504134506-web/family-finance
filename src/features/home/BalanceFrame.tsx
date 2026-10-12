@@ -42,7 +42,7 @@ export function BalanceFrame(props: Props) {
           {headline.amountAgorot !== null && (
             <>
               {' '}
-              <Amount agorot={headline.amountAgorot} className="balance-amount" />
+              <Amount animate agorot={headline.amountAgorot} className="balance-amount" />
             </>
           )}
         </span>
@@ -54,7 +54,7 @@ export function BalanceFrame(props: Props) {
           <div>
             <dt>הכנסות</dt>
             <dd>
-              <Amount agorot={props.incomeAgorot} className="tone-income" />
+              <Amount animate agorot={props.incomeAgorot} className="tone-income" />
             </dd>
           </div>
           {props.fromBusinessAgorot !== undefined && props.fromBusinessAgorot !== 0 && (
@@ -63,14 +63,14 @@ export function BalanceFrame(props: Props) {
                 <>
                   <dt>מתוכן: הכנסה מהעסק</dt>
                   <dd>
-                    <Amount agorot={props.fromBusinessAgorot} />
+                    <Amount animate agorot={props.fromBusinessAgorot} />
                   </dd>
                 </>
               ) : (
                 <>
                   <dt>מתוכן: הפסד מהעסק (מקטין את ההכנסות)</dt>
                   <dd>
-                    <Amount agorot={Math.abs(props.fromBusinessAgorot)} className="tone-expense" />
+                    <Amount animate agorot={Math.abs(props.fromBusinessAgorot)} className="tone-expense" />
                   </dd>
                 </>
               )}
@@ -79,13 +79,13 @@ export function BalanceFrame(props: Props) {
           <div>
             <dt>פחות הוצאות</dt>
             <dd>
-              <Amount agorot={props.expenseAgorot} className="tone-expense" />
+              <Amount animate agorot={props.expenseAgorot} className="tone-expense" />
             </dd>
           </div>
           <div className="balance-total">
             <dt>שווה יתרה</dt>
             <dd>
-              <Amount agorot={props.balanceAgorot} className={`tone-${headline.tone}`} />
+              <Amount animate agorot={props.balanceAgorot} className={`tone-${headline.tone}`} />
             </dd>
           </div>
         </dl>
