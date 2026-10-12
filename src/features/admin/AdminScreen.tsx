@@ -172,7 +172,18 @@ function NoticeForm({
   );
 }
 
-function Messages({ list, loadError, search }: { list: AdminMessage[] | null; loadError: boolean; search: string }) {
+function Messages({
+  list,
+  loadError,
+  search,
+  emailOf,
+}: {
+  list: AdminMessage[] | null;
+  loadError: boolean;
+  search: string;
+  /** אימייל לפי מזהה חשבון, להודעות ישנות שנשמרו בלי אימייל */
+  emailOf: ReadonlyMap<string, string>;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [replyId, setReplyId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -207,7 +218,7 @@ function Messages({ list, loadError, search }: { list: AdminMessage[] | null; lo
 
   const q = search.trim().toLowerCase();
   const shown = (list ?? []).filter(
-    (m) => !q || `${m.email} ${m.text} ${m.reply}`.toLowerCase().includes(q),
+    (m) => !q || `${m.email || emailOf.get(m.uid) || ''} ${m.text} ${m.reply}`.toLowerCase().includes(q),
   );
   return (
     <div className="stack">
@@ -222,7 +233,7 @@ function Messages({ list, loadError, search }: { list: AdminMessage[] | null; lo
         {shown.map((m) => (
           <li key={m.id} className="txc">
             <div className="txc-top">
-              <span className="txc-title" dir="ltr">{m.email || m.uid}</span>
+              <span className="txc-title" dir="ltr">{m.email || emailOf.get(m.uid) || 'חשבון שנמחק'}</span>
             </div>
             <div className="txc-note">{dateTime(m.createdAt)}{m.reply ? '' : ' · ללא מענה'}</div>
             <div style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
@@ -366,6 +377,7 @@ function AdminContent() {
     }
   };
 
+  const emailOf = new Map((data?.users ?? []).map((u) => [u.uid, u.email] as const));
   const aq = accountSearch.trim().toLowerCase();
   const filteredUsers = (data?.users ?? []).filter(
     (u) => !aq || `${u.email} ${STATUS_LABEL[u.status]} ${USAGE_LABEL[u.usage]}`.toLowerCase().includes(aq),
@@ -473,7 +485,7 @@ function AdminContent() {
                 )}
                   {notice ? <p className="muted small" role="status">{notice}</p> : null}
                   <SearchBox value={messageSearch} onChange={setMessageSearch} label="חיפוש בהודעות" />
-                  <Messages list={messages.list} loadError={messages.error} search={messageSearch} />
+                  <Messages list={messages.list} loadError={messages.error} search={messageSearch} emailOf={emailOf} />
                 </div>
               </AccordionItem>
 

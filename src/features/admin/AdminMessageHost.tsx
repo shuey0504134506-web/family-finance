@@ -70,7 +70,7 @@ export function AdminMessageHost() {
   return (
     <Modal title="הודעה חדשה מחשבון" onClose={() => undefined}>
       <div className="stack">
-        <p className="txc-title" dir="ltr">{next.email || next.uid}</p>
+        <p className="txc-title" dir="ltr">{next.email || 'שולח ישן (האימייל לא נשמר). השם יופיע בשורת ההודעות'}</p>
         <p className="txc-note">{dateTime(next.createdAt)}</p>
         <p style={{ whiteSpace: 'pre-wrap' }}>{next.text}</p>
         <label className="field-label" htmlFor="admin-popup-reply">מענה (קופץ אצל המשתמש)</label>
