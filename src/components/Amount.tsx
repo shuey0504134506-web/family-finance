@@ -1,6 +1,6 @@
-import type { CurrencyCode } from "../domain/currency";
-import { formatShekels } from "../domain/money";
-import { useCountUp } from "../hooks/useCountUp";
+import type { CurrencyCode } from '../domain/currency';
+import { formatShekels } from '../domain/money';
+import { useCountUp, useInView } from '../hooks/useCountUp';
 
 /**
  * סכום כספי. נעטף ב-bdi כדי שהמספר, סימן המינוס וסימן השקל לא יתהפכו
@@ -35,6 +35,11 @@ function AnimatedAmount({
   className: string;
   currency?: CurrencyCode;
 }) {
-  const shown = useCountUp(agorot);
-  return <bdi className={className}>{formatShekels(shown, { currency })}</bdi>;
+  const [ref, visible] = useInView<HTMLElement>();
+  const shown = useCountUp(agorot, visible);
+  return (
+    <bdi ref={ref} className={className}>
+      {formatShekels(shown, { currency })}
+    </bdi>
+  );
 }

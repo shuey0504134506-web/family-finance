@@ -8,6 +8,7 @@ import { APP_NAME, APP_VERSION } from '../../config/appInfo';
 import { AccordionItem } from './Accordion';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
+import { FeedbackSection } from './FeedbackSection';
 import { FormDefaultsSection } from './FormDefaultsSection';
 import { LanguageCurrencySection } from './LanguageCurrencySection';
 import { LockSection } from './LockSection';
@@ -58,6 +59,10 @@ export function SettingsScreen() {
 
           <AccordionItem id="lang" title="שפה" open={openId === 'lang'} onToggle={toggle}>
             <LanguageCurrencySection />
+          </AccordionItem>
+
+          <AccordionItem id="feedback" title="צלילים ורטט" open={openId === 'feedback'} onToggle={toggle}>
+            <FeedbackSection />
           </AccordionItem>
 
           <AccordionItem id="manage" title="ניהול האפליקציה" open={openId === 'manage'} onToggle={toggle}>
