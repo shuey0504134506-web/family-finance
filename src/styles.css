@@ -3584,3 +3584,7 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 /* חשבון המנהל בראש רשימת החשבונות: מסגרת ותווית */
 .txc.txc-admin { border: 2px solid var(--business); }
 .txc-chip.txc-chip-admin { background: var(--business); color: #fff; border-color: var(--business); font-weight: 600; }
+
+/* מסגרת מעט כהה יותר לכרטיסי החשבונות וההודעות בניהול מתקדם */
+.admin-list .txc { border: 1px solid #8f9e97; }
+.admin-list .txc.txc-admin { border: 2px solid var(--business); }

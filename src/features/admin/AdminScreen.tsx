@@ -229,7 +229,7 @@ function Messages({
       ) : null}
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       {list && shown.length === 0 ? <p className="muted">{q ? 'לא נמצאו הודעות.' : 'אין הודעות.'}</p> : null}
-      <ul className="tx-list" aria-label="הודעות">
+      <ul className="tx-list admin-list" aria-label="הודעות">
         {shown.map((m) => (
           <li key={m.id} className="txc">
             <div className="txc-top">
@@ -493,7 +493,7 @@ function AdminContent() {
               <AccordionItem id="accounts" title={`חשבונות (${data.users.length})`} open={openId === 'accounts'} onToggle={toggle}>
                 <div className="stack">
                   <SearchBox value={accountSearch} onChange={setAccountSearch} label="חיפוש חשבון לפי אימייל או סטטוס" />
-            <ul className="tx-list" aria-label="חשבונות">
+            <ul className="tx-list admin-list" aria-label="חשבונות">
               {filteredUsers.map((u) => (
                 <li key={u.uid} className={`txc${isAdminEmail(u.email) ? ' txc-admin' : ''}`}>
                   <div className="txc-top">
