@@ -3696,3 +3696,9 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 .recent-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .recent-name{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
 .recent-date{font-size:.75rem;color:var(--text-muted)}
+.cat-expenses{margin-top:6px}
+.cat-expense-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;border-top:1px solid var(--border);padding-top:10px}
+.cat-expense-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.cat-expense-name{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
+.cat-expense-date{font-size:.75rem;color:var(--text-muted)}
+.cat-expenses{text-align:center}.cat-expense-list{text-align:start}

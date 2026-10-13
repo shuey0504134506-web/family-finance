@@ -202,14 +202,6 @@ export function HomeScreen() {
           onOpenExpense={() => navigate(`/${space.key}/list/expense`)}
         />
 
-        {!loading && !active.error && (
-          <MultiCurrencySummary
-            items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
-            primaryIncomeAgorot={totals.incomeAgorot}
-            primaryExpenseAgorot={totals.expenseAgorot}
-          />
-        )}
-
         {!active.error && (
           <div className="add-actions">
             <button
@@ -227,6 +219,14 @@ export function HomeScreen() {
               הוספת הוצאה
             </button>
           </div>
+        )}
+
+        {!loading && !active.error && (
+          <MultiCurrencySummary
+            items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
+            primaryIncomeAgorot={totals.incomeAgorot}
+            primaryExpenseAgorot={totals.expenseAgorot}
+          />
         )}
 
         {!loading && !active.error && recent.length > 0 && (

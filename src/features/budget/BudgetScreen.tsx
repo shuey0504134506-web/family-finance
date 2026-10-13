@@ -12,7 +12,7 @@ import {
   overallBudgetId,
   splitBudgets,
 } from '../../domain/budget';
-import { formatMonthYear } from '../../domain/dates';
+import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
 import { MAX_TRANSACTION_AGOROT, parseShekelsToAgorot } from '../../domain/money';
 import { totalsByCategory } from '../../domain/summary';
 import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
@@ -99,6 +99,29 @@ function BudgetContent({ space }: { space: Space }) {
     () => [...expenseByCategory.values()].reduce((a, b) => a + b, 0),
     [expenseByCategory],
   );
+  // הוצאות התקופה לפי קטגוריה, מהחדשה לישנה, להצגה מתחת לכל קטגוריה
+  const expensesByCategory = useMemo(() => {
+    const map = new Map<string, TransactionRecord[]>();
+    for (const t of periodItems) {
+      if (t.type !== 'expense') continue;
+      const list = map.get(t.categoryId);
+      if (list) list.push(t);
+      else map.set(t.categoryId, [t]);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1));
+    }
+    return map;
+  }, [periodItems]);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   const rows = useMemo(() => {
     const own = categories.filter((c) => inSpace(c, space));
     // הוצאות בקטגוריה שנמחקה: מופיעות כשורה בשם שנשמר בפעולה, כדי שהסכום לא ייעלם מהמסך
@@ -265,6 +288,13 @@ function BudgetContent({ space }: { space: Space }) {
                     onCancel={() => setEditing(null)}
                     noBudgetText=""
                     {...lineProps(row.categoryId, false, row.usedAgorot)}
+                  />
+                  <CategoryExpenses
+                    id={row.categoryId}
+                    items={expensesByCategory.get(row.categoryId) ?? []}
+                    open={expanded.has(row.categoryId)}
+                    onToggle={() => toggleExpanded(row.categoryId)}
+                    monthly={monthly}
                   />
                 </li>
               ))}
@@ -453,4 +483,44 @@ function BudgetLine({
   );
 
   return bare ? body : <section className="card budget-row" aria-label={title}>{body}</section>;
+}
+
+/** רשימת ההוצאות של קטגוריה בתקופה, נפתחת בלחיצה. הסכומים כבר אחרי המרה למטבע הראשי, כמו בניצול התקציב. */
+function CategoryExpenses({
+  id,
+  items,
+  open,
+  onToggle,
+  monthly,
+}: {
+  id: string;
+  items: readonly TransactionRecord[];
+  open: boolean;
+  onToggle: () => void;
+  monthly: boolean;
+}) {
+  if (items.length === 0) return null;
+  const listId = `cat-exp-${id}`;
+  return (
+    <div className="cat-expenses">
+      <button type="button" className="link-btn" aria-expanded={open} aria-controls={listId} onClick={onToggle}>
+        {open
+          ? 'הסתרת ההוצאות'
+          : `${monthly ? 'הצגת ההוצאות של החודש' : 'הצגת ההוצאות של השנה'} (${items.length})`}
+      </button>
+      {open && (
+        <ul id={listId} className="cat-expense-list">
+          {items.map((t) => (
+            <li key={t.id} className="cat-expense-row">
+              <span className="cat-expense-name">
+                {t.counterparty || t.categoryName}
+                <span className="cat-expense-date">{formatDisplayDate(t.date)}</span>
+              </span>
+              <Amount agorot={t.amountAgorot} className="tone-expense" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
