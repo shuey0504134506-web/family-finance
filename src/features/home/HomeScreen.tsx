@@ -210,6 +210,25 @@ export function HomeScreen() {
           />
         )}
 
+        {!active.error && (
+          <div className="add-actions">
+            <button
+              type="button"
+              className="btn btn-income"
+              onClick={() => navigate(`/${space.key}/add/income`)}
+            >
+              הוספת הכנסה
+            </button>
+            <button
+              type="button"
+              className="btn btn-expense"
+              onClick={() => navigate(`/${space.key}/add/expense`)}
+            >
+              הוספת הוצאה
+            </button>
+          </div>
+        )}
+
         {!loading && !active.error && recent.length > 0 && (
           <section className="card recent-card" aria-labelledby="recent-title">
             <h2 id="recent-title" className="recent-title">
@@ -231,25 +250,6 @@ export function HomeScreen() {
               ))}
             </ul>
           </section>
-        )}
-
-        {!active.error && (
-          <div className="add-actions">
-            <button
-              type="button"
-              className="btn btn-income"
-              onClick={() => navigate(`/${space.key}/add/income`)}
-            >
-              הוספת הכנסה
-            </button>
-            <button
-              type="button"
-              className="btn btn-expense"
-              onClick={() => navigate(`/${space.key}/add/expense`)}
-            >
-              הוספת הוצאה
-            </button>
-          </div>
         )}
 
         {!isBusiness && countedIds.length > 0 && !loading && (
