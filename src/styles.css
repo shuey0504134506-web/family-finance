@@ -3702,3 +3702,22 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 .cat-expense-name{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
 .cat-expense-date{font-size:.75rem;color:var(--text-muted)}
 .cat-expenses{text-align:center}.cat-expense-list{text-align:start}
+
+.spend-card{margin-block:12px}
+.spend-title{font-size:1.0625rem;margin:0 0 10px}
+.spend-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.spend-tabs button{border:0;border-radius:999px;padding:7px 14px;font:inherit;font-size:.8125rem;background:#efe9da;color:var(--text-muted);cursor:pointer;min-height:36px}
+.spend-tabs button.is-active{background:var(--navy);color:#fff}
+.spend-body{display:flex;align-items:center;gap:16px}
+.spend-donut{position:relative;width:150px;height:150px;flex:none}
+.spend-donut svg{width:100%;height:100%;display:block}
+.spend-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:.75rem;color:var(--text-muted);padding:0 24px;gap:1px}
+.spend-total{font-size:1.125rem;font-weight:700;color:var(--text)}
+.spend-legend{list-style:none;margin:0;padding:0;display:grid;gap:10px;flex:1;min-width:0}
+.spend-legend li{display:flex;align-items:center;gap:8px;font-size:.875rem}
+.spend-dot{width:12px;height:12px;border-radius:50%;flex:none}
+.spend-name{min-width:0;overflow-wrap:anywhere}
+.spend-legend .num{margin-inline-start:auto;font-weight:600}
+.spend-stack{display:flex;height:8px;border-radius:6px;overflow:hidden;gap:2px;margin-top:16px}
+.spend-stack i{display:block;height:100%}
+.spend-more{display:block;margin:12px auto 0}

@@ -27,6 +27,7 @@ import { useSpaces } from '../spaces/SpacesContext';
 import { useBudgets } from '../../hooks/useBudgets';
 import { useTitheRows } from '../tithes/useTitheRows';
 import { QuickLink } from './QuickLink';
+import { SpendingCard } from './SpendingCard';
 import { BalanceFrame } from './BalanceFrame';
 import { notStartedText, previousStageHeadline, uptoDayOfMonth } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
@@ -59,8 +60,8 @@ export function HomeScreen() {
   // השוואה לחודש הקודם באותו שלב (רק בחודש הנוכחי)
   const compare = month.status === 'current';
   const prevMonth = addMonths(month.selected, -1);
-  const prevBusiness = useMonthTransactions(user.uid, 'business', prevMonth, compare && needBusiness);
-  const prevHousehold = useMonthTransactions(user.uid, 'household', prevMonth, compare && (hasHousehold || !isBusiness));
+  const prevBusiness = useMonthTransactions(user.uid, 'business', prevMonth, month.status !== 'future' && needBusiness);
+  const prevHousehold = useMonthTransactions(user.uid, 'household', prevMonth, month.status !== 'future' && (hasHousehold || !isBusiness));
 
   const ownBusinessItems = useMemo(
     () => (isBusiness ? business.items.filter((t) => businessIdOf(t) === space.businessId) : []),
@@ -97,6 +98,15 @@ export function HomeScreen() {
     if (hh.length === 0 && prevTransfer === 0) return null;
     return householdTotals(hh, prevTransfer).balanceAgorot;
   }, [compare, prevBusiness, prevHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
+  // הוצאות החודש הקודם להשוואה בכרטיס "לאן הלך הכסף": במלואו, ועד אותו יום בחודש הנוכחי
+  const prevScopeItems = useMemo(
+    () => (isBusiness ? prevBusiness.items.filter((t) => businessIdOf(t) === space.businessId) : prevHousehold.items),
+    [isBusiness, prevBusiness.items, prevHousehold.items, space.businessId],
+  );
+  const prevStageScopeItems = useMemo(
+    () => (compare ? uptoDayOfMonth(prevScopeItems, Number(todayIso().slice(8, 10))) : undefined),
+    [compare, prevScopeItems],
+  );
   const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
   // שלוש הפעולות האחרונות של המרחב והחודש שמוצגים, במטבע המקורי
@@ -229,6 +239,19 @@ export function HomeScreen() {
             items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
             primaryIncomeAgorot={totals.incomeAgorot}
             primaryExpenseAgorot={totals.expenseAgorot}
+          />
+        )}
+
+        {!loading && !active.error && month.status !== 'future' && (
+          <SpendingCard
+            key={`${space.key}|${month.selected}`}
+            scope={scope}
+            businessId={space.businessId}
+            selected={month.selected}
+            monthItems={activeItems}
+            prevItems={prevScopeItems}
+            prevStageItems={prevStageScopeItems}
+            onOpenBreakdown={() => navigate(`/${space.key}/budget`)}
           />
         )}
 
