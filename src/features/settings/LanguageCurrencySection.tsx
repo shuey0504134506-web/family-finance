@@ -18,6 +18,7 @@ export function LanguageCurrencySection() {
       businessTransferMode: settings.businessTransferMode,
       annualMode: settings.annualMode,
       currency,
+      currencyChangedAt: currency === settings.currency ? settings.currencyChangedAt : Date.now(),
     }).catch(() => reportFailure('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.'));
   };
 

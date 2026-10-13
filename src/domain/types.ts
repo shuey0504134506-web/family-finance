@@ -48,6 +48,8 @@ export interface UserSettings {
   currency: CurrencyCode;
   /** שיטת חישוב שנה בסיכום השנתי ובתקציב השנתי: קלנדרי, או 12 חודשים מתחילת התיעוד. */
   annualMode: AnnualMode;
+  /** מתי הוחלף לאחרונה המטבע הראשי (באלפיות שנייה). פעולות שנרשמו לפני כן הומרו בהחלפה. */
+  currencyChangedAt?: number;
   updatedAt: number;
 }
 

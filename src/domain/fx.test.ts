@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setCurrency, type Rates } from './currency';
-import { applyConversion, convertBudgets, datesNeedingRates, mainAmountOf } from './fx';
+import { applyConversion, conversionNote, convertBudgets, datesNeedingRates, mainAmountOf } from './fx';
 import type { TransactionRecord } from './types';
 
 const rates = (usd: number): Rates => ({ ILS: 1, USD: usd, EUR: 0.25, GBP: 0.21 });
@@ -75,5 +75,22 @@ describe('fx', () => {
       tx('c', '2026-01-02', 1),
     ]);
     expect(dates).toEqual(['2026-01-01']);
+  });
+});
+
+describe('conversionNote', () => {
+  const at = (iso: string) => new Date(`${iso}T12:00:00`).getTime();
+  it('פעולה מלפני החלפת המטבע: שונה ביום ההחלפה, גם אם הוזנה באותו יום שהתרחשה', () => {
+    const item = { date: '2026-09-29', createdAt: at('2026-09-29') };
+    expect(conversionNote(item, false, at('2026-10-13'))).toBe('שונה ביום 13/10/2026 לסכום');
+  });
+  it('הוזנה ביום ההוצאה אחרי ההחלפה: הומר ביום ההוצאה', () => {
+    const item = { date: '2026-10-14', createdAt: at('2026-10-14') };
+    expect(conversionNote(item, false, at('2026-10-13'))).toBe('הומר ביום ההוצאה (14/10/2026) לסכום');
+    expect(conversionNote(item, true)).toBe('הומר ביום ההכנסה (14/10/2026) לסכום');
+  });
+  it('הוזנה למפרע אחרי ההחלפה: לפי שער יום הפעולה', () => {
+    const item = { date: '2026-10-01', createdAt: at('2026-10-14') };
+    expect(conversionNote(item, true, at('2026-10-13'))).toBe('הומר לפי שער יום 01/10/2026 לסכום');
   });
 });

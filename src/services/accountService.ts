@@ -49,9 +49,10 @@ export async function verifyAccountPassword(user: User, password: string): Promi
 
 export function saveSettings(uid: string, settings: Omit<UserSettings, 'updatedAt'>): Promise<void> {
   // ברירת המחדל (קלנדרי) לא נכתבת למסמך: חסר = קלנדרי. כך שמירת הגדרות רגילות לא תלויה בכך שהכללים החדשים כבר פורסמו.
-  const { annualMode, ...rest } = settings;
+  const { annualMode, currencyChangedAt, ...rest } = settings;
   return setDoc(doc(db, 'users', uid, 'settings', 'main'), {
     ...rest,
+    ...(currencyChangedAt === undefined ? {} : { currencyChangedAt }),
     ...(annualMode === 'calendar' ? {} : { annualMode }),
     updatedAt: Date.now(),
   });

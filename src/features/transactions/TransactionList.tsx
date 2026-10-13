@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { currencyOf, getCurrency } from '../../domain/currency';
+import { conversionNote } from '../../domain/fx';
 import { PencilIcon, TrashIcon } from '../../components/icons';
-import { todayIso } from '../../domain/dates';
 import { parseSpaceKey } from '../../domain/spaces';
 import { paymentLabelOf } from '../../domain/payment';
 import type { TransactionRecord } from '../../domain/types';
 import { deleteTransaction } from '../../services/transactionService';
 import { useReadyAuth } from '../auth/AuthContext';
+import { useSettings } from '../settings/SettingsContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 
 /** "2026-10-07" -> "07/10/2026" */
@@ -36,6 +37,7 @@ export function TransactionList({
 }) {
   const navigate = useNavigate();
   const { user } = useReadyAuth();
+  const settings = useSettings();
   const { reportFailure } = useSyncNotice();
   const scope = parseSpaceKey(spaceKey)?.scope ?? 'household';
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -125,7 +127,7 @@ export function TransactionList({
             </div>
             {item.mainAgorot !== undefined ? (
               <div className="txc-note txc-converted">
-                {conversionNote(item, isIncome)}{' '}
+                {conversionNote(item, isIncome, settings.currencyChangedAt)}{' '}
                 <Amount agorot={item.mainAgorot} />
               </div>
             ) : currencyOf(item) !== getCurrency() ? (
@@ -155,16 +157,4 @@ export function TransactionList({
       })}
     </ul>
   );
-}
-
-/**
- * "הומר ביום ההכנסה" נכתב רק כשהפעולה הוזנה באותו יום שבו היא התרחשה, כלומר ההמרה נעשתה אז.
- * אחרת (פעולה שהוזנה למפרע, או שהמטבע הראשי הוחלף אחר כך) ההמרה היא לפי שער היום של הפעולה,
- * ולכן נכתב "שונה ביום ..." עם תאריך הפעולה, ולא שההמרה נעשתה באותו יום.
- */
-function conversionNote(item: { date: string; createdAt: number }, isIncome: boolean): string {
-  const day = fullDate(item.date);
-  const enteredOnTheDay = todayIso(new Date(item.createdAt)) === item.date;
-  if (enteredOnTheDay) return isIncome ? `הומר ביום ההכנסה (${day}) לסכום` : `הומר ביום ההוצאה (${day}) לסכום`;
-  return `שונה ביום ${day} לסכום`;
 }

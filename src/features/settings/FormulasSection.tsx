@@ -26,6 +26,7 @@ export function FormulasSection() {
       countBusinessTithePayments: settings.countBusinessTithePayments,
       businessTransferMode: settings.businessTransferMode,
       currency: settings.currency,
+      currencyChangedAt: settings.currencyChangedAt,
       annualMode: settings.annualMode,
       ...patch,
     }).catch(() => reportFailure('לא הצלחנו לסנכרן את ההגדרות. יש לנסות שוב.'));

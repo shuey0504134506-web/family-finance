@@ -1,4 +1,5 @@
 import { convertAgorot, currencyOf, getCurrency, type Rates } from './currency';
+import { formatDisplayDate, todayIso } from './dates';
 import type { Budget, TransactionRecord } from './types';
 
 /**
@@ -73,4 +74,25 @@ export function convertBudgets(budgets: readonly Budget[], rates: Rates | undefi
     }
   }
   return out;
+}
+
+/**
+ * הערה ברשימה על פעולה שהומרה למטבע הראשי:
+ * - פעולה שנרשמה לפני שהמטבע הראשי הוחלף: ההמרה נעשתה בהחלפה, ולכן "שונה ביום <יום ההחלפה>".
+ * - פעולה שהוזנה באותו יום שבו התרחשה: "הומר ביום ההכנסה/ההוצאה".
+ * - פעולה שהוזנה למפרע: "הומר לפי שער יום <תאריך הפעולה>".
+ */
+export function conversionNote(
+  item: { date: string; createdAt: number },
+  isIncome: boolean,
+  currencyChangedAt?: number,
+): string {
+  const day = formatDisplayDate(item.date);
+  if (currencyChangedAt !== undefined && item.createdAt < currencyChangedAt) {
+    return `שונה ביום ${formatDisplayDate(todayIso(new Date(currencyChangedAt)))} לסכום`;
+  }
+  if (todayIso(new Date(item.createdAt)) === item.date) {
+    return isIncome ? `הומר ביום ההכנסה (${day}) לסכום` : `הומר ביום ההוצאה (${day}) לסכום`;
+  }
+  return `הומר לפי שער יום ${day} לסכום`;
 }

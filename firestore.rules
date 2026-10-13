@@ -195,7 +195,7 @@ service cloud.firestore {
     function validSettings(data) {
       return data.keys().hasOnly([
                'titheBps', 'countBusinessTithePayments',
-               'businessTransferMode', 'updatedAt', 'currency', 'annualMode'
+               'businessTransferMode', 'updatedAt', 'currency', 'annualMode', 'currencyChangedAt'
              ])
              && data.keys().hasAll([
                'titheBps', 'countBusinessTithePayments',
@@ -210,6 +210,7 @@ service cloud.firestore {
                  || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
              && (!data.keys().hasAny(['annualMode'])
                  || data.annualMode in ['calendar', 'from-start'])
+             && (!data.keys().hasAny(['currencyChangedAt']) || data.currencyChangedAt is int)
              && data.updatedAt is int;
     }
 
