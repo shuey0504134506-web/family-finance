@@ -57,3 +57,21 @@ export function previousStageHeadline(balanceAgorot: number): { text: string; am
     amountAgorot: Math.abs(balanceAgorot),
   };
 }
+
+/** מאז תחילת התיעוד: "מתחילת התיעוד אנחנו בפלוס" והסכום בנפרד. */
+export function sinceStartText(balanceAgorot: number): { text: string; amountAgorot: number | null; tone: BalanceTone } {
+  if (balanceAgorot === 0) return { text: 'מתחילת התיעוד אנחנו על אפס', amountAgorot: null, tone: 'zero' };
+  const plus = balanceAgorot > 0;
+  return {
+    text: `מתחילת התיעוד אנחנו ${plus ? 'בפלוס' : 'במינוס'} של`,
+    amountAgorot: Math.abs(balanceAgorot),
+    tone: plus ? 'plus' : 'minus',
+  };
+}
+
+/** התאריך המוקדם ביותר ברשימה (YYYY-MM-DD), או null אם הרשימה ריקה. */
+export function earliestDate(items: readonly { date: string }[]): string | null {
+  let min: string | null = null;
+  for (const t of items) if (min === null || t.date < min) min = t.date;
+  return min;
+}

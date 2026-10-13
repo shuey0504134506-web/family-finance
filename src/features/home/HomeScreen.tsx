@@ -7,7 +7,6 @@ import { AppHeader } from '../../components/AppHeader';
 import { ScopeTabs } from '../../components/ScopeTabs';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
-import { effectiveMonthly, summarizeBudget } from '../../domain/budget';
 import { neighborSpace } from '../../domain/display';
 import { addMonths, formatDisplayDate, todayIso } from '../../domain/dates';
 import { currencyOf } from '../../domain/currency';
@@ -15,7 +14,6 @@ import { businessIdOf } from '../../domain/spaces';
 import { useBusinessLogo } from '../../hooks/useBusinessLogo';
 import {
   householdTotals,
-  totalsByCategory,
   totalsOf,
   transferFromBusinesses,
 } from '../../domain/summary';
@@ -24,12 +22,10 @@ import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
-import { useBudgets } from '../../hooks/useBudgets';
-import { useTitheRows } from '../tithes/useTitheRows';
-import { QuickLink } from './QuickLink';
+import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { SpendingCard } from './SpendingCard';
 import { BalanceFrame } from './BalanceFrame';
-import { notStartedText, previousStageHeadline, uptoDayOfMonth } from './homeText';
+import { earliestDate, notStartedText, previousStageHeadline, sinceStartText, uptoDayOfMonth } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
 
 /**
@@ -117,22 +113,30 @@ export function HomeScreen() {
       .slice(0, 3);
   }, [isBusiness, business.all, household.all, space.businessId]);
 
-  // תקציר התקציב לכפתור (לפי המרחב שמוצג)
-  const { budgets } = useBudgets(user.uid);
   const activeItems = isBusiness ? ownBusinessItems : household.items;
-  const budgetSummary = useMemo(
-    () =>
-      summarizeBudget(
-        effectiveMonthly(budgets, scope, space.businessId, month.selected),
-        totalsByCategory(activeItems, 'expense'),
-      ),
-    [budgets, scope, space.businessId, month.selected, activeItems],
-  );
 
-  // יתרת מעשרות: רק במשק הבית, ורק בחודש שהתחיל
-  const showTithe = scope === 'household';
-  const tithe = useTitheRows(showTithe);
-  const titheCurrent = tithe.rows[tithe.rows.length - 1];
+  // מאז תחילת התיעוד: כל ההיסטוריה עד סוף החודש הנוכחי, לפי אותם כללים כמו בסיכום החודשי
+  const allBusiness = useTransactionsUpTo(user.uid, 'business', month.current, needBusiness);
+  const allHousehold = useTransactionsUpTo(user.uid, 'household', month.current, !isBusiness && hasHousehold);
+  const sinceStart = useMemo(() => {
+    if (allBusiness.loading || allHousehold.loading || allBusiness.error || allHousehold.error) return null;
+    if (isBusiness) {
+      const own = allBusiness.items.filter((t) => businessIdOf(t) === space.businessId);
+      if (own.length === 0) return null;
+      return { balanceAgorot: totalsOf(own).balanceAgorot, since: earliestDate(own) };
+    }
+    const counted = new Set(countedIds);
+    const transfer = transferFromBusinesses(
+      allBusiness.items.filter((t) => counted.has(businessIdOf(t))),
+      settings.businessTransferMode,
+    );
+    if (allHousehold.items.length === 0 && transfer === 0) return null;
+    return {
+      balanceAgorot: householdTotals(allHousehold.items, transfer).balanceAgorot,
+      since: earliestDate([...allHousehold.items, ...allBusiness.items.filter((t) => counted.has(businessIdOf(t)))]),
+    };
+  }, [allBusiness, allHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
+  const sinceStartHeadline = sinceStart === null ? null : sinceStartText(sinceStart.balanceAgorot);
 
   const next = neighborSpace(spaces, space.key, 1);
   const previous = neighborSpace(spaces, space.key, -1);
@@ -278,6 +282,19 @@ export function HomeScreen() {
           </section>
         )}
 
+        {sinceStart && sinceStartHeadline && (
+          <section className="card since-card" aria-label="מתחילת התיעוד">
+            <div className="since-text">{sinceStartHeadline.text}</div>
+            {sinceStartHeadline.amountAgorot !== null && (
+              <Amount
+                agorot={sinceStartHeadline.amountAgorot}
+                className={`since-amount ${sinceStartHeadline.tone === 'minus' ? 'tone-expense' : 'tone-income'}`}
+              />
+            )}
+            {sinceStart.since && <div className="since-note">{`מאז ${formatDisplayDate(sinceStart.since)}`}</div>}
+          </section>
+        )}
+
         {!isBusiness && countedIds.length > 0 && !loading && (
           <section
             className="card business-income-card"
@@ -301,61 +318,6 @@ export function HomeScreen() {
                 : 'רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים.'}
             </p>
           </section>
-        )}
-
-        {(
-          <div className="quick-links">
-            <QuickLink
-              icon="budget"
-              title="תקציב"
-              tone={budgetSummary.kind === 'set' && budgetSummary.overAgorot > 0 ? 'bad' : undefined}
-              progress={budgetSummary.kind === 'set' && budgetSummary.budgetAgorot > 0 ? budgetSummary.usedAgorot / budgetSummary.budgetAgorot : undefined}
-              onClick={() => navigate(`/${space.key}/budget`)}
-            >
-              {active.loading ? (
-                'טוען…'
-              ) : budgetSummary.kind === 'none' ? (
-                'לא הוגדר תקציב'
-              ) : budgetSummary.overAgorot > 0 ? (
-                <>
-                  חרגת מהתקציב החודש ב-<Amount agorot={budgetSummary.overAgorot} />
-                </>
-              ) : (
-                <>
-                  נוצל <Amount agorot={budgetSummary.usedAgorot} /> מתוך{' '}
-                  <Amount agorot={budgetSummary.budgetAgorot} />
-                </>
-              )}
-            </QuickLink>
-
-            {!isBusiness && (
-              <QuickLink
-                icon="tithe"
-                title="מעשרות"
-                tone={titheCurrent && titheCurrent.cumulative.remainingAgorot > 0 ? 'bad' : undefined}
-                progress={
-                  titheCurrent && titheCurrent.cumulative.requiredAgorot > 0
-                    ? titheCurrent.cumulative.paidAgorot / titheCurrent.cumulative.requiredAgorot
-                    : undefined
-                }
-                onClick={() => navigate('/tithes')}
-              >
-                {tithe.loading || !titheCurrent ? (
-                  'טוען…'
-                ) : titheCurrent.cumulative.remainingAgorot > 0 ? (
-                  <>
-                    יתרת מעשרות לתת: <Amount agorot={titheCurrent.cumulative.remainingAgorot} />
-                  </>
-                ) : titheCurrent.cumulative.surplusAgorot > 0 ? (
-                  <>
-                    ניתן מעבר לנדרש: <Amount agorot={titheCurrent.cumulative.surplusAgorot} />
-                  </>
-                ) : (
-                  'המעשר מאוזן'
-                )}
-              </QuickLink>
-            )}
-          </div>
         )}
       </main>
 

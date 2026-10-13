@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceHeadline, monthLabel, notStartedText, previousStageHeadline, uptoDayOfMonth } from './homeText';
+import { balanceHeadline, monthLabel, notStartedText, previousStageHeadline, sinceStartText, earliestDate, uptoDayOfMonth } from './homeText';
 
 describe('balanceHeadline', () => {
   it('חודש נוכחי בפלוס: "החודש אנחנו בפלוס"', () => {
@@ -93,5 +93,17 @@ describe('previous stage', () => {
     expect(previousStageHeadline(500)).toEqual({ text: 'בחודש הקודם בשלב זה היינו בפלוס', amountAgorot: 500 });
     expect(previousStageHeadline(-500).text).toContain('במינוס');
     expect(previousStageHeadline(0).amountAgorot).toBeNull();
+  });
+});
+
+describe('since start', () => {
+  it('words plus, minus and zero', () => {
+    expect(sinceStartText(1500)).toEqual({ text: 'מתחילת התיעוד אנחנו בפלוס של', amountAgorot: 1500, tone: 'plus' });
+    expect(sinceStartText(-1500).text).toContain('במינוס');
+    expect(sinceStartText(0).amountAgorot).toBeNull();
+  });
+  it('finds the earliest date', () => {
+    expect(earliestDate([{ date: '2026-03-02' }, { date: '2025-12-30' }])).toBe('2025-12-30');
+    expect(earliestDate([])).toBeNull();
   });
 });
