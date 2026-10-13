@@ -3686,3 +3686,5 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+.previous-stage{text-align:center;margin-block:-4px 12px}

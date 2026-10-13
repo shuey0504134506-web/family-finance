@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceHeadline, monthLabel, notStartedText } from './homeText';
+import { balanceHeadline, monthLabel, notStartedText, previousStageHeadline, uptoDayOfMonth } from './homeText';
 
 describe('balanceHeadline', () => {
   it('חודש נוכחי בפלוס: "החודש אנחנו בפלוס"', () => {
@@ -81,5 +81,17 @@ describe('monthLabel', () => {
   it('מסתיר שנה נוכחית ומציג שנה אחרת', () => {
     expect(monthLabel('2026-03', '2026-10')).toBe('מרץ');
     expect(monthLabel('2024-03', '2026-10')).toBe('מרץ 2024');
+  });
+});
+
+describe('previous stage', () => {
+  it('keeps items up to the given day', () => {
+    const items = [{ date: '2026-09-03' }, { date: '2026-09-13' }, { date: '2026-09-14' }];
+    expect(uptoDayOfMonth(items, 13)).toHaveLength(2);
+  });
+  it('words plus, minus and zero', () => {
+    expect(previousStageHeadline(500)).toEqual({ text: 'בחודש הקודם בשלב זה היינו בפלוס', amountAgorot: 500 });
+    expect(previousStageHeadline(-500).text).toContain('במינוס');
+    expect(previousStageHeadline(0).amountAgorot).toBeNull();
   });
 });

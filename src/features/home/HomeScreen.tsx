@@ -9,6 +9,7 @@ import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
 import { effectiveMonthly, summarizeBudget } from '../../domain/budget';
 import { neighborSpace } from '../../domain/display';
+import { addMonths, todayIso } from '../../domain/dates';
 import { businessIdOf } from '../../domain/spaces';
 import { useBusinessLogo } from '../../hooks/useBusinessLogo';
 import {
@@ -26,7 +27,7 @@ import { useBudgets } from '../../hooks/useBudgets';
 import { useTitheRows } from '../tithes/useTitheRows';
 import { QuickLink } from './QuickLink';
 import { BalanceFrame } from './BalanceFrame';
-import { notStartedText } from './homeText';
+import { notStartedText, previousStageHeadline, uptoDayOfMonth } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
 
 /**
@@ -54,6 +55,12 @@ export function HomeScreen() {
   const business = useMonthTransactions(user.uid, 'business', month.selected, needBusiness);
   const household = useMonthTransactions(user.uid, 'household', month.selected, hasHousehold || !isBusiness);
 
+  // השוואה לחודש הקודם באותו שלב (רק בחודש הנוכחי)
+  const compare = month.status === 'current';
+  const prevMonth = addMonths(month.selected, -1);
+  const prevBusiness = useMonthTransactions(user.uid, 'business', prevMonth, compare && needBusiness);
+  const prevHousehold = useMonthTransactions(user.uid, 'household', prevMonth, compare && (hasHousehold || !isBusiness));
+
   const ownBusinessItems = useMemo(
     () => (isBusiness ? business.items.filter((t) => businessIdOf(t) === space.businessId) : []),
     [isBusiness, business.items, space.businessId],
@@ -70,6 +77,26 @@ export function HomeScreen() {
     () => householdTotals(household.items, transferAgorot),
     [household.items, transferAgorot],
   );
+
+  const previousStage = useMemo(() => {
+    if (!compare || prevBusiness.loading || prevHousehold.loading) return null;
+    if (prevBusiness.error || prevHousehold.error) return null;
+    const day = Number(todayIso().slice(8, 10));
+    const bizAll = uptoDayOfMonth(prevBusiness.items, day);
+    if (isBusiness) {
+      const own = bizAll.filter((t) => businessIdOf(t) === space.businessId);
+      return own.length === 0 ? null : totalsOf(own).balanceAgorot;
+    }
+    const hh = uptoDayOfMonth(prevHousehold.items, day);
+    const counted = new Set(countedIds);
+    const prevTransfer = transferFromBusinesses(
+      bizAll.filter((t) => counted.has(businessIdOf(t))),
+      settings.businessTransferMode,
+    );
+    if (hh.length === 0 && prevTransfer === 0) return null;
+    return householdTotals(hh, prevTransfer).balanceAgorot;
+  }, [compare, prevBusiness, prevHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
+  const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
   // תקציר התקציב לכפתור (לפי המרחב שמוצג)
   const { budgets } = useBudgets(user.uid);
@@ -145,6 +172,18 @@ export function HomeScreen() {
             yearMonth={month.selected}
             currentYearMonth={month.current}
           />
+        )}
+
+        {!loading && !active.error && previousHeadline && (
+          <p className="previous-stage muted small">
+            {previousHeadline.text}
+            {previousHeadline.amountAgorot !== null && (
+              <>
+                {' '}
+                <Amount agorot={previousHeadline.amountAgorot} />
+              </>
+            )}
+          </p>
         )}
 
         <TotalsTiles

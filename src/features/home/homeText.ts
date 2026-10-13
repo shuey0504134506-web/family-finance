@@ -43,3 +43,17 @@ export function balanceHeadline(args: {
 export function notStartedText(ym: YearMonth, currentYm: YearMonth): string {
   return `חודש ${monthLabel(ym, currentYm)} עדיין לא התחיל`;
 }
+
+/** פעולות שתאריכן עד אותו יום בחודש (כולל), להשוואה לחודש קודם "בשלב זה". */
+export function uptoDayOfMonth<T extends { date: string }>(items: readonly T[], dayOfMonth: number): T[] {
+  return items.filter((t) => Number(t.date.slice(8, 10)) <= dayOfMonth);
+}
+
+/** הניסוח של השורה "בחודש הקודם בשלב זה היינו ...". */
+export function previousStageHeadline(balanceAgorot: number): { text: string; amountAgorot: number | null } {
+  if (balanceAgorot === 0) return { text: 'בחודש הקודם בשלב זה היינו על אפס', amountAgorot: null };
+  return {
+    text: `בחודש הקודם בשלב זה היינו ${balanceAgorot > 0 ? 'בפלוס' : 'במינוס'}`,
+    amountAgorot: Math.abs(balanceAgorot),
+  };
+}

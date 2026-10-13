@@ -250,6 +250,8 @@ export const EN: Record<string, string> = {
   "סך הכנסות": "Total income",
   "סך הוצאות": "Total expenses",
   "החודש אנחנו": "This month we are",
+  "בחודש הקודם בשלב זה היינו": "At this point last month we were",
+  "בחודש הקודם בשלב זה היינו על אפס": "At this point last month we were at zero",
   "חודש {0} נגמר": "Month {0} has ended",
   "{0} על אפס": "{0} at zero",
   "בפלוס": "in the black",
