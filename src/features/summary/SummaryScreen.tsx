@@ -151,27 +151,27 @@ export function SummaryScreen() {
                 <div>
                   <dt>הכנסות</dt>
                   <dd>
-                    <Amount animate agorot={totals.incomeAgorot} className="tone-income" />
+                    <Amount agorot={totals.incomeAgorot} className="tone-income" />
                   </dd>
                 </div>
                 {scope === 'household' && countedIds.length > 0 && totals.fromBusinessAgorot !== 0 && (
                   <div>
                     <dt className="small">מתוכן: {totals.fromBusinessAgorot < 0 ? 'הפסד' : 'נטו'} {countedIds.length > 1 ? 'מהעסקים' : 'מהעסק'}</dt>
                     <dd className="small">
-                      <Amount animate agorot={totals.fromBusinessAgorot} className={totals.fromBusinessAgorot < 0 ? 'tone-expense' : undefined} />
+                      <Amount agorot={totals.fromBusinessAgorot} className={totals.fromBusinessAgorot < 0 ? 'tone-expense' : undefined} />
                     </dd>
                   </div>
                 )}
                 <div>
                   <dt>הוצאות</dt>
                   <dd>
-                    <Amount animate agorot={totals.expenseAgorot} className="tone-expense" />
+                    <Amount agorot={totals.expenseAgorot} className="tone-expense" />
                   </dd>
                 </div>
                 <div>
                   <dt>{totals.balanceAgorot < 0 ? 'מינוס' : 'פלוס'}</dt>
                   <dd>
-                    <Amount animate agorot={Math.abs(totals.balanceAgorot)} className={totals.balanceAgorot < 0 ? 'tone-expense' : 'tone-income'} />
+                    <Amount agorot={Math.abs(totals.balanceAgorot)} className={totals.balanceAgorot < 0 ? 'tone-expense' : 'tone-income'} />
                   </dd>
                 </div>
               </dl>
@@ -224,7 +224,7 @@ function Breakdown({
             <div className="row-between">
               <span>{nameOf(s.categoryId)}</span>
               <span>
-                <Amount animate agorot={s.amountAgorot} /> · {s.percent}%
+                <Amount agorot={s.amountAgorot} /> · {s.percent}%
               </span>
             </div>
             <div className={`share-bar share-${tone}`} aria-hidden="true">

@@ -233,17 +233,17 @@ function BudgetContent({ space }: { space: Space }) {
                 view.categoriesTotal > 0 && view.categoriesTotal !== view.overall ? (
                   <>
                     <div className="muted small">
-                      סכום התקציבים לפי קטגוריה: <Amount animate agorot={view.categoriesTotal} />, מתוכם נוצל{' '}
-                      <Amount animate agorot={categoriesUsed} />.
+                      סכום התקציבים לפי קטגוריה: <Amount agorot={view.categoriesTotal} />, מתוכם נוצל{' '}
+                      <Amount agorot={categoriesUsed} />.
                     </div>
                     <button type="button" className="link-btn" onClick={() => save(overallId, matchTarget, view.categoriesTotal)}>
-                      התאמה לסכום התקציבים לפי קטגוריה (<Amount animate agorot={view.categoriesTotal} />)
+                      התאמה לסכום התקציבים לפי קטגוריה (<Amount agorot={view.categoriesTotal} />)
                     </button>
                   </>
                 ) : view.categoriesTotal > 0 ? (
                   <div className="muted small">
-                    סכום התקציבים לפי קטגוריה: <Amount animate agorot={view.categoriesTotal} />, מתוכם נוצל{' '}
-                    <Amount animate agorot={categoriesUsed} />.
+                    סכום התקציבים לפי קטגוריה: <Amount agorot={view.categoriesTotal} />, מתוכם נוצל{' '}
+                    <Amount agorot={categoriesUsed} />.
                   </div>
                 ) : null
               }
@@ -356,7 +356,7 @@ function BudgetLine({
   const remainingText =
     usage && monthsLeft !== null && usage.remainingAgorot > 0 ? (
       <div className="muted small">
-        עוד {monthsLeft} חודשים בשנה: עד <Amount animate agorot={Math.floor(usage.remainingAgorot / monthsLeft)} /> בחודש.
+        עוד {monthsLeft} חודשים בשנה: עד <Amount agorot={Math.floor(usage.remainingAgorot / monthsLeft)} /> בחודש.
       </div>
     ) : null;
 
@@ -383,16 +383,16 @@ function BudgetLine({
           </div>
           <div className="row-between small">
             <span>
-              נוצל <Amount animate agorot={usage.usedAgorot} /> מתוך <Amount animate agorot={usage.budgetAgorot} /> ({percent}%)
+              נוצל <Amount agorot={usage.usedAgorot} /> מתוך <Amount agorot={usage.budgetAgorot} /> ({percent}%)
             </span>
             <span className={usage.remainingAgorot < 0 ? 'tone-expense' : 'muted'}>
               {usage.remainingAgorot < 0 ? 'חריגה של ' : 'נותר '}
-              <Amount animate agorot={Math.abs(usage.remainingAgorot)} />
+              <Amount agorot={Math.abs(usage.remainingAgorot)} />
             </span>
           </div>
           {overridden && generalAmount !== null && (
             <div className="muted small">
-              התקציב הקבוע לכל החודשים: <Amount animate agorot={generalAmount} />
+              התקציב הקבוע לכל החודשים: <Amount agorot={generalAmount} />
             </div>
           )}
           {remainingText}
@@ -400,7 +400,7 @@ function BudgetLine({
       ) : (
         <div className="muted small">
           {noBudgetText && <>{noBudgetText} </>}
-          {unit === 'חודשי' ? 'הוצאות החודש' : 'הוצאות השנה'}: <Amount animate agorot={used} />
+          {unit === 'חודשי' ? 'הוצאות החודש' : 'הוצאות השנה'}: <Amount agorot={used} />
         </div>
       )}
 

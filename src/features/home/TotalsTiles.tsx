@@ -28,7 +28,7 @@ function Tile({ className, label, icon, agorot, loading, ratio, onOpen }: TilePr
         <Icon name={icon} /> {label}
       </div>
       <div className="tile-amount">
-        {loading ? <span className="skeleton">—</span> : <Amount animate agorot={agorot} />}
+        {loading ? <span className="skeleton">—</span> : <Amount agorot={agorot} />}
       </div>
       <div className="row-bar" aria-hidden="true">
         <i style={{ width: `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%` }} />

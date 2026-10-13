@@ -194,7 +194,7 @@ export function HomeScreen() {
                   ? `${businessLossLabel} (נטו)`
                   : `${businessIncomeLabel} (נטו)`}
               </span>
-              <Amount animate
+              <Amount
                 agorot={Math.abs(householdSummary.fromBusinessAgorot)}
                 className={householdSummary.fromBusinessAgorot < 0 ? 'tone-expense' : 'tone-income'}
               />
@@ -222,12 +222,12 @@ export function HomeScreen() {
                 'לא הוגדר תקציב'
               ) : budgetSummary.overAgorot > 0 ? (
                 <>
-                  חרגת מהתקציב החודש ב-<Amount animate agorot={budgetSummary.overAgorot} />
+                  חרגת מהתקציב החודש ב-<Amount agorot={budgetSummary.overAgorot} />
                 </>
               ) : (
                 <>
-                  נוצל <Amount animate agorot={budgetSummary.usedAgorot} /> מתוך{' '}
-                  <Amount animate agorot={budgetSummary.budgetAgorot} />
+                  נוצל <Amount agorot={budgetSummary.usedAgorot} /> מתוך{' '}
+                  <Amount agorot={budgetSummary.budgetAgorot} />
                 </>
               )}
             </QuickLink>
@@ -248,11 +248,11 @@ export function HomeScreen() {
                   'טוען…'
                 ) : titheCurrent.cumulative.remainingAgorot > 0 ? (
                   <>
-                    יתרת מעשרות לתת: <Amount animate agorot={titheCurrent.cumulative.remainingAgorot} />
+                    יתרת מעשרות לתת: <Amount agorot={titheCurrent.cumulative.remainingAgorot} />
                   </>
                 ) : titheCurrent.cumulative.surplusAgorot > 0 ? (
                   <>
-                    ניתן מעבר לנדרש: <Amount animate agorot={titheCurrent.cumulative.surplusAgorot} />
+                    ניתן מעבר לנדרש: <Amount agorot={titheCurrent.cumulative.surplusAgorot} />
                   </>
                 ) : (
                   'המעשר מאוזן'

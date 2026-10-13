@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { applyDocumentLang } from './i18n/lang';
 import { installAndroidBackHandler } from './native/androidBack';
-import { startScrollReveal } from './services/scrollReveal';
 import '@fontsource/heebo/hebrew-300.css';
 import '@fontsource/heebo/hebrew-400.css';
 import '@fontsource/heebo/hebrew-500.css';
@@ -18,7 +17,6 @@ import './styles.css';
 
 applyDocumentLang();
 installAndroidBackHandler();
-startScrollReveal();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

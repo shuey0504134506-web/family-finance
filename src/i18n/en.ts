@@ -1057,8 +1057,4 @@ export const EN: Record<string, string> = {
   "הגיבוי לא הצליח. יש לבדוק את החיבור ולנסות שוב.": "The backup failed. Check the connection and try again.",
   "גיבוי עכשיו": "Back up now",
   "מגבה…": "Backing up…",
-  "צלילים ורטט": "Sounds and vibration",
-  "צליל בספירת הסכומים": "Sound while amounts count up",
-  "רטט בספירת הסכומים": "Vibration while amounts count up",
-  "נשמר במכשיר הזה בלבד. בדפדפן הצליל מתחיל אחרי המגע הראשון במסך. כשמוגדרת במכשיר הפחתת תנועה, אין הנפשה ולכן גם לא צליל או רטט.": "Saved on this device only. In a browser, sound starts after the first touch of the screen. If the device is set to reduce motion, there is no animation, so no sound or vibration either.",
 };

@@ -3634,28 +3634,3 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
   overflow-wrap: anywhere;
   min-width: 0;
 }
-
-/* הנפשות: פסי מצב וגרפים גדלים מאפס כשהם נכנסים למסך (scrollReveal.ts מוסיף reveal ו-in-view). בלי שינוי עיצוב. */
-.reveal:not(.in-view) > i,
-.reveal:not(.in-view) > div,
-.reveal:not(.in-view) > span {
-  width: 0 !important;
-  transition: none !important;
-}
-.reveal.in-view > i,
-.reveal.in-view > div,
-.reveal.in-view > span {
-  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.reveal .cmp-bar {
-  transform-box: fill-box;
-  transform-origin: bottom;
-}
-.reveal:not(.in-view) .cmp-bar {
-  transform: scaleY(0);
-  transition: none;
-}
-.reveal.in-view .cmp-bar {
-  transform: scaleY(1);
-  transition: transform 0.95s cubic-bezier(0.22, 1, 0.36, 1);
-}

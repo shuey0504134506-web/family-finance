@@ -177,7 +177,7 @@ export function PeriodComparison({
                     const showAmount = h >= 13 && amountText.length <= maxChars;
                     return (
                       <g key={s.id} opacity={opacity}>
-                        <rect className="cmp-bar" style={{ transitionDelay: `${ci * 60}ms` }} x={cx - barWidth / 2} y={y} width={barWidth} height={h} fill={s.color} stroke="#fff" strokeWidth={0.6} />
+                        <rect x={cx - barWidth / 2} y={y} width={barWidth} height={h} fill={s.color} stroke="#fff" strokeWidth={0.6} />
                         {showAmount && (
                           <text x={cx} y={showName ? y + h / 2 - 1 : y + h / 2 + 3} textAnchor="middle" className="chart-inbar">
                             {showName ? s.name : amountText}
