@@ -1,0 +1,154 @@
+/* עזרה והדרכה */
+
+/* עזרה והדגמות מונפשות */
+.help-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-body {
+  padding: 8px 4px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.help-body p {
+  margin: 0;
+}
+
+.help-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.walk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.walk-phone {
+  position: relative;
+  width: min(100%, 270px);
+  aspect-ratio: 9 / 16;
+  margin: 3px 0;
+  box-shadow: 0 0 0 3px var(--navy, #0f2a47);
+  border-radius: 26px;
+  background: #f7f3ea;
+  overflow: hidden;
+}
+
+.walk-screen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  animation: walk-in 0.35s ease;
+}
+
+.walk-ring {
+  position: absolute;
+  border: 2px solid #d4a017;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.25);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* חץ אדום קלאסי (קו דק וראש פתוח): נמשך בהדרגה ואז מתנדנד לכיוון הכפתור */
+.walk-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.walk-arrow svg {
+  position: absolute;
+  left: -18px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.walk-arrow-down svg {
+  top: -63px;
+  animation: walk-bob-down 0.9s ease-in-out 0.8s infinite;
+}
+
+.walk-arrow-up svg {
+  top: -5px;
+  transform: rotate(180deg);
+  animation: walk-bob-up 0.9s ease-in-out 0.8s infinite;
+}
+
+.walk-arrow-line {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: walk-draw 0.45s ease-out 0.1s forwards;
+}
+
+.walk-arrow-head {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: walk-draw 0.25s ease-out 0.5s forwards;
+}
+
+.walk-caption {
+  margin: 0;
+  text-align: center;
+  min-height: 3.4em;
+}
+
+.walk-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.walk-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d9d2bf;
+}
+
+.walk-dots i.on {
+  background: var(--navy, #0f2a47);
+}
+
+.walk-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.walk-controls .icon-btn:disabled {
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .walk-screen {
+    animation: none;
+  }
+
+  .walk-arrow svg {
+    animation: none;
+  }
+
+  .walk-arrow-line,
+  .walk-arrow-head {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.dialog-actions p {
+  margin: 0;
+}
+
+.spend-stack i {
+  display: block;
+  height: 100%;
+}

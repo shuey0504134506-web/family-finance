@@ -1,0 +1,279 @@
+/* שדות קלט, טפסים ובקרים */
+
+.form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 16px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--business);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
+}
+
+.input-error {
+  border-color: var(--expense);
+}
+
+.field-error {
+  margin-top: 6px;
+  color: var(--expense);
+  font-size: 0.9rem;
+}
+
+.field-hint {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.form-error {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--expense-soft);
+  color: var(--expense);
+  font-weight: 600;
+}
+
+select.input {
+  appearance: auto;
+}
+
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap);
+  font-weight: 600;
+}
+
+.check-row input {
+  width: 24px;
+  height: 24px;
+}
+
+.form-success {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--income-soft);
+  color: var(--income);
+  font-weight: 600;
+}
+
+.pattern-pad {
+  width: 240px;
+  max-width: 100%;
+  align-self: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pattern-halo {
+  fill: transparent;
+}
+
+.pattern-dot {
+  fill: #000;
+}
+
+.pattern-dot.is-on {
+  fill: var(--accent);
+}
+
+.pattern-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+
+.pattern-pad.is-invalid .pattern-dot.is-on {
+  fill: var(--expense);
+}
+
+.pattern-pad.is-invalid .pattern-line {
+  stroke: var(--expense);
+}
+
+.pattern-pad.is-disabled {
+  opacity: 0.5;
+}
+
+.radio-group legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.input[readonly] {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.reminder-text {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+/* שדות */
+.input {
+  border-radius: var(--radius-sm);
+  min-height: 54px;
+  border-color: #e1dacb;
+  background: #fbf9f3;
+}
+
+/* כפתור שמירה בטפסים: מרווח מאוזן מהשדה שמעליו ומשפת הכרטיס */
+.form-card > button[type='submit'] {
+  margin-top: 16px;
+}
+
+.form-card > button[type='submit']:last-child {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .input {
+    min-height: 46px;
+  }
+
+  .form-card {
+    gap: 8px;
+  }
+}
+
+/* שדה תאריך: הטקסט במרכז האנכי של המשבצת גם במסכים קטנים (אנדרואיד מעלה אותו למעלה) */
+input.input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  line-height: 1.2;
+  padding-block: 0;
+}
+
+input.input[type='date']::-webkit-date-and-time-value {
+  min-height: 1.4em;
+  text-align: start;
+  margin: 0;
+}
+
+input.input[type='date']::-webkit-datetime-edit,
+input.input[type='date']::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  select.input {
+    font-size: 14px;
+    padding-inline: 10px;
+  }
+}
+
+/* תיבות סימון: גודל וצבע אחידים בכל האפליקציה (ללא כיווץ ב-flex כשהטקסט ארוך) */
+input[type='checkbox'],
+.check-row input {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--business, #0f2a47);
+}
+
+.recipient-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  align-items: center;
+}
+
+.recipient-head[aria-expanded='true'] {
+  font-weight: 700;
+}
+
+.recipient-payments a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: inherit;
+  text-decoration: none;
+}
+
+a[href$="/privacy"] {
+  display: inline-block;
+  padding: 10px 6px;
+}
+
+select.input:not(.cmp-select),
+textarea.input {
+  color: var(--text);
+  font-size: 16px;
+}
+
+/* פס תזכורת תשלום מעל האפליקציה (לפני מועד הנעילה). לחיצה פותחת את הדרישה המלאה. */
+.payment-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 16px;
+  padding-top: calc(8px + var(--safe-top));
+  border: 0;
+  border-bottom: 1px solid #e6d28a;
+  background: #fff4d6;
+  color: #5c4300;
+  font: inherit;
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.payment-strip-more {
+  flex: 0 0 auto;
+  text-decoration: underline;
+}

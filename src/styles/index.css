@@ -1,0 +1,18 @@
+/* נקודת הכניסה של העיצוב. הסדר כאן הוא סדר ה-cascade – אל תשנו אותו בלי לבדוק. */
+@import './tokens.css';
+@import './base.css';
+@import './layout.css';
+@import './buttons.css';
+@import './forms.css';
+@import './cards.css';
+@import './home.css';
+@import './transactions.css';
+@import './budget.css';
+@import './tithes.css';
+@import './analysis.css';
+@import './auth.css';
+@import './tasks.css';
+@import './settings.css';
+@import './help.css';
+@import './admin.css';
+@import './animations.css';

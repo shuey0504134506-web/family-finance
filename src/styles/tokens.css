@@ -1,0 +1,41 @@
+/* משתני עיצוב (צבעים, רדיוס, צללים) – מקור האמת היחיד לערכי העיצוב */
+
+:root {
+  --surface: #ffffff;
+  --accent: var(--business);
+  --accent-soft: var(--business-soft);
+  --tap: 48px;
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  font-family: 'Heebo', system-ui, -apple-system, 'Segoe UI', 'Noto Sans Hebrew', 'Arial Hebrew',
+    sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  --navy: #0f2a47;
+  --bg: #f7f3ea;
+  --text: #14233a;
+  --text-muted: #566070;
+  --border: #e8e2d4;
+  --business: #1f6f66;
+  --business-soft: #e3f0ee;
+  --household: #4f56b3;
+  --household-soft: #ecedf8;
+  --income: #26784a;
+  --income-soft: #e6f2ea;
+  --expense: #b8442f;
+  --expense-soft: #faebe7;
+  --tithe: #9a7440;
+  --budget: #1f6f66;
+  --gold: #b8955a;
+  --radius: 24px;
+  --radius-sm: 18px;
+  --shadow: 0 1px 2px rgba(15, 42, 71, 0.04), 0 8px 24px rgba(15, 42, 71, 0.05);
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  :root {
+    --tap: 44px;
+  }
+}

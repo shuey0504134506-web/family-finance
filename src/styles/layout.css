@@ -1,0 +1,518 @@
+/* מבנה האפליקציה: כותרת, תוכן, ניווט תחתון, בורר חודש ומחלקות עזר */
+
+.muted {
+  color: var(--text-muted);
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+.center-text {
+  text-align: center;
+}
+
+/* מספרים כספיים: תמיד LTR בתוך טקסט עברי, ספרות ברוחב אחיד */
+.num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.center-screen {
+  align-items: center;
+}
+
+.center-card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scope-business {
+  --accent: var(--business);
+  --accent-soft: var(--business-soft);
+}
+
+.scope-household {
+  --accent: var(--household);
+  --accent-soft: var(--household-soft);
+}
+
+/* כותרת עליונה: משתלבת ברקע, בלי פס צבע ובלי קו תחתון */
+/* הכותרת נשארת במקומה בגלילה בכל המסכים */
+.app-header {
+  padding-top: var(--safe-top);
+  border-top: 0;
+  border-bottom: 0;
+  box-shadow: none;
+  background: rgba(247, 243, 234, 0.82);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.header-row {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 calc(6px + var(--safe-right)) 0 calc(6px + var(--safe-left));
+}
+
+.header-side {
+  display: flex;
+  align-items: center;
+}
+
+.header-side-end {
+  justify-content: flex-end;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.month-label {
+  direction: rtl;
+  min-width: 128px;
+  text-align: center;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+.back-to-current {
+  display: flex;
+  justify-content: center;
+  padding: 0 12px 10px;
+}
+
+.screen-header-row {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 calc(6px + var(--safe-right)) 0 calc(6px + var(--safe-left));
+}
+
+.screen-title {
+  flex: 1;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.screen-header-spacer {
+  width: var(--tap);
+}
+
+.content {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px calc(16px + var(--safe-right)) calc(108px + var(--safe-bottom))
+    calc(16px + var(--safe-left));
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scope-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+/* מעבר בין עסקים לבית: גלולה צפה בתחתית */
+/* מעבר עסק / משק בית */
+.scope-tabs {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(104px, 1fr);
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+  inset-inline: 16px;
+  bottom: calc(16px + var(--safe-bottom));
+  padding: 5px;
+  gap: 4px;
+  border-radius: 999px;
+  grid-auto-columns: minmax(110px, 1fr);
+  scrollbar-width: none;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(15, 42, 71, 0.12);
+}
+
+.scope-tab {
+  min-height: 48px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.scope-tab-name {
+  display: inline-block;
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.scope-tab-business.is-active {
+  background: var(--business-soft);
+  border-color: var(--business);
+  color: var(--business);
+}
+
+.scope-tab-household.is-active {
+  background: var(--household-soft);
+  border-color: var(--household);
+  color: var(--household);
+}
+
+.skeleton {
+  color: var(--text-muted);
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+
+@media (min-width: 720px) {
+  .content {
+    max-width: 880px;
+    padding-top: 24px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .content {
+    max-width: 1040px;
+  }
+}
+
+.sync-failure {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(80px + var(--safe-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--expense);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.sync-failure .link-btn {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.offline-banner {
+  padding: 8px 16px;
+  padding-top: calc(8px + var(--safe-top));
+  background: #fff3cd;
+  color: #5c4400;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+  border-top-color: #ecefed;
+}
+
+.subhead {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.inline-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.inline-add-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.section-title {
+  font-size: 1.0625rem;
+  margin: 20px 0 8px;
+}
+
+.content > .field {
+  margin: 0;
+}
+
+.content > .back-link {
+  align-self: flex-start;
+  margin-bottom: -8px;
+}
+
+/* כותרת עליונה: כל הכפתורים חייבים להיכנס גם במסכים צרים (320-360px) */
+.header-row .month-nav {
+  justify-self: center;
+  min-width: 0;
+}
+
+.header-row .icon-btn {
+  width: 42px;
+  margin: 0 2px;
+}
+
+.header-row .month-label {
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+/* מעבר בין חודשים מתחת לכותרת מסך הסיכומים */
+.period-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* סדר פיזי קבוע, כמו בשורת הכותרת: חודש קודם מימין, חודש הבא משמאל */
+.period-nav .month-nav {
+  direction: ltr;
+}
+
+.scope-title .icon {
+  color: var(--accent);
+}
+
+.scope-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.scope-tab-business.is-active,
+.scope-tab-household.is-active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(23, 33, 31, 0.14);
+}
+
+.scope-tab.is-active .icon {
+  color: var(--accent);
+}
+
+.scope-tab-business.is-active .icon {
+  color: var(--business);
+}
+
+.scope-tab-household.is-active .icon {
+  color: var(--household);
+}
+
+.scope-tab-business.is-active,
+.scope-tab-household.is-active,
+.scope-tab.is-active {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: none;
+}
+
+.scope-tab-business.is-active .icon,
+.scope-tab-household.is-active .icon,
+.scope-tab.is-active .icon {
+  color: #fff;
+}
+
+.has-hero .content {
+  position: relative;
+  z-index: 1;
+}
+
+.has-hero .month-label {
+  color: var(--navy);
+}
+
+.scope-tab-name.seg-label {
+  display: inline-block;
+  max-width: 16ch;
+  vertical-align: bottom;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .content {
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: calc(88px + var(--safe-bottom));
+    padding-right: calc(12px + var(--safe-right));
+    padding-left: calc(12px + var(--safe-left));
+  }
+
+  .scope-tab {
+    min-height: 44px;
+  }
+
+  .month-label {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 340px), (max-height: 600px) {
+  .content {
+    gap: 8px;
+    padding-right: calc(10px + var(--safe-right));
+    padding-left: calc(10px + var(--safe-left));
+  }
+}
+
+.app-shell,
+.content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 380px) {
+  .header-row {
+    padding-inline: 4px;
+  }
+}
+
+/* אנגלית: "הקודם" משמאל ו"הבא" מימין (בעברית "הבא" משמאל). החצים כבר מתהפכים ב-.chev */
+html[dir='ltr'] .month-nav {
+  flex-direction: row-reverse;
+}
+
+/* אמצעי תשלום אישיים ובלוקי ברירות מחדל */
+.defaults-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.custom-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: #e3dccb;
+  overflow: hidden;
+  direction: rtl;
+}
+
+.row-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--budget);
+}
+
+.row-bar-bad > i {
+  background: var(--expense);
+}
+
+/* סיכום 14 ימים (מנהל): שורת יום לחיצה עם פירוט החשבונות */
+.day-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.day-btn:disabled {
+  cursor: default;
+}
+
+.day-btn .row-between {
+  display: flex;
+}
+
+.day-btn .share-bar {
+  display: block;
+}
+
+.day-btn .share-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.day-btn.share-income > span,
+.day-btn .share-income > span {
+  background: var(--income);
+}

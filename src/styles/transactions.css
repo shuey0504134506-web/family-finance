@@ -1,0 +1,388 @@
+/* הוספה ורשימת פעולות */
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* רשימות */
+.tx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 14px;
+  background: var(--surface);
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  border: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 2px rgba(23, 33, 31, 0.04);
+}
+
+.tx-date {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  min-width: 44px;
+}
+
+.tx-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tx-title {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.tx-sub {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.tx-sync {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tx-sync-pending {
+  color: var(--tithe);
+}
+
+.tx-sync-done {
+  color: var(--income);
+}
+
+/* פעולה שהוגללה אליה מהחיפוש */
+.tx-row.is-highlight {
+  animation: tx-flash 3.5s ease-out;
+  border-color: var(--tithe);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-row.is-highlight {
+    animation: none;
+    background: #fff1b8;
+  }
+}
+
+.acc-list > :last-child {
+  border-bottom: 0;
+}
+
+.balance-frame.tone-plus,
+.balance-frame.tone-minus {
+  background: var(--surface);
+  border: 0;
+}
+
+/* יתרת החודש: כרטיס נייבי */
+.balance-frame,
+.balance-frame.tone-plus,
+.balance-frame.tone-minus {
+  background: var(--navy);
+  border: 0;
+  box-shadow: 0 14px 28px rgba(15, 42, 71, 0.22);
+}
+
+.has-hero .icon-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  box-shadow: 0 2px 8px rgba(15, 42, 71, 0.1);
+}
+
+/* כותרת העסק/משק הבית: בלי משבצת */
+.has-hero .scope-title {
+  width: fit-content;
+  color: var(--navy);
+  font-weight: 700;
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 0;
+  border-radius: 0;
+}
+
+/* כפתורי אייקון בכותרות: בלי משבצת, רק האייקון (אזור הלחיצה נשאר 44px) */
+.icon-btn,
+.screen-header-row .icon-btn,
+.has-hero .icon-btn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.chip-option.is-active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* "לחץ לעריכה": באותה שורה של הסכום, מימינו, כדי שלא יגדיל את המסגרת */
+.tx-side {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.tx-side .tx-hint {
+  display: inline;
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .tx-row {
+    min-height: 54px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+}
+
+/* בורר של שתי אפשרויות ארוכות: אחת מתחת לשנייה, בלי "בלוק" עגול ענק */
+.segmented.segmented-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  border-radius: 24px;
+  gap: 4px;
+}
+
+.txc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(23, 33, 31, 0.08);
+}
+
+.txc.is-highlight {
+  box-shadow: 0 0 0 3px var(--accent, var(--navy));
+}
+
+.txc-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.txc-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.txc-date {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.txc-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.txc-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: #000;
+}
+
+.txc-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.txc-mid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.txc-chip {
+  padding: 3px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.txc-mid .num {
+  font-weight: 700;
+  font-size: 1.2rem;
+  white-space: nowrap;
+}
+
+.txc-note {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.txc-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.txc-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tx-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.home-clean .scope-title {
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.home-clean .balance-frame,
+.home-clean .balance-frame.tone-plus,
+.home-clean .balance-frame.tone-minus {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  text-align: center;
+}
+
+.home-clean .balance-button {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+
+.home-clean .tile,
+.home-clean .tile-income,
+.home-clean .tile-expense {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  row-gap: 8px;
+  padding: 0;
+  min-height: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+/* אזורי לחיצה גדולים יותר (לפחות ~40px) בלי לשנות את המראה */
+.home-clean .quick-link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  row-gap: 8px;
+  min-height: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 10px 0;
+  margin: -10px 0;
+}
+
+.home-clean .scope-title,
+.home-clean.has-hero .scope-title {
+  width: 100%;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.home-clean .balance-details {
+  border-top-color: var(--border);
+  color: var(--text);
+}
+
+.scope-title .scope-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
+  vertical-align: middle;
+}
+
+.chip-with-x .chip-main {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  min-height: 44px;
+  padding: 0;
+  padding-inline-start: 16px;
+  padding-inline-end: 6px;
+}
+
+@media (max-width: 400px) {
+  .chip-with-x .chip-main {
+    min-height: 40px;
+    padding-inline-start: 12px;
+    padding-inline-end: 4px;
+  }
+}
+
+/* חשבון המנהל בראש רשימת החשבונות: מסגרת ותווית */
+.txc.txc-admin {
+  border: 2px solid var(--business);
+}
+
+.txc-chip.txc-chip-admin {
+  background: var(--business);
+  color: #fff;
+  border-color: var(--business);
+  font-weight: 600;
+}
+
+.spend-donut svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.spend-legend .num {
+  margin-inline-start: auto;
+  font-weight: 600;
+}

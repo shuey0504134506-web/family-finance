@@ -1,0 +1,376 @@
+/* כפתורים, קישורים, אייקונים, צ׳יפים ובקרים מקוטעים */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.05s ease;
+}
+
+.btn:active {
+  transform: scale(0.985);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--business);
+  border-color: var(--business);
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 12px 8px;
+  min-height: var(--tap);
+  color: var(--business);
+  font-weight: 600;
+}
+
+/* כפתורי אייקון בכותרת: אריחים לבנים מעוגלים */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  border-radius: 15px;
+  background: var(--surface);
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.icon-btn:active {
+  background: var(--accent-soft);
+}
+
+/* כפתורי קישור (למשל "להגדרות ←"): הטקסט ממורכז גם בגובה, גם כשהם קישורים ולא כפתורים */
+.chip-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-color: transparent;
+  font-weight: 600;
+  background: #eef3f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.btn-income {
+  background: var(--income);
+  color: #fff;
+  border-color: var(--income);
+}
+
+.btn-expense {
+  background: var(--expense);
+  color: #fff;
+  border-color: var(--expense);
+}
+
+.btn-danger {
+  background: var(--expense);
+  color: #fff;
+}
+
+.btn-danger-outline {
+  margin-top: 16px;
+  background: var(--surface);
+  color: var(--expense);
+  border-color: var(--expense);
+}
+
+.delete-confirm {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* בוררים (עסק/בית, חודשי/שנתי, הכנסות/הוצאות) */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px;
+  background: #ebe5d6;
+}
+
+.segmented button {
+  flex: 1 1 auto;
+  min-width: 30%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding: 0 8px;
+  border-radius: 999px;
+  min-height: 44px;
+  font-weight: 500;
+}
+
+.segmented button.is-active {
+  font-weight: 600;
+  background: var(--navy);
+  color: #fff;
+  box-shadow: none;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.swatch-income,
+.bar-income {
+  background: var(--income);
+  fill: var(--income);
+}
+
+.swatch-expense,
+.bar-expense {
+  background: var(--expense);
+  fill: var(--expense);
+}
+
+.share-bar {
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.share-expense > div {
+  background: var(--expense);
+}
+
+.share-income > div {
+  background: var(--income);
+}
+
+.danger-zone {
+  border: 1.5px solid var(--expense);
+}
+
+.icon {
+  color: #000;
+  vertical-align: -0.2em;
+  flex: none;
+}
+
+.btn-add {
+  margin: 12px 0;
+  gap: 8px;
+}
+
+.link-danger {
+  color: var(--expense);
+}
+
+.btn-small {
+  width: auto;
+  min-height: 40px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+/* כפתורים: גלולות */
+.btn {
+  min-height: 54px;
+  border-radius: 999px;
+  border-width: 1.5px;
+  font-weight: 600;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: #d8d1c0;
+}
+
+.btn-danger-outline {
+  border-color: #e5b8a6;
+}
+
+/* כפתורי הוספה: רקע בהיר, מסגרת צבעונית, טקסט ואייקון שחורים */
+.btn-income,
+.btn-expense {
+  background: var(--surface);
+  color: var(--text);
+  border-width: 1.5px;
+}
+
+.btn-income {
+  background: var(--income);
+  border-color: var(--income);
+  color: #fff;
+}
+
+.btn-expense {
+  background: var(--expense);
+  border-color: var(--expense);
+  color: #fff;
+}
+
+.screen-header-row .icon-btn {
+  background: var(--surface);
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--navy);
+  border-color: var(--navy);
+  box-shadow: 0 10px 22px rgba(15, 42, 71, 0.22);
+}
+
+/* בורר מרחבים: שמות ארוכים נחתכים בשלוש נקודות ונשארים בשורה אחת */
+.segmented-spaces {
+  flex-wrap: nowrap;
+}
+
+.segmented-spaces button {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.segmented-spaces.has-all button:first-child {
+  flex: 0 0 auto;
+  min-width: 64px;
+}
+
+.segmented-spaces .seg-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmented-spaces button svg {
+  flex: 0 0 auto;
+}
+
+/* שמות ארוכים של עסק/משק בית: הקטנת כתב */
+.seg-long {
+  font-size: 0.86em;
+}
+
+.seg-xlong {
+  font-size: 0.74em;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-group-error {
+  outline: 2px solid var(--expense);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
+.chip-option {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid #d8d1c0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .btn {
+    min-height: 46px;
+    font-size: 0.98rem;
+  }
+
+  .segmented button {
+    min-height: 40px;
+  }
+
+  .chip-option {
+    min-height: 40px;
+    padding: 0 12px;
+  }
+}
+
+.segmented.segmented-stack button {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+  padding: 8px 12px;
+  line-height: 1.25;
+}
+
+a.btn,
+.btn {
+  align-items: center;
+  justify-content: center;
+}
+
+/* קטגוריה עם ✕ לניהול: נראית כגלולה אחת, הבחירה והסימן הם שני כפתורים נפרדים */
+.chip-option.chip-with-x {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.chip-with-x .chip-x {
+  align-self: stretch;
+  min-width: 34px;
+  padding: 0;
+  padding-inline-start: 4px;
+  padding-inline-end: 10px;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 0.8rem;
+}
+
+.chip-with-x .chip-x:hover {
+  opacity: 1;
+}
+
+/* כפתור שקוף ניטרלי (בלי צבע הכנסה/הוצאה): מסגרת וטקסט בכחול, כמו כפתורי ההוספה בהכנסות ובהוצאות */
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--navy);
+  color: var(--navy);
+  box-shadow: none;
+}

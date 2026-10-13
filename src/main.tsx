@@ -13,7 +13,7 @@ import '@fontsource/heebo/latin-400.css';
 import '@fontsource/heebo/latin-500.css';
 import '@fontsource/heebo/latin-600.css';
 import '@fontsource/heebo/latin-700.css';
-import './styles.css';
+import './styles/index.css';
 
 applyDocumentLang();
 installAndroidBackHandler();

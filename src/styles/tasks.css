@@ -1,0 +1,215 @@
+/* חובות ומשימות */
+
+/* תפריט, משימות וקניות */
+.task-list,
+.reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-row,
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.task-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+}
+
+button.task-main {
+  cursor: pointer;
+}
+
+.task-title {
+  overflow-wrap: anywhere;
+}
+
+.task-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.task-row.is-done .task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.reminder-list {
+  margin-bottom: 16px;
+}
+
+.budget-row,
+.task-row,
+.reminder-item,
+.category-row {
+  border-radius: var(--radius-sm);
+}
+
+.card,
+.tile,
+.quick-link,
+.acc-list,
+.feature-list {
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.content > *,
+.tiles > *,
+.add-actions > *,
+.quick-links > *,
+.tx-row > *,
+.card {
+  min-width: 0;
+}
+
+@media (max-width: 380px) {
+  .month-label {
+    min-width: 0;
+    font-size: 1rem;
+  }
+}
+
+.welcome-features {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 20px rgba(15, 42, 71, 0.1);
+  color: var(--navy);
+  font-weight: 500;
+}
+
+.txc-head {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+}
+
+.txc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cmp {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chip-x {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+/* חובות */
+.debt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.debt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-strip-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.day-email {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.lang-switch button {
+  min-height: 44px;
+  padding: 0 18px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.recent-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cat-expense-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.spend-tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: .8125rem;
+  background: #efe9da;
+  color: var(--text-muted);
+  cursor: pointer;
+  min-height: 36px;
+}
+
+.spend-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.spend-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

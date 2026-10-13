@@ -1,0 +1,486 @@
+/* מסך הבית: מסגרת פלוס/מינוס, משבצות, לאן הלך הכסף ופעולות אחרונות */
+
+/* יתרת החודש: מספר גדול ודק על משטח לבן */
+.balance-frame {
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.balance-frame.tone-plus {
+  border-color: var(--income);
+  background: var(--income-soft);
+}
+
+.balance-frame.tone-minus {
+  border-color: var(--expense);
+  background: var(--expense-soft);
+}
+
+.balance-button {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  padding: 22px 22px 18px;
+}
+
+.balance-text {
+  display: block;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.balance-amount {
+  line-height: 1.1;
+  display: block;
+  font-size: 2.75rem;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+
+.balance-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: #8fa2ba;
+}
+
+.balance-details {
+  margin: 0;
+  padding: 4px 18px 16px;
+  border-top: 1px solid rgba(20, 30, 50, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.balance-details > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+}
+
+.balance-details dt {
+  color: var(--text-muted);
+}
+
+.balance-details dd {
+  margin: 0;
+  font-weight: 700;
+  color: #fff;
+}
+
+.balance-subrow {
+  padding-inline-start: 14px;
+  font-size: 0.9rem;
+}
+
+.balance-total {
+  margin-top: 4px;
+  border-top: 2px solid rgba(20, 30, 50, 0.2);
+  font-size: 1.1rem;
+  border-top-width: 1px;
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+.balance-total dt {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.details dt {
+  color: var(--text-muted);
+}
+
+.details dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+}
+
+.add-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.detail-list > div,
+.tithe-months li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-list dt {
+  color: var(--text-muted);
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.quick-links .btn:only-child {
+  grid-column: 1 / -1;
+}
+
+/* קישורים מהירים */
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-height: 88px;
+  background: var(--surface);
+  font: inherit;
+  text-align: start;
+  color: var(--text);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+}
+
+.quick-link:active {
+  transform: scale(0.985);
+}
+
+.quick-link-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.quick-link-sub {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.quick-links .quick-link:only-child {
+  grid-column: 1 / -1;
+}
+
+.balance-details dd {
+  font-weight: 600;
+}
+
+.balance-text,
+.tone-plus .balance-text,
+.tone-minus .balance-text {
+  color: #c9d5e4;
+  font-weight: 500;
+}
+
+.balance-details dt {
+  color: #b9c6d8;
+}
+
+.balance-frame .tone-income {
+  color: #9ad8b5;
+}
+
+.balance-frame .tone-expense {
+  color: #f2b1a6;
+}
+
+.balance-total dt {
+  color: #fff;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .balance-button {
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .balance-amount {
+    font-size: 2.1rem;
+  }
+
+  .quick-link {
+    min-height: 72px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 340px), (max-height: 600px) {
+  .balance-amount {
+    font-size: 1.9rem;
+  }
+}
+
+.balance-amount,
+.amount {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 380px) {
+  .balance-amount {
+    font-size: clamp(1.5rem, 8vw, 2.1rem);
+  }
+}
+
+/* הוספת קטגוריה: רווח בין השדה, השגיאה והכפתור */
+.add-category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mc-name {
+  font-weight: 600;
+}
+
+.mc-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.home-clean .scope-title .icon {
+  display: none;
+}
+
+.home-clean .balance-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.home-clean .balance-amount {
+  font-size: 3.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+/* הכנסות והוצאות: שורות עם פס */
+.home-clean .tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 24px 0 8px;
+}
+
+.home-clean .tile-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.home-clean .tile-title .icon,
+.home-clean .tile-hint {
+  display: none;
+}
+
+.home-clean .tile-amount {
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.home-clean .tile .row-bar {
+  grid-column: 1 / -1;
+}
+
+/* תקציב ומעשרות: שורות במקום כרטיסים */
+.home-clean .quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.home-clean .quick-link-title .icon {
+  display: none;
+}
+
+.home-clean .quick-link-sub {
+  text-align: end;
+  justify-self: end;
+}
+
+.home-clean .quick-link .row-bar {
+  grid-column: 1 / -1;
+}
+
+.home-clean .quick-link[aria-label] {
+  display: grid;
+}
+
+.home-clean .balance-text,
+.home-clean .tone-plus .balance-text,
+.home-clean .tone-minus .balance-text {
+  font-weight: 700;
+}
+
+.home-clean .tone-plus .balance-text,
+.home-clean .tone-plus .balance-amount {
+  color: var(--income);
+}
+
+.home-clean .tone-minus .balance-text,
+.home-clean .tone-minus .balance-amount {
+  color: var(--expense);
+}
+
+.home-clean .balance-hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.home-clean .balance-details dt {
+  color: var(--text-muted);
+}
+
+/* הגדרות עסק: מרווח רגיל בין שם העסק לכפתור המחיקה */
+.business-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.previous-stage-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.previous-stage-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.recent-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.recent-date {
+  font-size: .75rem;
+  color: var(--text-muted);
+}
+
+.cat-expense-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.cat-expense-date {
+  font-size: .75rem;
+  color: var(--text-muted);
+}
+
+.cat-expenses {
+  text-align: center;
+}
+
+.cat-expense-list {
+  text-align: start;
+}
+
+.spend-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.spend-donut {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  flex: none;
+}
+
+.spend-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: .75rem;
+  color: var(--text-muted);
+  padding: 0 24px;
+  gap: 1px;
+}
+
+.spend-total {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.spend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* מסך הבית: משבצות מעט שקופות ומרווח אחיד ביניהן */
+.home-clean .content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-clean .card {
+  background: rgba(255,255,255,.86);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.since-card {
+  text-align: center;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.since-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.since-amount {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.since-note {
+  font-size: .8125rem;
+  color: var(--text-muted);
+}

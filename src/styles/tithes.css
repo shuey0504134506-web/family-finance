@@ -1,0 +1,37 @@
+/* מעשרות */
+
+.tithe-hero {
+  text-align: center;
+}
+
+.tithe-label {
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.tithe-big {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 800;
+}
+
+.tithe-link {
+  margin: 16px 0;
+  color: var(--tithe);
+  border-color: var(--tithe);
+}
+
+.tithe-months {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* למי ניתנו מעשרות: לחיצה על נמען פותחת את התשלומים שלו */
+.tithe-months li.recipient {
+  flex-direction: column;
+  gap: 6px;
+}

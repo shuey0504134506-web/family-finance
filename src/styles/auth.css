@@ -1,0 +1,694 @@
+/* מסכי כניסה, ברוכים הבאים, נעילה ושפה */
+
+.auth-screen,
+.center-screen {
+  min-height: 100vh;
+  padding: calc(24px + var(--safe-top)) calc(20px + var(--safe-right)) calc(24px + var(--safe-bottom))
+    calc(20px + var(--safe-left));
+  display: flex;
+  justify-content: center;
+}
+
+.auth-screen {
+  align-items: flex-start;
+}
+
+.auth-column {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-header h1,
+.welcome-hero h1,
+.center-title {
+  font-size: 1.6rem;
+  line-height: 1.25;
+}
+
+.auth-header p {
+  margin-top: 6px;
+}
+
+.welcome-hero {
+  text-align: center;
+  padding-top: 12px;
+}
+
+.welcome-hero p {
+  margin-top: 8px;
+}
+
+.welcome-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
+  color: #000;
+  font-size: 2.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-footer-link {
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.business-income-card p {
+  margin-top: 8px;
+}
+
+.prose p,
+.prose li {
+  margin-bottom: 8px;
+}
+
+.welcome-logo,
+.feature-icon,
+.success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* מרווחים נקבעים במרווח האחיד של .content, לא בשוליים של כל רכיב */
+.content > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.acc-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* נעילת האפליקציה */
+/* מסך נעילה: רקע הנוף של האפליקציה (מ-body::before) ולוגו */
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+  overflow-y: auto;
+  background: linear-gradient(to bottom, rgba(247, 243, 234, 0.1), rgba(247, 243, 234, 0.2)),
+    #f7f3ea url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+}
+
+.lock-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.radio-group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chip-label {
+  display: inline-block;
+  margin-inline-end: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.scope-title {
+  color: var(--accent);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* מסך פתיחה וכניסה על רקע הרים */
+.welcome-screen,
+.login-screen {
+  background: #f7e9d6 url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+  align-items: stretch;
+}
+
+.welcome-screen .auth-column {
+  min-height: calc(100dvh - 48px - var(--safe-top) - var(--safe-bottom));
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.welcome-screen .welcome-hero {
+  padding-top: 6vh;
+}
+
+.welcome-screen .welcome-hero h1 {
+  color: var(--navy);
+}
+
+.welcome-screen .welcome-hero p {
+  color: #2a3a52;
+}
+
+.welcome-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcome-screen .btn-primary {
+  box-shadow: 0 12px 26px rgba(8, 25, 43, 0.4);
+}
+
+.welcome-screen .btn-secondary {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.75);
+  color: #fff;
+}
+
+.welcome-screen .auth-footer-link a {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* מסך כניסה (מהכניסה השנייה ואילך): אותו רקע הרים, שדה סיסמה כמו כפתור, וגלולות משניות שקופות מעט */
+.login-screen .auth-column {
+  min-height: calc(100dvh - 48px - var(--safe-top) - var(--safe-bottom));
+}
+
+.login-screen .auth-header h1 {
+  color: var(--navy);
+}
+
+.login-screen .auth-header p {
+  color: #2a3a52;
+}
+
+.login-screen .form-card .input {
+  min-height: 54px;
+  border-radius: 999px;
+  padding-inline: 22px;
+}
+
+.login-screen .auth-pill {
+  width: 88%;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 226, 212, 0.9);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 6px 16px rgba(15, 42, 71, 0.08);
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
+.login-screen .auth-pill a,
+.login-screen .auth-pill .link-btn {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.login-screen .auth-plain {
+  margin-top: auto;
+}
+
+.login-screen .auth-plain a {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.login-screen .auth-header {
+  text-align: center;
+}
+
+.tx-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* הגדרות: כפתורים אחידים (גובה, עיגול, גופן, בלי צללים) */
+.acc-list .btn {
+  min-height: 52px;
+  margin-top: 0;
+  padding: 0 20px;
+  border-width: 1.5px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.acc-list .btn-primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.acc-list .btn-secondary {
+  background: #fff;
+  border-color: #d8d1c0;
+  color: var(--navy);
+}
+
+.acc-list .btn-danger {
+  background: var(--expense);
+  border-color: var(--expense);
+  color: #fff;
+}
+
+.acc-list .btn-danger-outline {
+  background: #fff;
+  border-color: #e5b8a6;
+  color: var(--expense);
+}
+
+/* בחירה בלחיצה אחת (קטגוריה, אמצעי תשלום) */
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.tx-note {
+  display: -webkit-box;
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .acc-list .btn {
+    min-height: 46px;
+  }
+}
+
+@media (max-width: 340px), (max-height: 600px) {
+  .tx-hint {
+    display: none;
+  }
+}
+
+/* מסך פתיחה: שקוף, כך שרקע ההרים הכללי של האפליקציה נראה דרכו */
+.welcome-screen {
+  background: transparent;
+}
+
+.welcome-screen .welcome-bottom {
+  margin-top: auto;
+}
+
+.welcome-features .feature-icon {
+  color: var(--navy);
+  display: flex;
+  justify-content: center;
+}
+
+.welcome-screen .btn-secondary {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(15, 42, 71, 0.35);
+  color: var(--navy);
+}
+
+.welcome-screen .auth-footer-link a {
+  color: var(--navy);
+}
+
+@media (max-height: 700px) {
+  .welcome-screen .welcome-hero {
+    padding-top: 0;
+  }
+
+  .welcome-screen .welcome-logo {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 10px;
+  }
+
+  .welcome-features {
+    padding: 10px 12px;
+  }
+}
+
+.cmp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.cmp-legend {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cmp-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-inline-end: 4px;
+}
+
+.cmp-table-wrap {
+  overflow-x: auto;
+  margin-inline: -4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mc-legend {
+  margin-top: 6px;
+}
+
+.mc-convert {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mc-result {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* כפתורי הוספה שקופים: מסגרת וטקסט בצבע, בלי מילוי */
+.btn-income,
+.btn-expense,
+.btn-add.btn-income,
+.btn-add.btn-expense {
+  background: transparent;
+  border-width: 1.5px;
+  border-style: solid;
+  box-shadow: none;
+}
+
+.btn-income,
+.btn-add.btn-income {
+  border-color: var(--income);
+  color: var(--income);
+}
+
+.btn-expense,
+.btn-add.btn-expense {
+  border-color: var(--expense);
+  color: var(--expense);
+}
+
+/* לוגו האפליקציה במסך הפתיחה: האייקון עצמו ממלא את הריבוע */
+.welcome-screen .welcome-logo {
+  border: 0;
+  color: var(--navy);
+  box-shadow: 0 10px 24px rgba(15, 42, 71, 0.16);
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 26px;
+}
+
+.welcome-screen .welcome-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lock-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  border-radius: 22px;
+  box-shadow: 0 8px 20px rgba(15, 42, 71, 0.16);
+}
+
+/* לוגו עסק */
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.logo-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.logo-empty {
+  display: inline-block;
+  background: var(--surface);
+  border-style: dashed;
+}
+
+.logo-row .btn {
+  width: auto;
+  padding: 0 14px;
+  min-height: 46px;
+}
+
+.recipient-payments {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* תמונות מצורפות לפעולה */
+.att-grid {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.att-full {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+}
+
+.att-actions .btn {
+  width: auto;
+  flex: 1 1 130px;
+}
+
+/* קבוצות כפתורים (חובות ועוד): מרווח רגיל ביניהם ומעל הקבוצה */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.form-actions .btn {
+  flex: 1 1 120px;
+  width: auto;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.category-dialog-name {
+  margin: 0 0 4px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.dialog-actions .btn {
+  margin: 0;
+}
+
+/* אחידות: כל הכפתורים באותו גודל גופן וגובה, וכל שדות הטופס באותו צבע וגודל טקסט */
+.btn,
+.acc-list .btn {
+  font-size: 15px;
+}
+
+/* כפתור בלי מסגרת (למשל "ניהול מתקדם" בהגדרות) */
+.btn.btn-borderless {
+  border-color: transparent;
+}
+
+.day-accounts {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  display: grid;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.92rem;
+}
+
+/* בורר שפה במסכי הכניסה והרישום */
+.lang-switch {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 0 auto 12px;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface, #fff);
+}
+
+.lang-switch button.is-active {
+  background: var(--navy, #0f2a47);
+  color: #fff;
+  font-weight: 700;
+}
+
+.previous-stage {
+  text-align: center;
+  margin-block: -4px 14px;
+  display: grid;
+  gap: 2px;
+}
+
+.recent-card {
+  margin-block: 12px;
+}
+
+.recent-title {
+  font-size: 1rem;
+  margin: 0 0 10px;
+}
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.cat-expenses {
+  margin-top: 6px;
+}
+
+.cat-expense-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.spend-card {
+  margin-block: 12px;
+}
+
+.spend-title {
+  font-size: 1.0625rem;
+  margin: 0 0 10px;
+}
+
+.spend-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.spend-tabs button.is-active {
+  background: var(--navy);
+  color: #fff;
+}
+
+.spend-stack {
+  display: flex;
+  height: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+  margin-top: 16px;
+}
+
+.spend-more {
+  display: block;
+  margin: 12px auto 0;
+}
+
+.home-clean .content > * {
+  margin-block: 0;
+}
+
+.home-clean .tiles {
+  margin: 0;
+}

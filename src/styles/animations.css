@@ -1,0 +1,21 @@
+/* תנועה: keyframes של האפליקציה */
+
+@keyframes tx-flash {
+  0%,
+  60% {
+    background: #fff1b8;
+    box-shadow: 0 0 0 4px rgba(168, 89, 10, 0.35);
+  }
+  100% {
+    background: var(--surface);
+    box-shadow: 0 0 0 0 rgba(168, 89, 10, 0);
+  }
+}
+
+@keyframes walk-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes walk-draw { to { stroke-dashoffset: 0; } }
+
+@keyframes walk-bob-down { 0%, 100% { translate: 0 -4px; } 50% { translate: 0 3px; } }
+
+@keyframes walk-bob-up { 0%, 100% { translate: 0 4px; } 50% { translate: 0 -3px; } }

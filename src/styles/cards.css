@@ -1,0 +1,411 @@
+/* כרטיסים, משבצות, אקורדיון, חלוניות והודעות */
+
+/* כרטיסים */
+.card {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+}
+
+.feature-icon {
+  width: 32px;
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.success-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 2.5rem;
+  margin: 0 auto 8px;
+}
+
+.tone-plus .balance-text {
+  color: var(--income);
+}
+
+.tone-minus .balance-text {
+  color: var(--expense);
+}
+
+.tone-income {
+  color: var(--income);
+}
+
+.tone-expense {
+  color: var(--expense);
+}
+
+.tone-plus {
+  color: var(--income);
+}
+
+.tone-minus {
+  color: var(--expense);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tile {
+  min-height: 120px;
+  padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tile-income {
+  background: var(--income-soft);
+  border: 1.5px solid var(--income);
+}
+
+.tile-expense {
+  background: var(--expense-soft);
+  border: 1.5px solid var(--expense);
+}
+
+.tile-title {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.tile-amount {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  font-size: 1.5rem;
+}
+
+.tile-income .tile-amount {
+  color: var(--income);
+}
+
+.tile-expense .tile-amount {
+  color: var(--expense);
+}
+
+.notice-card {
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.error-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.details {
+  margin: 0;
+}
+
+.details > div:last-child {
+  border-bottom: 0;
+}
+
+.prose h2 {
+  margin: 22px 0 8px;
+  font-size: 1.1rem;
+}
+
+.prose ul {
+  padding-inline-start: 22px;
+}
+
+@media (min-width: 720px) {
+  .tiles {
+    gap: 16px;
+  }
+
+  .tile {
+    min-height: 140px;
+  }
+}
+
+.tone-tithe {
+  color: var(--tithe);
+}
+
+.detail-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tone-bad {
+  color: var(--expense);
+}
+
+.tone-good {
+  color: var(--income);
+}
+
+.tile-button {
+  font: inherit;
+  text-align: start;
+  color: var(--text);
+  width: 100%;
+}
+
+.tile-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* הגדרות: רשימת כותרות מתקפלות */
+.acc-list {
+  background: var(--surface);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.acc-item {
+  border-bottom: 1px solid var(--border);
+}
+
+.acc-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 58px;
+  padding: 0 22px;
+  font-weight: 500;
+}
+
+.acc-link {
+  border-bottom: 1px solid var(--border);
+}
+
+.acc-trigger:active {
+  background: var(--accent-soft);
+}
+
+.acc-chevron {
+  display: inline-flex;
+  color: #000;
+  transition: transform 0.15s;
+}
+
+.acc-item.is-open .acc-chevron {
+  transform: rotate(-90deg);
+}
+
+.acc-body {
+  padding: 4px 22px 20px;
+}
+
+/* חלון קופץ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 20, 35, 0.45);
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 20px 16px calc(20px + var(--safe-bottom));
+  background: var(--surface);
+  border-radius: var(--radius) var(--radius) 0 0;
+  outline: none;
+}
+
+@media (min-width: 600px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+
+  .modal {
+    border-radius: var(--radius);
+  }
+}
+
+/* סך הכנסות / הוצאות */
+.tile {
+  border: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  min-height: 104px;
+}
+
+.tile-income,
+.tile-expense {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.acc-item,
+.acc-link {
+  border-bottom-color: #ecefed;
+}
+
+/* חלונות */
+.modal {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+@media (min-width: 600px) {
+  .modal {
+    border-radius: var(--radius);
+  }
+}
+
+/* אנגלית (שמאל לימין): חיצי הניווט מתהפכים כדי שיצביעו לכיוון הנכון */
+html[dir='ltr'] .chev {
+  transform: scaleX(-1);
+}
+
+html[dir='ltr'] .acc-item.is-open .acc-chevron {
+  transform: rotate(90deg);
+}
+
+.tone-plus .balance-amount {
+  color: #9ad8b5;
+}
+
+.tone-minus .balance-amount {
+  color: #f2b1a6;
+}
+
+.acc-list .link-btn {
+  align-self: center;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 380px), (max-height: 700px) {
+  .card {
+    padding: 12px;
+  }
+}
+
+/* טופס הוספה: פרטים נוספים מקופלים */
+.details-toggle {
+  align-self: flex-start;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  color: var(--business);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.tile-income .row-bar > i {
+  background: var(--income);
+}
+
+.tile-expense .row-bar > i {
+  background: var(--expense);
+}
+
+.att-grid li {
+  position: relative;
+}
+
+.att-thumb {
+  display: block;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  cursor: pointer;
+}
+
+.att-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.att-remove {
+  position: absolute;
+  top: -8px;
+  inset-inline-start: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: #b8442f;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.att-add {
+  width: auto;
+  align-self: flex-start;
+}
+
+.att-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

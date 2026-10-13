@@ -1,0 +1,38 @@
+/* מסך ניהול */
+
+/* מסגרת מעט כהה יותר לכרטיסי החשבונות וההודעות בניהול מתקדם */
+.admin-list .txc {
+  border: 1px solid #8f9e97;
+}
+
+.admin-list .txc.txc-admin {
+  border: 2px solid var(--business);
+}
+
+/* מסך ניהול: פרטי בעל החשבון */
+.admin-details {
+  margin: 8px 0 4px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.admin-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-details dt {
+  color: var(--muted, #5b6b7c);
+}
+
+.admin-details dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
