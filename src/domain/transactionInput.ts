@@ -1,4 +1,4 @@
-import { currencyOf, getCurrency, isCurrencyCode, type CurrencyCode } from './currency';
+import { currencyOf, isCurrencyCode, LEGACY_CURRENCY, type CurrencyCode } from './currency';
 import { isValidIsoDate, parseYearMonth, yearMonthOfDate } from './dates';
 import { DEFAULT_BUSINESS_ID } from './spaces';
 import { MAX_PAYMENT_LABEL } from './payment';
@@ -121,8 +121,8 @@ export function buildTransaction(draft: TransactionDraft, context: BuildContext)
     isTithePayment: draft.type === 'expense' ? draft.isTithePayment : false,
     createdAt: context.createdAt ?? context.now,
     updatedAt: context.now,
-    // מטבע ראשי נשמר בלי שדה (כמו נתונים ישנים); רק מטבע אחר נשמר במפורש.
-    ...(draft.currency !== getCurrency() ? { currency: draft.currency } : {}),
+    // שקל נשמר בלי שדה (כמו נתונים ישנים); כל מטבע אחר נשמר במפורש, גם אם הוא המטבע הראשי.
+    ...(draft.currency !== LEGACY_CURRENCY ? { currency: draft.currency } : {}),
     // העסק הראשון נשמר בלי מזהה (כמו נתונים ישנים). עסק נוסף נשמר עם מזהה.
     ...(context.businessId && context.businessId !== DEFAULT_BUSINESS_ID ? { businessId: context.businessId } : {}),
   };

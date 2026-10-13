@@ -124,7 +124,8 @@ export function TransactionList({
             </div>
             {item.mainAgorot !== undefined ? (
               <div className="txc-note txc-converted">
-                ≈ <Amount agorot={item.mainAgorot} /> {`לפי שער ${fullDate(item.date)}`}
+                {isIncome ? `הומר ביום ההכנסה (${fullDate(item.date)}) לסכום` : `הומר ביום ההוצאה (${fullDate(item.date)}) לסכום`}{' '}
+                <Amount agorot={item.mainAgorot} />
               </div>
             ) : currencyOf(item) !== getCurrency() ? (
               <div className="txc-note txc-converted">שער ההמרה ליום הזה עדיין לא נטען</div>

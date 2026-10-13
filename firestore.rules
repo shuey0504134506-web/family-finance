@@ -274,7 +274,7 @@ service cloud.firestore {
 
     function validBudget(data, budgetId) {
       return data.keys().hasOnly([
-               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt', 'businessId', 'period'
+               'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt', 'businessId', 'period', 'currency'
              ])
              && data.keys().hasAll([
                'id', 'scope', 'categoryId', 'amountAgorot', 'createdAt', 'updatedAt'
@@ -285,6 +285,7 @@ service cloud.firestore {
              && data.amountAgorot is int
              && data.amountAgorot > 0
              && data.amountAgorot <= 100000000000
+             && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
              && data.createdAt is int
              && data.updatedAt is int
              && validOptionalBusinessId(data);

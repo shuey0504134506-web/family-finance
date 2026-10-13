@@ -44,7 +44,7 @@ export interface UserSettings {
   /** האם הוצאה עסקית שסומנה "מעשר" נספרת כמעשר ששולם. נקודת החלטה פתוחה. */
   countBusinessTithePayments: boolean;
   businessTransferMode: BusinessTransferMode;
-  /** מטבע התצוגה והחישוב. החלפה אינה ממירה סכומים קיימים. */
+  /** המטבע הראשי: בו מוצגים הכותרת, התקציב והמעשרות. החלפה אינה משנה נתונים שמורים, רק את ההמרה לתצוגה. */
   currency: CurrencyCode;
   /** שיטת חישוב שנה בסיכום השנתי ובתקציב השנתי: קלנדרי, או 12 חודשים מתחילת התיעוד. */
   annualMode: AnnualMode;
@@ -126,6 +126,8 @@ export interface Budget {
   scope: Scope;
   categoryId: string;
   amountAgorot: number;
+  /** מטבע הסכום. חסר = שקל (נתונים ישנים). */
+  currency?: CurrencyCode;
   createdAt: number;
   updatedAt: number;
   /** חסר = תקציב חודשי קבוע. 'YYYY-MM' = חודש מסוים. 'YYYY' = שנה. */

@@ -1,5 +1,5 @@
 import { convertAgorot, currencyOf, getCurrency, type Rates } from './currency';
-import type { TransactionRecord } from './types';
+import type { Budget, TransactionRecord } from './types';
 
 /**
  * המרה אוטומטית של פעולות במטבע זר למטבע הראשי, לפי שער יום הפעולה.
@@ -55,4 +55,22 @@ export function datesNeedingRates(all: readonly { date: string; currency?: Trans
   const dates = new Set<string>();
   for (const t of all) if (currencyOf(t) !== main) dates.add(t.date);
   return [...dates];
+}
+
+/**
+ * תקציבים במטבע הראשי: תקציב שנקבע במטבע אחר מומר לפי השער הנתון (העדכני).
+ * המסמך השמור לא משתנה. בלי שער, תקציב במטבע אחר מושמט במקום לנחש.
+ */
+export function convertBudgets(budgets: readonly Budget[], rates: Rates | undefined): Budget[] {
+  const main = getCurrency();
+  const out: Budget[] = [];
+  for (const b of budgets) {
+    const from = currencyOf(b);
+    if (from === main) {
+      out.push(b);
+    } else if (rates) {
+      out.push({ ...b, amountAgorot: convertAgorot(b.amountAgorot, from, main, rates), currency: main });
+    }
+  }
+  return out;
 }

@@ -5,7 +5,7 @@ import { CategoryChip } from '../../components/CategoryChip';
 import { CategoryDialog } from '../../components/CategoryDialog';
 import { Field } from '../../components/Field';
 import { ScreenHeader } from '../../components/ScreenHeader';
-import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencyOf, getCurrency, type CurrencyCode } from '../../domain/currency';
+import { CURRENCY_CODES, CURRENCY_SYMBOLS, currencyOf, getCurrency, LEGACY_CURRENCY, type CurrencyCode } from '../../domain/currency';
 import {
   balanceAgorot,
   debtCategories,
@@ -397,7 +397,7 @@ function DebtForm({
       direction,
       name: name.trim(),
       amountAgorot: amount,
-      ...(currency !== getCurrency() ? { currency } : {}),
+      ...(currency !== LEGACY_CURRENCY ? { currency } : {}),
       category: chosenCategory,
       paymentMethod: choice.method,
       ...(choice.method === 'other' && choice.label ? { paymentLabel: choice.label } : {}),

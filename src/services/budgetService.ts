@@ -1,3 +1,4 @@
+import { getCurrency, LEGACY_CURRENCY } from '../domain/currency';
 import { collection, deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { budgetDocId } from '../domain/budget';
@@ -36,6 +37,8 @@ export function saveBudget(
     scope,
     categoryId,
     amountAgorot,
+    // הסכום נשמר במטבע הראשי שבו הוזן. שקל נשמר בלי שדה (כמו נתונים ישנים).
+    ...(getCurrency() !== LEGACY_CURRENCY ? { currency: getCurrency() } : {}),
     createdAt: existingCreatedAt ?? now,
     updatedAt: now,
     ...(period ? { period } : {}),
