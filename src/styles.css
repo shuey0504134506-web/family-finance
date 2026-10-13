@@ -3689,7 +3689,7 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
 
 .previous-stage{text-align:center;margin-block:-4px 14px;display:grid;gap:2px}
 .previous-stage-text{font-size:1rem;font-weight:500;color:var(--text-muted)}
-.previous-stage-amount{font-size:.8125rem;color:var(--text-muted)}
+.previous-stage-amount{font-size:1.25rem;font-weight:700}
 .recent-card{margin-block:12px}
 .recent-title{font-size:1rem;margin:0 0 10px}
 .recent-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}

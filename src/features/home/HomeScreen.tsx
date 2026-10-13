@@ -188,7 +188,10 @@ export function HomeScreen() {
             <span className="previous-stage-text">{previousHeadline.text}</span>
             {previousHeadline.amountAgorot !== null && (
               <span className="previous-stage-amount">
-                <Amount agorot={previousHeadline.amountAgorot} />
+                <Amount
+                  agorot={previousHeadline.amountAgorot}
+                  className={previousStage !== null && previousStage < 0 ? 'tone-expense' : 'tone-income'}
+                />
               </span>
             )}
           </p>
