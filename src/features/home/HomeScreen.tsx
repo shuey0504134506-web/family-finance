@@ -9,7 +9,8 @@ import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
 import { effectiveMonthly, summarizeBudget } from '../../domain/budget';
 import { neighborSpace } from '../../domain/display';
-import { addMonths, todayIso } from '../../domain/dates';
+import { addMonths, formatDisplayDate, todayIso } from '../../domain/dates';
+import { currencyOf } from '../../domain/currency';
 import { businessIdOf } from '../../domain/spaces';
 import { useBusinessLogo } from '../../hooks/useBusinessLogo';
 import {
@@ -98,6 +99,14 @@ export function HomeScreen() {
   }, [compare, prevBusiness, prevHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
   const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
+  // שלוש הפעולות האחרונות של המרחב והחודש שמוצגים, במטבע המקורי
+  const recent = useMemo(() => {
+    const list = isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all;
+    return [...list]
+      .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1))
+      .slice(0, 3);
+  }, [isBusiness, business.all, household.all, space.businessId]);
+
   // תקציר התקציב לכפתור (לפי המרחב שמוצג)
   const { budgets } = useBudgets(user.uid);
   const activeItems = isBusiness ? ownBusinessItems : household.items;
@@ -175,13 +184,12 @@ export function HomeScreen() {
         )}
 
         {!loading && !active.error && previousHeadline && (
-          <p className="previous-stage muted small">
-            {previousHeadline.text}
+          <p className="previous-stage">
+            <span className="previous-stage-text">{previousHeadline.text}</span>
             {previousHeadline.amountAgorot !== null && (
-              <>
-                {' '}
+              <span className="previous-stage-amount">
                 <Amount agorot={previousHeadline.amountAgorot} />
-              </>
+              </span>
             )}
           </p>
         )}
@@ -200,6 +208,29 @@ export function HomeScreen() {
             primaryIncomeAgorot={totals.incomeAgorot}
             primaryExpenseAgorot={totals.expenseAgorot}
           />
+        )}
+
+        {!loading && !active.error && recent.length > 0 && (
+          <section className="card recent-card" aria-labelledby="recent-title">
+            <h2 id="recent-title" className="recent-title">
+              פעולות אחרונות
+            </h2>
+            <ul className="recent-list">
+              {recent.map((t) => (
+                <li key={t.id} className="recent-row">
+                  <span className="recent-name">
+                    {t.counterparty || t.categoryName}
+                    <span className="recent-date">{formatDisplayDate(t.date)}</span>
+                  </span>
+                  <Amount
+                    agorot={t.amountAgorot}
+                    currency={currencyOf(t)}
+                    className={t.type === 'income' ? 'tone-income' : 'tone-expense'}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {!active.error && (
