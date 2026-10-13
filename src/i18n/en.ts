@@ -253,7 +253,6 @@ export const EN: Record<string, string> = {
   "הומר ביום ההכנסה ({0}) לסכום": "Converted on the day of the income ({0}) to",
   "הומר ביום ההוצאה ({0}) לסכום": "Converted on the day of the expense ({0}) to",
   "מטבע ראשי": "Main currency",
-  "שפה ומטבע": "Language and currency",
   "שונה ביום {0} לסכום": "Converted at the rate of {0} to",
   "לאן הלך הכסף החודש": "Where the money went this month",
   "לאן הלך הכסף בחודש הקודם": "Where the money went last month",
