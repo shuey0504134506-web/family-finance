@@ -1,7 +1,9 @@
+import { LangSwitch } from '../../components/LangSwitch';
 import { useRef, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { describeErrorWithCode } from '../../services/authErrors';
 import { BusinessesFields } from './BusinessesFields';
+import { isValidPhone, normalizePhone } from './validation';
 import { useAuth } from './AuthContext';
 
 /**
@@ -12,6 +14,7 @@ export function CompleteSetupScreen() {
   const { completeSetup, signOutUser } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [extraBusinesses, setExtraBusinesses] = useState<string[]>([]);
   const [householdName, setHouseholdName] = useState('');
@@ -26,6 +29,10 @@ export function CompleteSetupScreen() {
       setError('יש למלא את השם הפרטי ושם המשפחה');
       return;
     }
+    if (!phone.trim() || !isValidPhone(phone)) {
+      setError('יש להזין מספר טלפון תקין');
+      return;
+    }
     if ([businessName, householdName, ...extraBusinesses].some((n) => n.trim().length > 60)) {
       setError('אחד השמות ארוך מדי (עד 60 תווים)');
       return;
@@ -37,6 +44,7 @@ export function CompleteSetupScreen() {
       await completeSetup({
         firstName,
         lastName,
+        phone: normalizePhone(phone),
         businessName,
         accountMode: 'both',
         extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
@@ -53,6 +61,7 @@ export function CompleteSetupScreen() {
   return (
     <main className="auth-screen">
       <div className="auth-column">
+        <LangSwitch />
         <header className="auth-header">
           <h1>השלמת הגדרת החשבון</h1>
           <p className="muted">
@@ -71,6 +80,15 @@ export function CompleteSetupScreen() {
             autoComplete="family-name"
             value={lastName}
             onChange={(event) => setLastName(event.target.value)}
+          />
+          <Field
+            label="מספר טלפון"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            dir="ltr"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
           />
           <Field
             label="שם העסק (לא חובה)"

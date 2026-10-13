@@ -1,10 +1,11 @@
+import { LangSwitch } from '../../components/LangSwitch';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Field } from '../../components/Field';
 import { describeErrorWithCode } from '../../services/authErrors';
 import { useAuth } from './AuthContext';
 import { BusinessesFields } from './BusinessesFields';
-import { validateSignup, type SignupValues } from './validation';
+import { normalizePhone, validateSignup, type SignupValues } from './validation';
 import { Icon } from '../../components/Icon';
 
 export function SignupScreen() {
@@ -14,6 +15,7 @@ export function SignupScreen() {
     firstName: '',
     lastName: '',
     businessName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -46,6 +48,7 @@ export function SignupScreen() {
           firstName: values.firstName,
           lastName: values.lastName,
           businessName: values.businessName,
+          phone: normalizePhone(values.phone),
           email: values.email,
           accountMode: 'both',
           extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
@@ -92,6 +95,7 @@ export function SignupScreen() {
   return (
     <main className="auth-screen">
       <div className="auth-column">
+        <LangSwitch />
         <header className="auth-header">
           <h1>יצירת חשבון</h1>
           <p className="muted">כמה פרטים קצרים ומתחילים.</p>
@@ -124,6 +128,17 @@ export function SignupScreen() {
             onHouseholdName={setHouseholdName}
             extras={extraBusinesses}
             onExtras={setExtraBusinesses}
+          />
+          <Field
+            label="מספר טלפון"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            dir="ltr"
+            value={values.phone}
+            onChange={update('phone')}
+            error={errors.phone}
+            hint="ליצירת קשר בנושא החשבון. מוצג למנהל האפליקציה בלבד"
           />
           <Field
             label="כתובת מייל"

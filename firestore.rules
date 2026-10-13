@@ -107,7 +107,7 @@ service cloud.firestore {
 
     function validUser(data) {
       return data.keys().hasOnly([
-               'firstName', 'lastName', 'email', 'businessName',
+               'firstName', 'lastName', 'email', 'phone', 'businessName',
                'accountMode', 'createdAt', 'updatedAt'
              ])
              && data.keys().hasAll([
@@ -117,6 +117,7 @@ service cloud.firestore {
              && isNonEmptyString(data.firstName, 60)
              && isNonEmptyString(data.lastName, 60)
              && isShortString(data.email, 254)
+             && (!('phone' in data.keys()) || isShortString(data.phone, 30))
              && isShortString(data.businessName, 120)
              && data.accountMode in ['both', 'business', 'household']
              && data.createdAt is int

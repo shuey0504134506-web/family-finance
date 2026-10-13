@@ -310,6 +310,8 @@ function AdminContent() {
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [openDay, setOpenDay] = useState<string | null>(null);
+  // פרטי בעל החשבון: פתוחים כברירת מחדל בחשבון שממתין להחלטה, וניתנים להצגה והסתרה בכפתור
+  const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
   const [accountSearch, setAccountSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const messages = useAdminMessages();
@@ -536,6 +538,47 @@ function AdminContent() {
                       ) : null}
                     </span>
                   </div>
+                  {(() => {
+                    const open = detailsOpen[u.uid] ?? (u.status === 'pending' || u.status === 'none');
+                    const d = u.details;
+                    const empty = 'לא הוזן';
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-small"
+                          aria-expanded={open}
+                          onClick={() => setDetailsOpen((m) => ({ ...m, [u.uid]: !open }))}
+                        >
+                          {open ? 'הסתרת פרטים' : 'הצגת פרטים'}
+                        </button>
+                        {open ? (
+                          d ? (
+                            <dl className="admin-details">
+                              <div>
+                                <dt>שם</dt>
+                                <dd>{`${d.firstName} ${d.lastName}`.trim() || empty}</dd>
+                              </div>
+                              <div>
+                                <dt>טלפון</dt>
+                                <dd dir="ltr">{d.phone || empty}</dd>
+                              </div>
+                              <div>
+                                <dt>מייל</dt>
+                                <dd dir="ltr">{u.email || empty}</dd>
+                              </div>
+                              <div>
+                                <dt>שם העסק</dt>
+                                <dd>{d.businessName || empty}</dd>
+                              </div>
+                            </dl>
+                          ) : (
+                            <p className="muted small">הפרטים יוצגו אחרי פריסה מחדש של פונקציות השרת.</p>
+                          )
+                        ) : null}
+                      </>
+                    );
+                  })()}
                   <div className="txc-note">
                     נרשם: {dateTime(u.createdAt)} · כניסה אחרונה: {dateTime(u.lastSignInAt)}
                   </div>

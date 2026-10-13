@@ -59,6 +59,40 @@ export function changeLang(lang: Lang): void {
   if (typeof window !== 'undefined') window.location.reload();
 }
 
+/** האם המשתמש בחר שפה (או שהזיהוי האוטומטי כבר הוחל) במכשיר הזה. */
+export function hasStoredLang(): boolean {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY);
+    return v === 'he' || v === 'en';
+  } catch {
+    return true;
+  }
+}
+
+/** שפת המכשיר: עברית רק אם שפת הדפדפן/המכשיר עברית. אחרת אנגלית. */
+export function deviceLang(languages: readonly string[] = typeof navigator !== 'undefined' ? navigator.languages ?? [navigator.language] : []): Lang {
+  const first = (languages[0] ?? '').toLowerCase();
+  return first.startsWith('he') || first.startsWith('iw') || first === '' ? 'he' : 'en';
+}
+
+/**
+ * פעם אחת, במסכי הכניסה והרישום של מכשיר שבו עוד לא נבחרה שפה: אם המכשיר לא בעברית, האפליקציה נפתחת
+ * באנגלית (ואפשר לעבור לעברית בלחיצה). ההחלטה נשמרת, כך שלא נחזור על הזיהוי ולא ניצור רענון חוזר.
+ */
+export function autoDetectLang(): void {
+  if (hasStoredLang()) return;
+  const detected = deviceLang();
+  if (detected === 'en') {
+    changeLang('en');
+    return;
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, 'he');
+  } catch {
+    // ללא אחסון: נבדוק שוב בפעם הבאה
+  }
+}
+
 /** לבדיקות בלבד. */
 export function setLangForTest(lang: Lang): void {
   current = lang;

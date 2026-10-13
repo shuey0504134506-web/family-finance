@@ -16,6 +16,8 @@ export interface NewAccountInput {
   firstName: string;
   lastName: string;
   email: string;
+  /** טלפון ליצירת קשר (חובה בהרשמה, חשבונות ישנים בלי). */
+  phone?: string;
   businessName: string;
   accountMode: AccountMode;
   /** עסקים נוספים (מעבר לראשון), בשמות שהוזנו. */
@@ -40,6 +42,7 @@ export async function createUserRecords(uid: string, input: NewAccountInput): Pr
     firstName: input.firstName.trim(),
     lastName: input.lastName.trim(),
     email: input.email.trim(),
+    ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
     businessName: input.businessName.trim(),
     accountMode: input.accountMode,
     createdAt: now,

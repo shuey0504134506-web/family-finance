@@ -62,6 +62,8 @@ export interface ProfileChanges {
   lastName: string;
   businessName: string;
   accountMode: AccountMode;
+  /** טלפון. ריק או חסר = לא משנים. */
+  phone?: string;
 }
 
 export function saveProfile(uid: string, changes: ProfileChanges): Promise<void> {
@@ -70,6 +72,7 @@ export function saveProfile(uid: string, changes: ProfileChanges): Promise<void>
     lastName: changes.lastName.trim(),
     businessName: changes.businessName.trim(),
     accountMode: changes.accountMode,
+    ...(changes.phone?.trim() ? { phone: changes.phone.trim() } : {}),
     updatedAt: Date.now(),
   });
 }

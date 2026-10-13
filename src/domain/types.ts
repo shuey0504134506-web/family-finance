@@ -30,6 +30,8 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
+  /** טלפון ליצירת קשר. חסר בחשבונות שנוצרו לפני שהוא נדרש. */
+  phone?: string;
   businessName: string;
   accountMode: AccountMode;
   createdAt: number;

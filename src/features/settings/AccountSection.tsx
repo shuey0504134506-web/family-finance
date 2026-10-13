@@ -4,7 +4,7 @@ import { Modal } from '../../components/Modal';
 import { requestEmailChange, saveProfile } from '../../services/accountService';
 import { describeError } from '../../services/authErrors';
 import { useAuth, useReadyAuth } from '../auth/AuthContext';
-import { isValidEmail } from '../auth/validation';
+import { isValidEmail, isValidPhone, normalizePhone } from '../auth/validation';
 import { useSyncNotice } from '../sync/SyncNotice';
 
 /**
@@ -35,6 +35,7 @@ export function AccountSection() {
       <Field label="שם פרטי" value={profile.firstName} readOnly />
       <Field label="שם משפחה" value={profile.lastName} readOnly />
       <Field label="כתובת מייל" value={user.email ?? ''} dir="ltr" readOnly />
+      <Field label="מספר טלפון" value={profile.phone ?? ''} dir="ltr" readOnly hint={profile.phone ? undefined : 'לא הוזן. אפשר להוסיף ב"עדכון פרטים"'} />
 
       <button type="button" className="btn btn-secondary" onClick={() => { setSentTo(''); setEditing(true); }}>
         עדכון פרטים
@@ -78,6 +79,7 @@ function EditDetailsDialog({
   const [firstName, setFirstName] = useState(profile.firstName);
   const [lastName, setLastName] = useState(profile.lastName);
   const [email, setEmail] = useState(user.email ?? '');
+  const [phone, setPhone] = useState(profile.phone ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -89,6 +91,7 @@ function EditDetailsDialog({
     if (busy) return;
     if (!firstName.trim() || !lastName.trim()) return setError('יש להזין שם פרטי ושם משפחה.');
     if (firstName.length > 60 || lastName.length > 60) return setError('אחד השדות ארוך מדי.');
+    if (phone.trim() && !isValidPhone(phone)) return setError('מספר הטלפון אינו תקין.');
     if (emailChanged && !isValidEmail(email)) return setError('יש להזין כתובת מייל תקינה.');
     if (emailChanged && !password) return setError('להחלפת כתובת מייל יש להזין את הסיסמה הנוכחית.');
 
@@ -102,9 +105,10 @@ function EditDetailsDialog({
       }
       const unchanged =
         firstName.trim() === profile.firstName &&
-        lastName.trim() === profile.lastName;
+        lastName.trim() === profile.lastName &&
+        normalizePhone(phone) === (profile.phone ?? '');
       if (!unchanged) {
-        saveProfile(user.uid, { firstName, lastName, businessName: profile.businessName, accountMode: profile.accountMode }).catch(() =>
+        saveProfile(user.uid, { firstName, lastName, businessName: profile.businessName, accountMode: profile.accountMode, phone: normalizePhone(phone) }).catch(() =>
           reportFailure('לא הצלחנו לסנכרן את פרטי החשבון. יש לנסות שוב.'),
         );
       }
@@ -121,6 +125,7 @@ function EditDetailsDialog({
         <Field label="שם פרטי" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
         <Field label="שם משפחה" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
         <Field label="כתובת מייל" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        <Field label="מספר טלפון" type="tel" inputMode="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
         {emailChanged && (
           <Field
             label="סיסמה נוכחית (נדרשת להחלפת מייל)"

@@ -1,3 +1,4 @@
+import { LangSwitch } from '../../components/LangSwitch';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 
@@ -8,6 +9,7 @@ export function WelcomeScreen() {
   return (
     <main className="auth-screen welcome-screen">
       <div className="auth-column">
+        <LangSwitch />
         <header className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true">
             <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={88} height={88} draggable={false} />

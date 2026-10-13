@@ -46,6 +46,26 @@ async function approvalStatuses(uids) {
   return out;
 }
 
+/** פרטי ההרשמה של כל חשבון (users/{uid}): שם, טלפון ושם העסק. נקרא בשרת בלבד ומוצג למנהל. */
+async function profileDetails(uids) {
+  const db = admin.firestore();
+  const out = new Map();
+  for (let i = 0; i < uids.length; i += 300) {
+    const refs = uids.slice(i, i + 300).map((uid) => db.collection('users').doc(uid));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((snap, k) => {
+      const d = snap.exists ? snap.data() : {};
+      out.set(uids[i + k], {
+        firstName: typeof d.firstName === 'string' ? d.firstName : '',
+        lastName: typeof d.lastName === 'string' ? d.lastName : '',
+        phone: typeof d.phone === 'string' ? d.phone : '',
+        businessName: typeof d.businessName === 'string' ? d.businessName : '',
+      });
+    });
+  }
+  return out;
+}
+
 const TZ = 'Asia/Jerusalem';
 const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(ms));
 
@@ -111,6 +131,8 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
     r.payment = a?.payment ?? null;
     r.notice = a?.notice ?? null;
   }
+  const profiles = await profileDetails(rows.map((r) => r.uid));
+  for (const r of rows) r.details = profiles.get(r.uid) ?? { firstName: '', lastName: '', phone: '', businessName: '' };
   const usage = await usageDays(rows.map((r) => r.uid));
   const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
   const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0, accounts: [] }));

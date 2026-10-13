@@ -35,6 +35,8 @@ export interface AdminUserRow {
   txTotal: number;
   tx7d: number;
   usage: UsageLevel;
+  /** פרטי ההרשמה (חסר אם הפונקציה בשרת עוד לא עודכנה). */
+  details?: { firstName: string; lastName: string; phone: string; businessName: string };
 }
 
 export interface AdminOverview {

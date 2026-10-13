@@ -3634,3 +3634,55 @@ select.input:not(.cmp-select), textarea.input { color: var(--text); font-size: 1
   overflow-wrap: anywhere;
   min-width: 0;
 }
+
+/* בורר שפה במסכי הכניסה והרישום */
+.lang-switch {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin: 0 auto 12px;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface, #fff);
+}
+.lang-switch button {
+  min-height: 44px;
+  padding: 0 18px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.lang-switch button.is-active {
+  background: var(--navy, #0f2a47);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* מסך ניהול: פרטי בעל החשבון */
+.admin-details {
+  margin: 8px 0 4px;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.admin-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-details dt {
+  color: var(--muted, #5b6b7c);
+}
+.admin-details dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
