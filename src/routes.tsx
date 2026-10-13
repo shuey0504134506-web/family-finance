@@ -19,6 +19,7 @@ import { TasksScreen } from './features/lists/TasksScreen';
 import { LockProvider } from './features/lock/LockContext';
 import { LockGate } from './features/lock/LockScreen';
 import { PrivacyScreen } from './features/privacy/PrivacyScreen';
+import { AccessibilityScreen } from './features/privacy/AccessibilityScreen';
 import { AutoBackupHost } from './features/settings/AutoBackupHost';
 import { SettingsProvider } from './features/settings/SettingsContext';
 import { SettingsScreen } from './features/settings/SettingsScreen';
@@ -122,6 +123,7 @@ export function AppRoutes() {
 
       {/* מדיניות הפרטיות פתוחה גם למי שלא מחובר */}
       <Route path="/privacy" element={<PrivacyScreen />} />
+      <Route path="/accessibility" element={<AccessibilityScreen />} />
 
       <Route element={<RequireAccount />}>
         <Route index element={<HomeRedirect />} />

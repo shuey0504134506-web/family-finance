@@ -48,7 +48,7 @@ export function WelcomeScreen() {
           </div>
 
           <p className="auth-footer-link">
-            <Link to="/privacy">מדיניות פרטיות</Link>
+            <Link to="/privacy">מדיניות פרטיות</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
           </p>
         </div>
       </div>

@@ -87,7 +87,7 @@ export function SettingsScreen() {
         ) : null}
 
         <p className="auth-footer-link">
-          <Link to="/privacy">מדיניות פרטיות</Link>
+          <Link to="/privacy">מדיניות פרטיות</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
         </p>
         <p className="muted center-text">
           {APP_NAME} · גרסה {APP_VERSION}

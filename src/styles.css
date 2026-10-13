@@ -87,7 +87,7 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid #5eb3a8;
+  outline: 3px solid #0b5f58;
   outline-offset: 2px;
 }
 
@@ -2155,7 +2155,7 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
   --navy: #0f2a47;
   --bg: #f7f3ea;
   --text: #14233a;
-  --text-muted: #6f7a8a;
+  --text-muted: #566070;
   --border: #e8e2d4;
 
   --business: #1f6f66;
