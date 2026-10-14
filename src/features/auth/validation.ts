@@ -8,7 +8,7 @@ export interface SignupValues {
   confirmPassword: string;
 }
 
-export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 10;
 
 /** מספר טלפון בצורה אחידה: ספרות בלבד, עם + בתחילה אם הוזן. מסיר רווחים, מקפים וסוגריים. */
 export function normalizePhone(phone: string): string {

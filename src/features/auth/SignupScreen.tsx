@@ -159,7 +159,7 @@ export function SignupScreen() {
             value={values.password}
             onChange={update('password')}
             error={errors.password}
-            hint="לפחות 8 תווים"
+            hint="לפחות 10 תווים"
           />
           <Field
             label="אימות סיסמה"

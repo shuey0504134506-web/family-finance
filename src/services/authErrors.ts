@@ -5,7 +5,7 @@ const MESSAGES: Record<string, string> = {
   'auth/user-not-found': 'לא נמצא חשבון עם כתובת המייל הזאת.',
   'auth/invalid-email': 'כתובת המייל אינה תקינה.',
   'auth/email-already-in-use': 'כבר קיים חשבון עם כתובת המייל הזאת. אפשר להיכנס אליו.',
-  'auth/weak-password': 'הסיסמה חלשה מדי. יש לבחור סיסמה של 8 תווים לפחות.',
+  'auth/weak-password': 'הסיסמה חלשה מדי. יש לבחור סיסמה של 10 תווים לפחות.',
   'auth/too-many-requests': 'בוצעו יותר מדי ניסיונות. יש להמתין מעט ולנסות שוב.',
   'auth/network-request-failed': 'אין חיבור לאינטרנט. יש לבדוק את החיבור ולנסות שוב.',
   'auth/user-disabled': 'החשבון הזה הושבת.',
