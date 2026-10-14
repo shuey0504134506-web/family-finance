@@ -73,12 +73,18 @@ export function subscribeApproval(
 ): Unsubscribe {
   return onSnapshot(
     doc(db, 'approvals', uid),
-    (snap) =>
+    (snap) => {
+      // בלי רשת, מסמך שלא נשמר במכשיר עדיין נראה "לא קיים". זה לא אומר שהחשבון ממתין, ולכן לא מחליטים על סמך זה.
+      if (snap.metadata.fromCache && !snap.exists()) {
+        onUnavailable();
+        return;
+      }
       onState({
         state: snap.exists() ? parse(snap.data().status) : 'none',
         payment: snap.exists() ? parsePayment(snap.data().payment) : null,
         notice: snap.exists() ? parseNotice(snap.data().notice) : null,
-      }),
+      });
+    },
     () => onUnavailable(),
   );
 }

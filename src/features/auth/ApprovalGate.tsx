@@ -118,6 +118,11 @@ export function ApprovalGate({
   useEffect(() => {
     setGate('loading');
     let requested = false;
+    // בלי רשת Firestore ממתין עד 10 שניות לפני שהוא מודה שאין חיבור; לא מחכים לו.
+    const offlineTimer =
+      typeof navigator !== 'undefined' && navigator.onLine === false
+        ? window.setTimeout(() => setGate((g) => (g === 'loading' ? 'unavailable' : g)), 1200)
+        : undefined;
     const stop = subscribeApproval(
       uid,
       (snapshot) => {
@@ -129,7 +134,10 @@ export function ApprovalGate({
       },
       () => setGate('unavailable'),
     );
-    return stop;
+    return () => {
+      window.clearTimeout(offlineTimer);
+      stop();
+    };
   }, [uid]);
 
   // נעילה אוטומטית ברגע שהמועד מגיע, גם כשהאפליקציה פתוחה

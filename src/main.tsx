@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { applyDocumentLang } from './i18n/lang';
+import { Capacitor } from '@capacitor/core';
 import { installAndroidBackHandler } from './native/androidBack';
 import '@fontsource/heebo/hebrew-300.css';
 import '@fontsource/heebo/hebrew-400.css';
@@ -17,6 +18,11 @@ import './styles/index.css';
 
 applyDocumentLang();
 installAndroidBackHandler();
+
+// באתר (לא באפליקציית האנדרואיד, שבה הקבצים כבר בתוך ה-APK): service worker לפתיחה בלי אינטרנט.
+if (import.meta.env.PROD && !Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
+  void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
