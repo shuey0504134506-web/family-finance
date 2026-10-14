@@ -1,0 +1,10 @@
+{
+  "kind": "by-category",
+  "type": "expense",
+  "items": [
+    { "type": "expense", "amountAgorot": 1250, "categoryId": "food" },
+    { "type": "expense", "amountAgorot": 750, "categoryId": "food" },
+    { "type": "expense", "amountAgorot": 5000, "categoryId": "rent" },
+    { "type": "income", "amountAgorot": 9000, "categoryId": "salary" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "totalAgorot": 225000,
+  "slices": [
+    {
+      "id": "food",
+      "name": "מזון",
+      "agorot": 150000
+    },
+    {
+      "id": "car",
+      "name": "רכב",
+      "agorot": 40000
+    },
+    {
+      "id": "other",
+      "name": "קטגוריות נוספות",
+      "agorot": 35000
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "businessNet": {
+    "incomeAgorot": 1100000,
+    "expenseAgorot": 700000,
+    "balanceAgorot": 400000
+  },
+  "household": {
+    "ownIncomeAgorot": 50000,
+    "fromBusinessAgorot": 400000,
+    "incomeAgorot": 450000,
+    "expenseAgorot": 620000,
+    "balanceAgorot": -170000
+  }
+}

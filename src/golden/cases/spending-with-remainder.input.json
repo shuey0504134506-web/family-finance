@@ -1,0 +1,12 @@
+{
+  "kind": "spending",
+  "maxSlices": 2,
+  "items": [
+    { "type": "expense", "amountAgorot": 90000, "categoryId": "food", "categoryName": "מזון" },
+    { "type": "expense", "amountAgorot": 40000, "categoryId": "car", "categoryName": "רכב" },
+    { "type": "expense", "amountAgorot": 25000, "categoryId": "fun", "categoryName": "בילויים" },
+    { "type": "expense", "amountAgorot": 10000, "categoryId": "gifts", "categoryName": "מתנות" },
+    { "type": "expense", "amountAgorot": 60000, "categoryId": "food", "categoryName": "מזון" },
+    { "type": "income", "amountAgorot": 999999, "categoryId": "salary", "categoryName": "משכורת" }
+  ]
+}

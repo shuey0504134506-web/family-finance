@@ -1,0 +1,14 @@
+{
+  "kind": "household-month",
+  "mode": "positive-only",
+  "business": [
+    { "type": "income", "amountAgorot": 1000000, "businessId": "a" },
+    { "type": "expense", "amountAgorot": 300000, "businessId": "a" },
+    { "type": "income", "amountAgorot": 100000, "businessId": "b" },
+    { "type": "expense", "amountAgorot": 400000, "businessId": "b" }
+  ],
+  "household": [
+    { "type": "income", "amountAgorot": 50000 },
+    { "type": "expense", "amountAgorot": 620000 }
+  ]
+}
