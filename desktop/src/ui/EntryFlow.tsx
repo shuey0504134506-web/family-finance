@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Field } from '../../../src/components/Field';
 import { Icon } from '../../../src/components/Icon';
+import { DEFAULT_BUSINESS_ID } from '../../../src/domain/spaces';
+import { LogoControl } from '../../../src/features/settings/LogoControl';
+import { saveLogo } from '../../../src/services/logoService';
 import { LangSwitch } from '../../../src/components/LangSwitch';
 import { BusinessesFields } from '../../../src/features/auth/BusinessesFields';
 import { isValidEmail, MIN_PASSWORD_LENGTH, normalizePhone, validateSignup, type SignupValues } from '../../../src/features/auth/validation';
@@ -215,6 +218,8 @@ function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }
   const [values, setValues] = useState<SignupValues>({ firstName: '', lastName: '', businessName: '', phone: '', email: '', password: '', confirmPassword: '' });
   const [extras, setExtras] = useState<string[]>([]);
   const [household, setHousehold] = useState('');
+  const [logo, setLogo] = useState<string | null>(null);
+  const saveChosenLogo = () => { const me = c.getState().me; if (logo && me) saveLogo(me.uid, DEFAULT_BUSINESS_ID, logo).catch(() => undefined); };
   const [errors, setErrors] = useState<Partial<Record<keyof SignupValues, string>>>({});
   const [step, setStep] = useState<'details' | 'recovery'>('details');
   const a = useAction();
@@ -243,7 +248,7 @@ function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     if (offline) setStep('recovery');
-    else void a.run(() => c.signUpOnline(input(), values.password));
+    else void a.run(async () => { await c.signUpOnline(input(), values.password); saveChosenLogo(); });
   }
 
   if (step === 'recovery') {
@@ -254,7 +259,7 @@ function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }
           <p className="muted">חשבון מנותק לא נשמר בשום שרת, ולכן אם הסיסמה תישכח הדרך היחידה להיכנס היא לענות על שלוש שאלות שתקבעו עכשיו. כעבור זמן אפשר להחליף חלק מהן בשאלות מהפעולות שתרשמו.</p>
         </header>
         <RecoveryEditor derived={[]} submitLabel="יצירת החשבון" busy={a.busy} error={a.error}
-          onSubmit={(qs, ans) => void a.run(async () => { await c.signUpOffline(input(), values.password); await c.setRecovery(qs, ans); })} />
+          onSubmit={(qs, ans) => void a.run(async () => { await c.signUpOffline(input(), values.password); await c.setRecovery(qs, ans); saveChosenLogo(); })} />
         <p className="auth-footer-link"><button type="button" className="link-btn" onClick={() => setStep('details')}>חזרה לפרטים</button></p>
       </>
     );
@@ -270,6 +275,7 @@ function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }
         <Field label="שם פרטי" autoComplete="given-name" value={values.firstName} onChange={set('firstName')} error={errors.firstName} />
         <Field label="שם משפחה" autoComplete="family-name" value={values.lastName} onChange={set('lastName')} error={errors.lastName} />
         <Field label="שם העסק (לא חובה)" value={values.businessName} onChange={set('businessName')} error={errors.businessName} />
+        <LogoControl data={logo} onChange={setLogo} />
         <BusinessesFields householdName={household} onHouseholdName={setHousehold} extras={extras} onExtras={setExtras} />
         {!offline && <Field label="מספר טלפון" type="tel" dir="ltr" value={values.phone} onChange={set('phone')} error={errors.phone} hint="מוצג למנהל האפליקציה בלבד" />}
         <Field label={offline ? 'כתובת מייל (לא חובה)' : 'כתובת מייל'} type="email" dir="ltr" value={values.email} onChange={set('email')} error={errors.email} />

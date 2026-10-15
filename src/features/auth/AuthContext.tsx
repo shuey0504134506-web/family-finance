@@ -36,7 +36,7 @@ interface AuthContextValue {
   state: AuthState;
   /** true מיד אחרי הרשמה, עד שהמשתמש לוחץ "מעבר ליומן שלי" */
   justRegistered: boolean;
-  register: (input: NewAccountInput, password: string) => Promise<void>;
+  register: (input: NewAccountInput, password: string) => Promise<string>;
   login: (email: string, password: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   completeSetup: (input: Omit<NewAccountInput, 'email'>) => Promise<void>;
@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       markNewAccount(newUid);
       markSignedIn(newUid);
       setJustRegistered(true);
+      return newUid;
     } finally {
       setRegistering(false);
     }

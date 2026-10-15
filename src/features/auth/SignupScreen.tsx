@@ -7,6 +7,9 @@ import { useAuth } from './AuthContext';
 import { BusinessesFields } from './BusinessesFields';
 import { normalizePhone, validateSignup, type SignupValues } from './validation';
 import { Icon } from '../../components/Icon';
+import { DEFAULT_BUSINESS_ID } from '../../domain/spaces';
+import { saveLogo } from '../../services/logoService';
+import { LogoControl } from '../settings/LogoControl';
 
 export function SignupScreen() {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ export function SignupScreen() {
   });
   const [extraBusinesses, setExtraBusinesses] = useState<string[]>([]);
   const [householdName, setHouseholdName] = useState('');
+  const [logo, setLogo] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof SignupValues, string>>>({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,7 +47,7 @@ export function SignupScreen() {
     submitting.current = true;
     setBusy(true);
     try {
-      await register(
+      const newUid = await register(
         {
           firstName: values.firstName,
           lastName: values.lastName,
@@ -56,6 +60,8 @@ export function SignupScreen() {
         },
         values.password,
       );
+      // הלוגו לא חוסם את ההרשמה: נשמר במכשיר מיד, ובחשבון כשאפשר
+      if (logo) saveLogo(newUid, DEFAULT_BUSINESS_ID, logo).catch(() => undefined);
     } catch (error) {
       setFormError(describeErrorWithCode(error));
     } finally {
@@ -123,6 +129,7 @@ export function SignupScreen() {
             onChange={update('businessName')}
             error={errors.businessName}
           />
+          <LogoControl data={logo} onChange={setLogo} />
           <BusinessesFields
             householdName={householdName}
             onHouseholdName={setHouseholdName}
