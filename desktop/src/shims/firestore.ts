@@ -61,7 +61,7 @@ export class DocumentSnapshot {
   exists(): boolean { return this.entry !== null; }
   data(): DocData | undefined { return this.entry?.data; }
   get metadata(): { fromCache: boolean; hasPendingWrites: boolean } {
-    return { fromCache: false, hasPendingWrites: this.entry?.pending ?? false };
+    return { fromCache: !activeDb().hydrated, hasPendingWrites: this.entry?.pending ?? false };
   }
 }
 export type QueryDocumentSnapshot = DocumentSnapshot;
@@ -71,7 +71,7 @@ export class QuerySnapshot {
   get size(): number { return this.docs.length; }
   get empty(): boolean { return this.docs.length === 0; }
   get metadata(): { fromCache: boolean; hasPendingWrites: boolean } {
-    return { fromCache: false, hasPendingWrites: this.docs.some((d) => d.metadata.hasPendingWrites) };
+    return { fromCache: !activeDb().hydrated, hasPendingWrites: this.docs.some((d) => d.metadata.hasPendingWrites) };
   }
   forEach(fn: (d: DocumentSnapshot) => void): void { this.docs.forEach(fn); }
 }
@@ -84,12 +84,18 @@ export const getDocFromServer = getDoc;
 export const getDocs = async (r: Ref) => snapQuery(r);
 export const getDocsFromServer = getDocs;
 
+export interface SnapshotOptions { includeMetadataChanges?: boolean }
 export function onSnapshot(r: DocumentReference, next: (s: DocumentSnapshot) => void, error?: (e: Error) => void): Unsubscribe;
+export function onSnapshot(r: DocumentReference, opts: SnapshotOptions, next: (s: DocumentSnapshot) => void, error?: (e: Error) => void): Unsubscribe;
 export function onSnapshot(r: Ref, next: (s: QuerySnapshot) => void, error?: (e: Error) => void): Unsubscribe;
-export function onSnapshot(r: DocumentReference | Ref, next: (s: never) => void, error?: (e: Error) => void): Unsubscribe {
+export function onSnapshot(r: Ref, opts: SnapshotOptions, next: (s: QuerySnapshot) => void, error?: (e: Error) => void): Unsubscribe;
+export function onSnapshot(r: DocumentReference | Ref, ...rest: unknown[]): Unsubscribe {
+  const hasOpts = typeof rest[0] !== 'function';
+  const next = (hasOpts ? rest[1] : rest[0]) as (s: unknown) => void;
+  const error = (hasOpts ? rest[2] : rest[1]) as ((e: Error) => void) | undefined;
   const emit = (): void => {
     try {
-      (next as (s: unknown) => void)(r.type === 'document' ? snapDoc(r) : snapQuery(r));
+      next(r.type === 'document' ? snapDoc(r) : snapQuery(r));
     } catch (e) {
       error?.(e as Error);
     }

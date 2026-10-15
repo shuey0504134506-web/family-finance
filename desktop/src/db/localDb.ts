@@ -114,6 +114,8 @@ export class LocalDb {
   private listeners = new Set<Listener>();
   /** onChange נקרא אחרי כל שינוי מקומי או מרוחק, כדי לשמור לקובץ. */
   onChange: (() => void) | null = null;
+  /** false עד שהמשיכה הראשונה מהענן הסתיימה (חשבון מקוון חדש במחשב). עד אז אסור להסיק שמסמך "חסר". */
+  hydrated = true;
 
   constructor(state?: DbState, private readonly trackOutbox = false) {
     if (state) {

@@ -19,7 +19,7 @@ export interface Storage {
   remove(name: string): Promise<void>;
 }
 
-interface Payload { meta: AccountMeta; db: DbState; lastSync: number | null }
+interface Payload { meta: AccountMeta; db: DbState; lastSync: number | null; recoveryAnswers?: string[] }
 
 const INDEX = 'accounts.json';
 const vaultName = (id: string) => `vault-${id}.json`;
@@ -30,6 +30,8 @@ export class Unlocked {
   private chain: Promise<void> = Promise.resolve();
   private timer: ReturnType<typeof setTimeout> | null = null;
   lastSync: number | null;
+  /** התשובות לשאלות השחזור, שמורות רק בתוך הכספת המוצפנת, כדי לרענן שאלות נגזרות בכל כניסה */
+  recoveryAnswers: string[] | null = null;
 
   constructor(
     readonly meta: AccountMeta,
@@ -53,7 +55,7 @@ export class Unlocked {
   flush(): Promise<void> {
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     this.chain = this.chain.then(async () => {
-      const payload: Payload = { meta: this.meta, db: this.db.state, lastSync: this.lastSync };
+      const payload: Payload = { meta: this.meta, db: this.db.state, lastSync: this.lastSync, ...(this.recoveryAnswers ? { recoveryAnswers: this.recoveryAnswers } : {}) };
       this.file = await sealVault(this.file, this.dataKey, JSON.stringify(payload));
       await this.storage.write(vaultName(this.meta.id), JSON.stringify(this.file));
     });
@@ -67,11 +69,22 @@ export class Unlocked {
 
   async setRecovery(questions: readonly RecoveryQuestion[], answers: readonly string[]): Promise<void> {
     this.file = await setVaultRecovery(this.file, this.dataKey, questions, answers);
+    this.recoveryAnswers = [...answers];
     await this.flush();
   }
 
   get recoveryQuestions(): RecoveryQuestion[] | null {
     return this.file.recovery?.questions ?? null;
+  }
+
+  /** האם הסיסמה נכונה (לאימות מחדש לפני פעולות רגישות). */
+  async verifyPassword(password: string): Promise<boolean> {
+    try { await unlockVault(this.file, password); return true; } catch { return false; }
+  }
+
+  async updateMeta(patch: Partial<Pick<AccountMeta, 'email' | 'displayName'>>): Promise<void> {
+    Object.assign(this.meta, patch);
+    await this.flush();
   }
 
   async lock(): Promise<void> {
@@ -89,14 +102,20 @@ export class Session {
     return raw ? (JSON.parse(raw) as AccountMeta[]) : [];
   }
 
+  async updateIndex(meta: AccountMeta): Promise<void> {
+    await this.addToIndex(meta);
+  }
+
   private async addToIndex(meta: AccountMeta): Promise<void> {
     const rest = (await this.list()).filter((m) => m.id !== meta.id);
     await this.storage.write(INDEX, JSON.stringify([...rest, meta]));
   }
 
-  private open(meta: AccountMeta, state: DbState | undefined, file: VaultFile, dataKey: Uint8Array, lastSync: number | null): Unlocked {
+  private open(meta: AccountMeta, state: DbState | undefined, file: VaultFile, dataKey: Uint8Array, lastSync: number | null, answers?: string[]): Unlocked {
     const db = new LocalDb(state, meta.kind === 'online');
-    return new Unlocked(meta, db, file, dataKey, this.storage, lastSync, this.opts.debounceMs ?? 400);
+    const u = new Unlocked(meta, db, file, dataKey, this.storage, lastSync, this.opts.debounceMs ?? 400);
+    u.recoveryAnswers = answers ?? null;
+    return u;
   }
 
   /** חשבון מנותק: לא מסונכרן לעולם. מאשרים אותו מקומית כדי שמסך האישור לא יחסום. */
@@ -131,7 +150,7 @@ export class Session {
     let r;
     try { r = await unlockVault(file, password); } catch { throw new WrongPassword(); }
     const p = JSON.parse(r.plaintext) as Payload;
-    return this.open(p.meta, p.db, file, r.dataKey, p.lastSync);
+    return this.open(p.meta, p.db, file, r.dataKey, p.lastSync, p.recoveryAnswers);
   }
 
   async recoveryQuestions(id: string): Promise<RecoveryQuestion[] | null> {
@@ -146,7 +165,7 @@ export class Session {
     const reset = await changeVaultPassword(file, r.dataKey, newPassword);
     const p = JSON.parse(r.plaintext) as Payload;
     await this.storage.write(vaultName(id), JSON.stringify(reset));
-    return this.open(p.meta, p.db, reset, r.dataKey, p.lastSync);
+    return this.open(p.meta, p.db, reset, r.dataKey, p.lastSync, p.recoveryAnswers);
   }
 
   /** מחיקת חשבון מקומי מהמחשב הזה (הקובץ והרשומה באינדקס). */

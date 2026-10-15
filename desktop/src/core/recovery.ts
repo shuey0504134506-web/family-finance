@@ -13,6 +13,9 @@ export interface RecoveryQuestion {
   kind: 'custom' | 'derived';
   /** מזהה סוג לשאלה נגזרת, כדי לדעת להשוות ולרענן */
   template?: DerivedTemplate;
+  /** לשאלה נגזרת: החודש והתחום שממנו נגזרה, כדי לחשב מחדש את התשובה אחרי עריכות */
+  month?: YearMonth;
+  scope?: Scope;
   text: string;
 }
 
@@ -104,17 +107,17 @@ export function derivedCandidates(
       const byCategory = new Map<string, number>();
       for (const t of expenses) byCategory.set(t.categoryName, (byCategory.get(t.categoryName) ?? 0) + t.amountAgorot);
       const topCategory = uniqueMax(byCategory);
-      if (topCategory) out.push({ question: { kind: 'derived', template: 'top-expense-category', text: `באיזו קטגוריה הוצאת הכי הרבה כסף ב${label}?` }, answer: topCategory, month, scope });
+      if (topCategory) out.push({ question: { kind: 'derived', template: 'top-expense-category', month, scope, text: `באיזו קטגוריה הוצאת הכי הרבה כסף ב${label}?` }, answer: topCategory, month, scope });
 
       const single = [...expenses].sort((a, b) => b.amountAgorot - a.amountAgorot);
       if (single.length >= 2 && single[0]!.amountAgorot > single[1]!.amountAgorot && single[0]!.counterparty.trim()) {
-        out.push({ question: { kind: 'derived', template: 'top-expense-name', text: `מה שם הספק או העסק של ההוצאה הבודדת הגדולה ביותר ב${label}?` }, answer: single[0]!.counterparty, month, scope });
+        out.push({ question: { kind: 'derived', template: 'top-expense-name', month, scope, text: `מה שם הספק או העסק של ההוצאה הבודדת הגדולה ביותר ב${label}?` }, answer: single[0]!.counterparty, month, scope });
       }
 
       const topIncome = [...incomes].sort((a, b) => b.amountAgorot - a.amountAgorot)[0];
-      if (topIncome) out.push({ question: { kind: 'derived', template: 'top-income-amount', text: `מה הסכום, בשקלים שלמים, של ההכנסה הגדולה ביותר ב${label}?` }, answer: String(Math.round(topIncome.amountAgorot / 100)), month, scope });
+      if (topIncome) out.push({ question: { kind: 'derived', template: 'top-income-amount', month, scope, text: `מה הסכום, בשקלים שלמים, של ההכנסה הגדולה ביותר ב${label}?` }, answer: String(Math.round(topIncome.amountAgorot / 100)), month, scope });
 
-      if (expenses.length >= 3) out.push({ question: { kind: 'derived', template: 'expense-count', text: `כמה הוצאות רשמת ב${label}?` }, answer: String(expenses.length), month, scope });
+      if (expenses.length >= 3) out.push({ question: { kind: 'derived', template: 'expense-count', month, scope, text: `כמה הוצאות רשמת ב${label}?` }, answer: String(expenses.length), month, scope });
     }
   }
   return out;
@@ -140,4 +143,14 @@ export function pickDerived(candidates: readonly DerivedCandidate[], count: numb
     }
   }
   return picked;
+}
+
+/**
+ * מחשב מחדש את התשובה לשאלה נגזרת מהנתונים הנוכחיים. null אם כבר אי אפשר (תיקו או חודש שהתרוקן).
+ * קוראים לזה בכל כניסה, כדי שעריכת פעולה ישנה לא תנעל את השחזור.
+ */
+export function recomputeDerived(q: RecoveryQuestion, byScope: Record<Scope, readonly TxLike[]>, currentMonth: YearMonth): string | null {
+  if (q.kind !== 'derived') return null;
+  const hit = derivedCandidates(byScope, currentMonth).find((c) => c.question.template === q.template && c.month === q.month && c.scope === q.scope);
+  return hit ? hit.answer : null;
 }

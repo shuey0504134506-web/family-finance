@@ -103,3 +103,18 @@ describe('שאלות נגזרות מהפעולות', () => {
     expect(new Set(picked.map((p) => p.question.template)).size).toBe(2);
   });
 });
+
+import { recomputeDerived } from './recovery';
+describe('רענון שאלות נגזרות', () => {
+  const t = (date: string, type: 'income' | 'expense', agorot: number, name: string, cat: string): TxLike => ({ type, amountAgorot: agorot, date, counterparty: name, categoryName: cat });
+  const sep = [t('2026-09-01', 'income', 1200000, 'משכורת', 'משכורת'), t('2026-09-03', 'expense', 50000, 'שופרסל', 'מזון'), t('2026-09-05', 'expense', 450000, 'משכיר', 'דיור'), t('2026-09-09', 'expense', 30000, 'פז', 'רכב')];
+  it('מחשב מחדש אחרי עריכה, ומחזיר null כשכבר אין תשובה חד-משמעית', () => {
+    const q = derivedCandidates({ household: sep, business: [] }, '2026-10').find((c) => c.question.template === 'top-expense-name')!.question;
+    expect(q.month).toBe('2026-09');
+    expect(recomputeDerived(q, { household: sep, business: [] }, '2026-10')).toBe('משכיר');
+    const edited = sep.map((x) => (x.counterparty === 'שופרסל' ? { ...x, amountAgorot: 900000 } : x));
+    expect(recomputeDerived(q, { household: edited, business: [] }, '2026-10')).toBe('שופרסל');
+    const tie = sep.map((x) => (x.counterparty === 'שופרסל' ? { ...x, amountAgorot: 450000 } : x));
+    expect(recomputeDerived(q, { household: tie, business: [] }, '2026-10')).toBeNull();
+  });
+});

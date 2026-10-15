@@ -1,0 +1,46 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "firebase/firestore": [
+        "src/shims/firestore.ts"
+      ],
+      "firebase/auth": [
+        "src/shims/auth.ts"
+      ],
+      "firebase/app": [
+        "src/shims/app.ts"
+      ],
+      "firebase/functions": [
+        "src/shims/functions.ts"
+      ],
+      "firebase-real/*": [
+        "../node_modules/firebase/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "electron",
+    "vite.config.ts",
+    "../src/vite-env.d.ts"
+  ]
+}
