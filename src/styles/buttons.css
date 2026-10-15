@@ -264,9 +264,10 @@
   gap: 6px;
 }
 
+/* "הכול" באותו רוחב כמו שאר הכפתורים, כדי שהבורר יהיה מאוזן */
 .segmented-spaces.has-all button:first-child {
-  flex: 0 0 auto;
-  min-width: 64px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .segmented-spaces .seg-label {

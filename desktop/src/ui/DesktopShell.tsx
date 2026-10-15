@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../../../src/components/Icon';
 import { SpaceLabel } from '../../../src/components/SpaceLabel';
 import { isAdminEmail } from '../../../src/config/admin';
@@ -19,9 +19,23 @@ export function DesktopShell({ children }: { children: ReactNode }) {
   const ui = useUi();
   const c = useController();
   const loc = useLocation();
+  const navigate = useNavigate();
   const first = loc.pathname.split('/')[1] ?? '';
   const current = parseSpaceKey(first) ?? defaultSpace;
   const key = current.key;
+  // כפתור "חזרה" בכותרת של מסכים פנימיים מחזיר תמיד למסך הראשי של המרחב הנוכחי, ולא למסך הקודם.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const btn = (e.target as Element | null)?.closest('.screen-header-row > .icon-btn:first-child');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      navigate(`/${key}`);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [navigate, key]);
+
   const admin = state.status === 'ready' && isAdminEmail(state.user.email);
 
   const rows: { to: string; label: string; icon?: string; end?: boolean }[] = [
