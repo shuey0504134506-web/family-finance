@@ -25,12 +25,12 @@ export type SyncStatus =
   | { kind: 'offline'; pending: number; lastSync: number | null }
   | { kind: 'error'; pending: number; lastSync: number | null; failed: number };
 
+/** usage/{uid} נכתב בלבד: הכללים אוסרים קריאה (allow read: if false), ולכן הוא אינו יעד למשיכה. */
 export function targetsFor(uid: string): Target[] {
   const sub = ['settings', 'businessProfile', 'householdProfile', 'businesses', 'categories', 'businessTransactions', 'householdTransactions', 'attachments', 'debts', 'budgets', 'tasks', 'shoppingItems'];
   return [
     { kind: 'doc', path: `users/${uid}` },
     { kind: 'doc', path: `approvals/${uid}` },
-    { kind: 'doc', path: `usage/${uid}` },
     ...sub.map((name) => ({ kind: 'collection' as const, path: `users/${uid}/${name}` })),
     { kind: 'collection', path: 'messages', where: { field: 'uid', value: uid } },
   ];
@@ -129,7 +129,15 @@ export class SyncEngine {
       do {
         this.again = false;
         await this.push();
-        for (const t of targetsFor(this.uid)) this.applyList(t, await this.cloud.read(t));
+        for (const t of targetsFor(this.uid)) {
+          try {
+            this.applyList(t, await this.cloud.read(t));
+          } catch (e) {
+            // יעד שנדחה בכללי האבטחה לא יעצור את משיכת שאר הנתונים
+            if (!isNetwork(e) && isPermanent(e)) continue;
+            throw e;
+          }
+        }
       } while (this.again && !this.stopped);
       this.lastSync = Date.now();
       this.onSynced(this.lastSync);

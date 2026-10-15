@@ -11,7 +11,8 @@ class FakeCloud implements Cloud {
   private list(t: Target): Remote[] {
     return [...this.docs].filter(([p, d]) => (t.kind === 'doc' ? p === t.path : parentOf(p) === t.path && (!t.where || d[t.where.field] === t.where.value))).map(([path, data]) => ({ path, data: structuredClone(data) }));
   }
-  async read(t: Target) { this.check(); return this.list(t); }
+  deniedRead = new Set<string>();
+  async read(t: Target) { this.check(); if (this.deniedRead.has(t.path)) throw Object.assign(new Error('x'), { code: 'permission-denied' }); return this.list(t); }
   async write(p: string, d: DocData) { this.check(); if (this.denied.has(p)) throw Object.assign(new Error('x'), { code: 'permission-denied' }); this.writes.push(p); this.docs.set(p, structuredClone(d)); this.fire(); }
   async remove(p: string) { this.check(); this.docs.delete(p); this.fire(); }
   watch(t: Target, cb: (l: Remote[]) => void) { const w = { t, cb }; this.watchers.push(w); return () => { this.watchers = this.watchers.filter((x) => x !== w); }; }
@@ -35,6 +36,15 @@ describe('SyncEngine', () => {
     expect(c.docs.get(`${tx}/new`)).toEqual({ v: 1 });
     expect(c.docs.has(`${tx}/old`)).toBe(false);
     expect(db.pendingPaths()).toEqual([]);
+  });
+  it('יעד שהכללים אוסרים לקרוא אינו עוצר את משיכת שאר הנתונים', async () => {
+    const c = new FakeCloud();
+    c.deniedRead.add(`approvals/${U}`);
+    c.deniedRead.add(`users/${U}`);
+    c.docs.set(`${tx}/fromPhone`, { v: 7 });
+    const { db, eng } = make(c);
+    await eng.syncNow();
+    expect(db.get(`${tx}/fromPhone`)?.data).toEqual({ v: 7 });
   });
   it('מושך מהענן, כולל מחיקה שנעשתה במכשיר אחר', async () => {
     const c = new FakeCloud();
