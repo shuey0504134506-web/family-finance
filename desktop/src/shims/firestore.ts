@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- חתימות התחליפים משקפות במכוון את חתימות Firebase, כולל פרמטרים שאינם בשימוש */
 /**
  * תחליף מקומי ל-firebase/firestore. האפליקציה המקורית נטענת כמות שהיא (קריאה בלבד),
  * ו-Vite מפנה אליה את הייבוא של firebase/firestore לכאן. הכל נקרא ונכתב למסד המקומי.

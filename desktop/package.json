@@ -14,6 +14,49 @@
     "dist": "npm run build && electron-builder --win --publish never"
   },
   "devDependencies": {
-    "electron": "^44.7.2"
+    "electron": "^44.7.2",
+    "electron-builder": "^26.0.0"
+  },
+  "author": "family-finance",
+  "build": {
+    "appId": "com.familyfinance.desktop",
+    "productName": "ניהול כספים",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "finance-desktop-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1037",
+      "createDesktopShortcut": true
+    },
+    "electronLanguages": [
+      "he",
+      "en-US"
+    ]
   }
 }

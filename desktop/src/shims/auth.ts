@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- חתימות התחליפים משקפות במכוון את חתימות Firebase, כולל פרמטרים שאינם בשימוש */
 /**
  * תחליף ל-firebase/auth. המצב האמיתי (מי מחובר, סיסמאות, חשבון מקוון מול אופליין)
  * מנוהל בשכבת ה-session של התוכנה, שמתחברת לכאן דרך setAuthBackend.

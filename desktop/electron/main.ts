@@ -6,6 +6,9 @@ import path from 'node:path';
  * תהליך ראשי: חלון אחד, וקבצי נתונים בתיקיית המשתמש בלבד.
  * הרנדרר מבודד (contextIsolation, sandbox) ומקבל גישה רק ל-4 פעולות קבצים בשמות בטוחים.
  */
+// ברירת המחדל של התוכנה היא עברית, בלי קשר לשפת Windows. מעבר לאנגלית נשמר בבחירת המשתמש.
+app.commandLine.appendSwitch('lang', 'he');
+
 const dataDir = (): string => path.join(app.getPath('userData'), 'data');
 const SAFE = /^[A-Za-z0-9_.-]{1,120}$/;
 

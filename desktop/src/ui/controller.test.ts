@@ -30,11 +30,11 @@ class FakeCloudAuth implements CloudAuth {
   async deleteAccount() {}
   async call() { return {}; }
   store(): Cloud {
-    const self = this;
+    const docs = this.docs;
     return {
-      async read(t: Target): Promise<Remote[]> { return [...self.docs].filter(([p, d]) => (t.kind === 'doc' ? p === t.path : parentOf(p) === t.path && (!t.where || d[t.where.field] === t.where.value))).map(([path, data]) => ({ path, data })); },
-      async write(p, d) { self.docs.set(p, d); },
-      async remove(p) { self.docs.delete(p); },
+      async read(t: Target): Promise<Remote[]> { return [...docs].filter(([p, d]) => (t.kind === 'doc' ? p === t.path : parentOf(p) === t.path && (!t.where || d[t.where.field] === t.where.value))).map(([path, data]) => ({ path, data })); },
+      async write(p, d) { docs.set(p, d); },
+      async remove(p) { docs.delete(p); },
       watch: () => () => undefined,
     };
   }
