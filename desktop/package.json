@@ -45,7 +45,8 @@
           ]
         }
       ],
-      "artifactName": "finance-desktop-${version}-${arch}.${ext}"
+      "artifactName": "finance-desktop-${version}-${arch}.${ext}",
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": false,

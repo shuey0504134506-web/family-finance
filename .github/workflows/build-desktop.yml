@@ -1,0 +1,83 @@
+name: בניית תוכנת Windows
+
+# הרצה ידנית בלבד: לשונית Actions ← "בניית תוכנת Windows" ← Run workflow.
+# התוצאה: קובץ התקנה (.exe) וגרסה ניידת (portable) בעמוד Releases, וגם כקבצים מצורפים להרצה.
+# התוכנה היא פרויקט נפרד בתיקיית desktop/ ואינה משנה את האתר או את אפליקציית האנדרואיד.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      DESKTOP_VERSION: 1.0.${{ github.run_number }}
+    steps:
+      - name: הורדת הקוד
+        uses: actions/checkout@v4
+
+      - name: התקנת Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+
+      - name: התקנת חבילות (האפליקציה המשותפת)
+        run: npm ci
+
+      - name: התקנת חבילות (התוכנה)
+        working-directory: desktop
+        run: npm ci
+
+      - name: בדיקות (TypeScript ובדיקות יחידה של התוכנה)
+        working-directory: desktop
+        run: |
+          npm run typecheck
+          npm run test
+
+      - name: בניית התוכנה
+        working-directory: desktop
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_PRIVACY_CONTACT_EMAIL: ${{ secrets.VITE_PRIVACY_CONTACT_EMAIL }}
+
+      - name: אריזת קובץ התקנה ל-Windows
+        working-directory: desktop
+        run: npx electron-builder --win --publish never --config.extraMetadata.version="$DESKTOP_VERSION"
+
+      - name: שמירה כקבצים מצורפים להרצה
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-desktop-windows
+          path: |
+            desktop/release/*.exe
+          retention-days: 30
+
+      - name: פרסום בעמוד Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "desktop-v${DESKTOP_VERSION}" desktop/release/*.exe \
+            --title "תוכנת Windows ${DESKTOP_VERSION}" \
+            --notes "קובץ התקנה לתוכנת Windows (ללא חתימה דיגיטלית, ולכן Windows עשוי להציג אזהרת SmartScreen: 'מידע נוסף' ← 'הפעל בכל זאת'). ההוראות ב-desktop/README.md."
