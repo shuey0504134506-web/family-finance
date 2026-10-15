@@ -22,9 +22,23 @@ function redirectConfig(): Plugin {
   };
 }
 
+/** במסך הבית של התוכנה מושכים יותר פעולות אחרונות (3 באפליקציה); ההתאמה לגובה הכרטיס הסמוך נעשית ב-DesktopShell. הקוד המקורי לא משתנה. */
+function moreRecent(): Plugin {
+  return {
+    name: 'desktop-more-recent',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.replace(/\\/g, '/').endsWith('/src/features/home/HomeScreen.tsx')) return null;
+      const out = code.replace('.slice(0, 3);\n  }, [isBusiness, business.all, household.all', '.slice(0, 12);\n  }, [isBusiness, business.all, household.all');
+      if (out === code) throw new Error('desktop-more-recent: הקטע ב-HomeScreen השתנה, יש לעדכן את התוסף');
+      return out;
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [redirectConfig(), react({ jsxImportSource: 'ff-i18n' })],
+  plugins: [redirectConfig(), moreRecent(), react({ jsxImportSource: 'ff-i18n' })],
   publicDir: here('../public'),
   resolve: {
     alias: [

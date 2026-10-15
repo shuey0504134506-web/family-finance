@@ -36,6 +36,22 @@ export function DesktopShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('click', onClick, true);
   }, [navigate, key]);
 
+  // כרטיס "פעולות אחרונות" נמתח לגובה הכרטיס שלידו ומציג כמה פעולות שנכנסות בו.
+  useEffect(() => {
+    const fit = () => {
+      const list = document.querySelector<HTMLElement>('.desktop-content .recent-card .recent-list');
+      if (!list) return;
+      const rows = [...list.children] as HTMLElement[];
+      rows.forEach((r) => { r.style.display = ''; });
+      for (let i = rows.length - 1; i > 0 && list.scrollHeight > list.clientHeight + 1; i--) rows[i]!.style.display = 'none';
+    };
+    const mo = new MutationObserver(() => requestAnimationFrame(fit));
+    mo.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('resize', fit);
+    fit();
+    return () => { mo.disconnect(); window.removeEventListener('resize', fit); };
+  }, []);
+
   const admin = state.status === 'ready' && isAdminEmail(state.user.email);
 
   const rows: { to: string; label: string; icon?: string; end?: boolean }[] = [
