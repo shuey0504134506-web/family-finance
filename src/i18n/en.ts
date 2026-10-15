@@ -1,5 +1,9 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "לילה טוב": "Good night",
+  "ערב טוב": "Good evening",
+  "צהריים טובים": "Good afternoon",
+  "בוקר טוב": "Good morning",
   "הגדרות": "Settings",
   "לחודש הבא": "Next month",
   "לחודש הקודם": "Previous month",

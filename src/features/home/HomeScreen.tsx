@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { Icon } from '../../components/Icon';
 import { AppHeader } from '../../components/AppHeader';
+import { HomeGreeting } from './HomeGreeting';
 import { ScopeTabs } from '../../components/ScopeTabs';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
@@ -36,9 +37,24 @@ import { TotalsTiles } from './TotalsTiles';
  * כסכום נגזר, והכנסות העסקים הגולמיות אינן נכנסות להכנסות משק הבית.
  * רק עסקים שנספרים במכשיר הזה (מוצגים, או שסומן "הכל משתקף") נכנסים לחישוב.
  */
+const AVATARS: [string, string][] = [
+  ['#e6eef9', '#2f5fa8'],
+  ['#e3f3ee', '#2f7d6d'],
+  ['#ece9fb', '#5b58c9'],
+  ['#fbeede', '#b46a1f'],
+  ['#fbe6e2', '#b8402e'],
+];
+/** צבע קבוע לכל קטגוריה, מחושב משמה. */
+function avatarStyle(name: string): { background: string; color: string } {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const [background, color] = AVATARS[h % AVATARS.length] as [string, string];
+  return { background, color };
+}
+
 export function HomeScreen() {
   const navigate = useNavigate();
-  const { user } = useReadyAuth();
+  const { user, profile } = useReadyAuth();
   const settings = useSettings();
   const month = useMonth();
   const space = useSpace();
@@ -166,6 +182,7 @@ export function HomeScreen() {
       <AppHeader />
 
       <main className="content" aria-busy={loading}>
+        <HomeGreeting firstName={profile.firstName} />
         <h1 className="scope-title">
           {logo ? <img className="scope-logo" src={logo} alt="" width={36} height={36} /> : <Icon name={isBusiness ? 'business' : 'household'} />} {title}
         </h1>
@@ -267,6 +284,9 @@ export function HomeScreen() {
             <ul className="recent-list">
               {recent.map((t) => (
                 <li key={t.id} className="recent-row">
+                  <span className="recent-avatar" style={avatarStyle(t.counterparty || t.categoryName)} aria-hidden="true">
+                    {(t.counterparty || t.categoryName || '·').trim().charAt(0)}
+                  </span>
                   <span className="recent-name">
                     {t.counterparty || t.categoryName}
                     <span className="recent-date">{formatDisplayDate(t.date)}</span>
