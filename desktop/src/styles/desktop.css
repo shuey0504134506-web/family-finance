@@ -116,3 +116,10 @@ select.input { appearance: auto; }
 .entry-brand .feature-list li { color: #fff; }
 .entry-brand .feature-icon { background: rgba(255, 255, 255, 0.12); color: var(--gold); }
 .entry-main { background: var(--bg); }
+
+@media (max-height: 880px) {
+  .side { gap: 12px; padding-block: 14px; }
+  .side-link { padding-block: 6px; }
+  .side-space { padding-block: 7px; }
+  .side-bottom { gap: 8px; padding-top: 10px; }
+}

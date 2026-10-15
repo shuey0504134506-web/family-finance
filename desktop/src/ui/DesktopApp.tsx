@@ -11,10 +11,19 @@ import { DesktopRoutes } from './DesktopRoutes';
 import { EntryFlow } from './EntryFlow';
 import { createStorage } from './storage';
 import { ControllerContext, useUi } from './useController';
-import { createFirebaseCloud } from '../sync/firebaseCloud';
+import { createFirebaseCloud, type CloudAuth } from '../sync/firebaseCloud';
+
+/** בבדיקות קצה-לקצה (mode=e2e בלבד) אפשר להזריק ענן מדומה. בבנייה רגילה הענף הזה נמחק. */
+function pickCloud(): CloudAuth {
+  if (import.meta.env.MODE === 'e2e') {
+    const fake = (window as unknown as { __fakeCloud?: CloudAuth }).__fakeCloud;
+    if (fake) return fake;
+  }
+  return createFirebaseCloud();
+}
 
 export function DesktopApp() {
-  const controller = useMemo(() => new Controller(createStorage(), createFirebaseCloud(), createProfile), []);
+  const controller = useMemo(() => new Controller(createStorage(), pickCloud(), createProfile), []);
 
   useEffect(() => {
     void controller.boot();
