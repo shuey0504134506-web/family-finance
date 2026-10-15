@@ -43,6 +43,7 @@ export function EntryFlow() {
       <section className="entry-main">
         <div className="entry-panel">
           <LangSwitch />
+          {view.name !== 'list' && <button type="button" className="btn btn-secondary entry-back" onClick={back}>חזרה</button>}
           {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
           {view.name === 'unlock' && <Unlock account={view.account} back={back} go={setView} />}
           {view.name === 'recover' && <Recover account={view.account} back={back} />}
@@ -80,9 +81,9 @@ function AccountList({ accounts, online, go }: { accounts: AccountMeta[]; online
         </ul>
       )}
       <div className="auth-actions">
+        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-online' })} disabled={!online}>יצירת חשבון מקוון</button>
+        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'online-login' })} disabled={!online}>כניסה לחשבון מקוון קיים</button>
         <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-offline' })}>יצירת חשבון מנותק (ללא סנכרון)</button>
-        <button type="button" className="btn btn-secondary" onClick={() => go({ name: 'signup-online' })} disabled={!online}>יצירת חשבון מקוון</button>
-        <button type="button" className="btn btn-secondary" onClick={() => go({ name: 'online-login' })} disabled={!online}>כניסה לחשבון מקוון קיים</button>
       </div>
       {!online && <p className="muted small" role="status">אין חיבור לאינטרנט. כניסה ראשונה ויצירת חשבון מקוון דורשות חיבור. חשבונות שכבר נמצאים במחשב נפתחים גם בלי חיבור.</p>}
     </>

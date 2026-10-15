@@ -123,3 +123,8 @@ select.input { appearance: auto; }
   .side-space { padding-block: 7px; }
   .side-bottom { gap: 8px; padding-top: 10px; }
 }
+
+.entry-back { align-self: flex-start; width: auto; min-width: 120px; padding-inline: 28px; }
+.entry-main { align-items: flex-start; }
+.entry-panel { margin-block: auto; }
+.entry-brand .feature-icon, .entry-brand .feature-icon svg { color: var(--gold); }
