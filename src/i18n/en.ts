@@ -1030,6 +1030,8 @@ export const EN: Record<string, string> = {
   "לא נמצא חשבון עם כתובת המייל הזאת.": "No account was found with this email address.",
   "כתובת המייל אינה תקינה.": "The email address is not valid.",
   "כבר קיים חשבון עם כתובת המייל הזאת. אפשר להיכנס אליו.": "An account with this email address already exists. You can sign in to it.",
+  "שמירה במכשיר": "Save to device",
+  "לא הצלחנו לשמור את התמונה.": "We couldn't save the image.",
   "הסיסמה חלשה מדי. יש לבחור סיסמה של 10 תווים לפחות.": "The password is too weak. Please choose a password of at least 10 characters.",
   "בוצעו יותר מדי ניסיונות. יש להמתין מעט ולנסות שוב.": "Too many attempts were made. Please wait a moment and try again.",
   "אין חיבור לאינטרנט. יש לבדוק את החיבור ולנסות שוב.": "No internet connection. Please check the connection and try again.",

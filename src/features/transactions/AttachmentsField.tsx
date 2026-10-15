@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { MAX_ATTACHMENTS } from '../../domain/attachment';
 import { fileToAttachment } from '../../services/attachmentImage';
+import { saveImage } from '../../native/saveFile';
 
 /** צירוף תמונות (קבלה, תלוש) לפעולה: הוספה מהמצלמה או מהגלריה, תצוגה מוגדלת והסרה. */
 export function AttachmentsField({
@@ -23,6 +24,17 @@ export function AttachmentsField({
   const [error, setError] = useState('');
   const [viewing, setViewing] = useState<number | null>(null);
   const full = images.length >= MAX_ATTACHMENTS;
+
+  const download = async (index: number) => {
+    const src = images[index];
+    if (!src) return;
+    setError('');
+    try {
+      await saveImage(`${isIncome ? 'asmachta' : 'receipt'}-${index + 1}`, src);
+    } catch {
+      setError('לא הצלחנו לשמור את התמונה.');
+    }
+  };
 
   const onFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -115,6 +127,9 @@ export function AttachmentsField({
       {viewing !== null && images[viewing] && (
         <Modal title="תמונה מצורפת" onClose={() => setViewing(null)}>
           <img className="att-full" src={images[viewing]} alt="" />
+          <button type="button" className="btn btn-primary" onClick={() => void download(viewing)}>
+            שמירה במכשיר
+          </button>
           <button type="button" className="btn btn-secondary" onClick={() => setViewing(null)}>
             סגירה
           </button>

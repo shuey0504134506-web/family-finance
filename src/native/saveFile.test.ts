@@ -13,3 +13,15 @@ describe('safeFileName', () => {
     expect(safeFileName('גיבוי')).toBe('file');
   });
 });
+
+import { parseImageDataUrl } from './saveFile';
+
+describe('parseImageDataUrl', () => {
+  it('מפרק תמונת jpeg', () => {
+    expect(parseImageDataUrl('data:image/jpeg;base64,QUJD')).toEqual({ mime: 'image/jpeg', ext: 'jpg', base64: 'QUJD' });
+  });
+  it('דוחה תוכן שאינו תמונה', () => {
+    expect(parseImageDataUrl('data:text/html;base64,QUJD')).toBeNull();
+    expect(parseImageDataUrl('https://x/y.png')).toBeNull();
+  });
+});

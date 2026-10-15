@@ -67,3 +67,59 @@ export async function saveFile(filename: string, content: string, mime: string):
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   return 'downloaded';
 }
+
+/** מפרק כתובת data:image/...;base64,... לסוג, סיומת ותוכן base64. מחזיר null אם זו לא תמונה בקידוד base64. */
+export function parseImageDataUrl(dataUrl: string): { mime: string; ext: string; base64: string } | null {
+  const m = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+  if (!m) return null;
+  const mime = m[1]!;
+  const ext = mime === 'image/jpeg' ? 'jpg' : mime.slice('image/'.length);
+  return { mime, ext, base64: m[2]! };
+}
+
+/**
+ * שומר תמונה (למשל קבלה מצורפת) במכשיר. אותה התנהגות כמו saveFile:
+ * באנדרואיד חלון השיתוף של המערכת ("שמירה בקבצים", גלריה, וואטסאפ), בדפדפן בטלפון חלון השיתוף, ובמחשב הורדה רגילה.
+ */
+export async function saveImage(baseName: string, dataUrl: string): Promise<SaveOutcome> {
+  const parsed = parseImageDataUrl(dataUrl);
+  if (!parsed) throw new Error('not-an-image');
+  suppressLock();
+  const name = `${safeFileName(baseName)}.${parsed.ext}`;
+
+  if (Capacitor.isNativePlatform()) {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const written = await Filesystem.writeFile({ path: name, data: parsed.base64, directory: Directory.Cache });
+    try {
+      const { Share } = await import('@capacitor/share');
+      await Share.share({ title: name, url: written.uri, dialogTitle: 'שמירת התמונה' });
+      return 'shared';
+    } catch (error) {
+      if (isCancel(error)) return 'cancelled';
+      await Filesystem.writeFile({ path: name, data: parsed.base64, directory: Directory.Documents, recursive: true });
+      return 'saved-documents';
+    }
+  }
+
+  const bytes = Uint8Array.from(atob(parsed.base64), (c) => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: parsed.mime });
+  const file = new File([blob], name, { type: parsed.mime });
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.platform));
+  if (mobile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      return 'shared';
+    } catch (error) {
+      if (isCancel(error)) return 'cancelled';
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return 'downloaded';
+}
