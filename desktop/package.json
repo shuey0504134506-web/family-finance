@@ -1,0 +1,19 @@
+{
+  "name": "finance-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ניהול כספים – תוכנה למחשב (Windows). פרויקט נפרד מהאתר והאפליקציה: משתמש בקוד המשותף שב-../src לקריאה בלבד.",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "build:electron": "node scripts/build-electron.mjs",
+    "build:renderer": "vite build -c vite.config.ts",
+    "build": "npm run build:electron && npm run build:renderer",
+    "start": "npm run build && electron .",
+    "test": "vitest run -c vitest.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dist": "npm run build && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2"
+  }
+}
