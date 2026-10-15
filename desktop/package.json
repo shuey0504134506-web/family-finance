@@ -1,0 +1,63 @@
+{
+  "name": "finance-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ניהול כספים – תוכנה למחשב (Windows). פרויקט נפרד מהאתר והאפליקציה: משתמש בקוד המשותף שב-../src לקריאה בלבד.",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "build:electron": "node scripts/build-electron.mjs",
+    "build:renderer": "vite build -c vite.config.ts",
+    "build": "npm run build:electron && npm run build:renderer",
+    "start": "npm run build && electron .",
+    "test": "vitest run -c vitest.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dist": "npm run build && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.0.0"
+  },
+  "author": "family-finance",
+  "build": {
+    "appId": "com.familyfinance.desktop",
+    "productName": "ניהול כספים",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "finance-desktop-${version}-${arch}.${ext}",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1037",
+      "createDesktopShortcut": true
+    },
+    "electronLanguages": [
+      "he",
+      "en-US"
+    ]
+  }
+}
