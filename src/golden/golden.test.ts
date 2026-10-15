@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { householdTotals, totalsByCategory, totalsOf, transferFromBusinesses } from '../domain/summary';
 import { spendingBreakdown } from '../features/home/spending';
+import { parseWorkbook } from '../domain/import/parse';
+import type { Sheet } from '../domain/import/text';
 
 /**
  * בדיקות Golden: לכל תרחיש יש שני קבצים בתיקיית cases:
@@ -13,7 +15,8 @@ import { spendingBreakdown } from '../features/home/spending';
 type Case =
   | { kind: 'household-month'; mode?: 'allow-negative' | 'positive-only'; business: Row[]; household: Row[] }
   | { kind: 'spending'; maxSlices?: number; items: Row[] }
-  | { kind: 'by-category'; type: 'income' | 'expense'; items: Row[] };
+  | { kind: 'by-category'; type: 'income' | 'expense'; items: Row[] }
+  | { kind: 'import'; sheets: Sheet[] };
 
 interface Row {
   type: 'income' | 'expense';
@@ -31,6 +34,13 @@ function run(c: Case): unknown {
     }
     case 'spending':
       return spendingBreakdown(c.items as never, c.maxSlices);
+    case 'import': {
+      const { parsed, skipped } = parseWorkbook(c.sheets);
+      return {
+        skipped,
+        sheets: parsed.map((p) => ({ sheet: p.sheet.name, layout: p.layout, rows: p.rows.map((r) => ({ ...r, key: undefined })) })),
+      };
+    }
     case 'by-category':
       return Object.fromEntries(totalsByCategory(c.items as never, c.type));
   }

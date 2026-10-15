@@ -11,6 +11,7 @@ import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
 import { AdminScreen } from './features/admin/AdminScreen';
 import { HomeScreen } from './features/home/HomeScreen';
+import { ImportScreen } from './features/import/ImportScreen';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
 import { RemindersHost } from './features/lists/RemindersHost';
@@ -134,6 +135,7 @@ export function AppRoutes() {
           <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
           <Route path="/:scope/budget" element={<BudgetScreen />} />
           <Route path="/:scope/menu" element={<MenuScreen />} />
+          <Route path="/:scope/import" element={<ImportScreen />} />
           <Route path="/:scope/debts" element={<DebtsScreen />} />
           <Route path="/:scope/tasks" element={<TasksScreen />} />
           <Route path="/:scope/shopping" element={<ShoppingScreen />} />

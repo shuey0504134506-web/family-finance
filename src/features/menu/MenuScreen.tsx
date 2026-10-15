@@ -16,6 +16,7 @@ export function MenuScreen() {
     { to: `/${key}/budget`, label: 'תקציב' },
     { to: '/summary', label: 'סיכומים והשוואות', state: { spaceKey: key } },
     { to: `/${key}/debts`, label: 'חובות' },
+    { to: `/${key}/import`, label: 'ייבוא נתונים' },
     ...(space.scope === 'household' ? [{ to: '/tithes', label: 'מעשרות' }] : []),
     { to: `/${key}/tasks`, label: 'רשימת משימות' },
     { to: `/${key}/shopping`, label: 'רשימת קניות' },

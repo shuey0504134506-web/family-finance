@@ -1,0 +1,75 @@
+{
+  "skipped": [],
+  "sheets": [
+    {
+      "sheet": "עסקאות במועד החיוב",
+      "layout": {
+        "headerRow": 1,
+        "columns": {
+          "date": 0,
+          "description": 1,
+          "category": 2,
+          "card": 3,
+          "type": 4,
+          "amount": 5,
+          "currency": 6,
+          "txnAmount": 7,
+          "txnCurrency": 8
+        },
+        "signedAmount": false,
+        "kind": "card",
+        "confidence": "high"
+      },
+      "rows": [
+        {
+          "sheet": "עסקאות במועד החיוב",
+          "line": 3,
+          "date": "2026-10-05",
+          "type": "expense",
+          "amountAgorot": 12050,
+          "currency": "ILS",
+          "name": "שופרסל דיל",
+          "details": "",
+          "card": "1234",
+          "issuerCategory": "מזון וצריכה",
+          "payment": "credit",
+          "cardLumpSum": false,
+          "pending": false,
+          "refund": false
+        },
+        {
+          "sheet": "עסקאות במועד החיוב",
+          "line": 4,
+          "date": "2026-10-08",
+          "type": "expense",
+          "amountAgorot": 36720,
+          "currency": "ILS",
+          "name": "AMAZON",
+          "details": "מקור: 100.00 USD",
+          "card": "1234",
+          "issuerCategory": "קניות",
+          "payment": "credit",
+          "cardLumpSum": false,
+          "pending": false,
+          "refund": false
+        },
+        {
+          "sheet": "עסקאות במועד החיוב",
+          "line": 5,
+          "date": "2026-10-09",
+          "type": "income",
+          "amountAgorot": 5000,
+          "currency": "ILS",
+          "name": "זיכוי מחנות",
+          "details": "",
+          "card": "1234",
+          "issuerCategory": "קניות",
+          "payment": "credit",
+          "cardLumpSum": false,
+          "pending": false,
+          "refund": true
+        }
+      ]
+    }
+  ]
+}

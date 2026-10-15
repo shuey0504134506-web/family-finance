@@ -1,0 +1,73 @@
+{
+  "skipped": [],
+  "sheets": [
+    {
+      "sheet": "עובר ושב",
+      "layout": {
+        "headerRow": 0,
+        "columns": {
+          "date": 0,
+          "description": 1,
+          "details": 2,
+          "reference": 3,
+          "debit": 5,
+          "credit": 6,
+          "balance": 7
+        },
+        "signedAmount": false,
+        "kind": "bank",
+        "confidence": "high"
+      },
+      "rows": [
+        {
+          "sheet": "עובר ושב",
+          "line": 2,
+          "date": "2026-10-05",
+          "type": "income",
+          "amountAgorot": 950000,
+          "currency": "ILS",
+          "name": "משכורת",
+          "details": "",
+          "card": "",
+          "issuerCategory": "",
+          "payment": "direct",
+          "cardLumpSum": false,
+          "pending": false,
+          "refund": false
+        },
+        {
+          "sheet": "עובר ושב",
+          "line": 3,
+          "date": "2026-10-06",
+          "type": "expense",
+          "amountAgorot": 85000,
+          "currency": "ILS",
+          "name": "ארנונה",
+          "details": "הוראת קבע",
+          "card": "",
+          "issuerCategory": "",
+          "payment": "direct",
+          "cardLumpSum": false,
+          "pending": false,
+          "refund": false
+        },
+        {
+          "sheet": "עובר ושב",
+          "line": 4,
+          "date": "2026-10-07",
+          "type": "expense",
+          "amountAgorot": 230040,
+          "currency": "ILS",
+          "name": "ישראכרט בע\"מ",
+          "details": "חיוב כרטיס",
+          "card": "",
+          "issuerCategory": "",
+          "payment": "direct",
+          "cardLumpSum": true,
+          "pending": false,
+          "refund": false
+        }
+      ]
+    }
+  ]
+}
