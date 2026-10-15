@@ -2,7 +2,7 @@
  * תחליף מקומי ל-firebase/firestore. האפליקציה המקורית נטענת כמות שהיא (קריאה בלבד),
  * ו-Vite מפנה אליה את הייבוא של firebase/firestore לכאן. הכל נקרא ונכתב למסד המקומי.
  */
-import { IncrementValue, parentOf, idOf, type DocData, type DocEntry, type QuerySpec, type Where } from '../db/localDb';
+import { IncrementValue, parentOf, idOf, type DocEntry, type QuerySpec, type Where } from '../db/localDb';
 import { activeDb, onDbSwap } from './registry';
 
 export type Unsubscribe = () => void;
@@ -14,10 +14,10 @@ type Ref = CollectionReference | Query;
 
 const specOf = (r: Ref): QuerySpec => (r.type === 'collection' ? { collection: r.path, wheres: [], orders: [] } : r.spec);
 
-export function initializeFirestore(): Firestore { return { type: 'firestore' }; }
-export function getFirestore(): Firestore { return { type: 'firestore' }; }
-export const persistentLocalCache = (): object => ({});
-export const persistentMultipleTabManager = (): object => ({});
+export function initializeFirestore(..._args: unknown[]): Firestore { return { type: 'firestore' }; }
+export function getFirestore(..._args: unknown[]): Firestore { return { type: 'firestore' }; }
+export const persistentLocalCache = (..._args: unknown[]): object => ({});
+export const persistentMultipleTabManager = (..._args: unknown[]): object => ({});
 
 const join = (segs: string[]): string => segs.filter(Boolean).join('/');
 
@@ -55,25 +55,29 @@ export function query(base: Ref, ...cs: Constraint[]): Query {
 export const increment = (n: number): IncrementValue => new IncrementValue(n);
 
 // ---- תמונות מצב ----
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DocumentData = Record<string, any>;
 export class DocumentSnapshot {
-  constructor(readonly ref: DocumentReference, private readonly entry: DocEntry | null) {}
+  constructor(readonly ref: DocumentReference, protected readonly entry: DocEntry | null) {}
   get id(): string { return this.ref.id; }
-  exists(): boolean { return this.entry !== null; }
-  data(): DocData | undefined { return this.entry?.data; }
+  exists(): this is QueryDocumentSnapshot { return this.entry !== null; }
+  data(): DocumentData | undefined { return this.entry?.data; }
   get metadata(): { fromCache: boolean; hasPendingWrites: boolean } {
     return { fromCache: !activeDb().hydrated, hasPendingWrites: this.entry?.pending ?? false };
   }
 }
-export type QueryDocumentSnapshot = DocumentSnapshot;
+export class QueryDocumentSnapshot extends DocumentSnapshot {
+  override data(): DocumentData { return this.entry!.data; }
+}
 export class QuerySnapshot {
-  readonly docs: DocumentSnapshot[];
-  constructor(entries: DocEntry[]) { this.docs = entries.map((e) => new DocumentSnapshot(doc({ type: 'firestore' }, e.path), e)); }
+  readonly docs: QueryDocumentSnapshot[];
+  constructor(entries: DocEntry[]) { this.docs = entries.map((e) => new QueryDocumentSnapshot(doc({ type: 'firestore' }, e.path), e)); }
   get size(): number { return this.docs.length; }
   get empty(): boolean { return this.docs.length === 0; }
   get metadata(): { fromCache: boolean; hasPendingWrites: boolean } {
     return { fromCache: !activeDb().hydrated, hasPendingWrites: this.docs.some((d) => d.metadata.hasPendingWrites) };
   }
-  forEach(fn: (d: DocumentSnapshot) => void): void { this.docs.forEach(fn); }
+  forEach(fn: (d: QueryDocumentSnapshot) => void): void { this.docs.forEach(fn); }
 }
 
 const snapDoc = (ref: DocumentReference) => new DocumentSnapshot(ref, activeDb().get(ref.path));

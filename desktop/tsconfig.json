@@ -10,7 +10,6 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
-    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
@@ -34,8 +33,16 @@
       ],
       "firebase-real/*": [
         "../node_modules/firebase/*"
+      ],
+      "ff-i18n/*": [
+        "../src/i18n/*"
       ]
-    }
+    },
+    "jsxImportSource": "ff-i18n",
+    "useDefineForClassFields": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": [
     "src",

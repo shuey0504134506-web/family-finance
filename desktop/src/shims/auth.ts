@@ -8,6 +8,7 @@ export interface User {
   readonly displayName: string | null;
   readonly emailVerified: boolean;
   readonly offlineOnly: boolean;
+  readonly metadata: { lastSignInTime?: string; creationTime?: string };
 }
 export interface Auth { currentUser: User | null }
 export interface UserCredential { user: User }
@@ -29,7 +30,7 @@ const listeners = new Set<(u: User | null) => void>();
 let ready = false;
 let backend: AuthBackend | null = null;
 
-export const getAuth = (): Auth => auth;
+export const getAuth = (..._args: unknown[]): Auth => auth;
 export const setAuthBackend = (b: AuthBackend): void => { backend = b; };
 
 /** נקרא על ידי ה-session בכניסה, ביציאה ובסיום האתחול. */

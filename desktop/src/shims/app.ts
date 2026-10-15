@@ -1,1 +1,1 @@
-export const initializeApp = (): object => ({});
+export const initializeApp = (..._args: unknown[]): object => ({});

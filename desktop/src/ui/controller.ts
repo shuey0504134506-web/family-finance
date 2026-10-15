@@ -20,10 +20,10 @@ export interface UiState {
 }
 
 export interface NewAccount { email: string; firstName: string; lastName: string }
-type CreateRecords = (uid: string, input: never) => Promise<void>;
+type CreateRecords = (uid: string, input: never) => Promise<unknown>;
 
 const appErr = (code: string) => Object.assign(new Error(code), { code });
-const toUser = (m: AccountMeta): User => ({ uid: m.uid, email: m.email || null, displayName: m.displayName || null, emailVerified: true, offlineOnly: m.kind === 'offline' });
+const toUser = (m: AccountMeta): User => ({ uid: m.uid, email: m.email || null, displayName: m.displayName || null, emailVerified: true, offlineOnly: m.kind === 'offline', metadata: { lastSignInTime: new Date().toUTCString() } });
 const isBadCredential = (e: unknown) => /invalid-credential|wrong-password|invalid-login/.test((e as { code?: string })?.code ?? '');
 
 export class Controller {
@@ -100,6 +100,12 @@ export class Controller {
     await this.enter(u, password);
     await this.createRecords(u.meta.uid, { ...input, email: input.email.trim() } as never);
     return u;
+  }
+
+  /** איפוס סיסמה בדוא"ל (חשבון מקוון, דורש אינטרנט) */
+  async sendReset(email: string): Promise<void> {
+    if (!this.isOnline()) throw appErr('app/offline');
+    await this.cloud.resetEmail(email);
   }
 
   async recoveryQuestions(id: string): Promise<RecoveryQuestion[] | null> {
@@ -189,6 +195,11 @@ export class Controller {
     this.password = newPassword;
     this.set({ needsPasswordSync: false });
     this.connecting = this.connectCloud().catch(() => undefined);
+  }
+
+  /** שמירה מיידית של הקובץ (לפני סגירה) */
+  async flushNow(): Promise<void> {
+    await this.cur?.flush();
   }
 
   async syncNow(): Promise<void> {

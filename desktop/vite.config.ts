@@ -24,9 +24,11 @@ function redirectConfig(): Plugin {
 
 export default defineConfig({
   base: './',
-  plugins: [redirectConfig(), react()],
+  plugins: [redirectConfig(), react({ jsxImportSource: 'ff-i18n' })],
+  publicDir: here('../public'),
   resolve: {
     alias: [
+      { find: 'ff-i18n', replacement: here('../src/i18n') },
       { find: /^firebase\/firestore$/, replacement: here('src/shims/firestore.ts') },
       { find: /^firebase\/auth$/, replacement: here('src/shims/auth.ts') },
       { find: /^firebase\/app$/, replacement: here('src/shims/app.ts') },

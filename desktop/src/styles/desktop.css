@@ -1,0 +1,118 @@
+/* התאמה למסך מחשב. משתמש באותם משתני עיצוב (tokens) של האפליקציה, ולא משנה אף ערך שלהם. */
+
+html, body { height: 100%; }
+body { overflow-x: hidden; }
+
+/* ---------- כניסה ---------- */
+.entry {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(340px, 5fr) minmax(0, 7fr);
+}
+.entry-brand {
+  background: var(--navy);
+  color: #fff;
+  padding: 64px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+.entry-brand h1 { font-size: 2rem; line-height: 1.25; color: #fff; }
+.entry-brand p { color: rgba(255, 255, 255, 0.78); max-width: 34ch; }
+.entry-brand .feature-list { margin-top: 12px; color: #fff; }
+.entry-brand .feature-icon { color: var(--gold); }
+.entry-main { display: flex; align-items: center; justify-content: center; padding: 40px; overflow-y: auto; max-height: 100vh; }
+.entry-panel { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 20px; }
+.account-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.account-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 18px; text-align: start; cursor: pointer; border: 1px solid var(--border); font: inherit; color: inherit; }
+.account-row:hover, .account-row:focus-visible { border-color: var(--accent); outline: none; }
+.account-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--business-soft); color: var(--business); display: grid; place-items: center; font-weight: 700; }
+.account-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.badge { font-size: 0.78rem; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+.badge-online { background: var(--income-soft); color: var(--income); }
+.badge-offline { background: var(--household-soft); color: var(--household); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.form-grid > .form-error, .form-grid > .btn, .form-grid > .inline-add, .form-grid > .field-wide { grid-column: 1 / -1; }
+.recovery-editor { display: flex; flex-direction: column; gap: 14px; }
+.recovery-slot { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.recovery-slot-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.seg { display: flex; gap: 6px; }
+.chip-active { background: var(--navy); color: #fff; border-color: var(--navy); }
+select.input { appearance: auto; }
+
+/* ---------- מעטפת ---------- */
+.desktop-shell { display: grid; grid-template-columns: 288px minmax(0, 1fr); min-height: 100vh; background: var(--bg); }
+.side {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--surface); border-inline-end: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 18px; padding: 22px 16px;
+}
+.side-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; color: var(--navy); padding-inline: 8px; }
+.side-spaces { display: flex; flex-direction: column; gap: 6px; }
+.side-space {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius-sm);
+  color: var(--text); text-decoration: none; font-weight: 600; border: 1px solid var(--border); min-width: 0;
+}
+.side-space.is-active.scope-tab-business { background: var(--business-soft); border-color: var(--business); color: var(--business); }
+.side-space.is-active.scope-tab-household { background: var(--household-soft); border-color: var(--household); color: var(--household); }
+.side-nav { display: flex; flex-direction: column; gap: 2px; }
+.side-link {
+  display: block; padding: 9px 14px; border-radius: 14px; color: var(--text); text-decoration: none; font-size: 0.97rem;
+}
+.side-link:hover { background: var(--bg); }
+.side-link.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.side-nav-minor .side-link { font-size: 0.9rem; color: var(--text-muted); }
+.side-nav-minor .side-link.is-active { color: var(--accent); }
+.side-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border); padding-top: 14px; }
+.side-user { display: flex; flex-direction: column; gap: 4px; padding-inline: 8px; font-size: 0.9rem; }
+.side-user-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sync-chip { font-size: 0.85rem; padding-inline: 4px; }
+.sync-chip-btn { all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+.sync-chip-btn:hover, .sync-chip-btn:focus-visible { background: var(--bg); }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); flex: none; }
+.sync-ok .sync-dot { background: var(--income); }
+.sync-sync .sync-dot { background: var(--gold); }
+.sync-offline .sync-dot, .sync-warn .sync-dot { background: var(--expense); }
+.sync-local .sync-dot { background: var(--household); }
+.sync-detail { padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+.sync-adopt { display: flex; flex-direction: column; gap: 6px; }
+
+/* ---------- תוכן רחב ---------- */
+.desktop-content { min-width: 0; }
+.desktop-content .app-shell { min-height: 100vh; }
+.desktop-content .content { max-width: 1240px; padding: 28px 40px 48px; }
+.desktop-content .scope-tabs,
+.desktop-content .app-header button[aria-label="תפריט"] { display: none; }
+.desktop-content .app-header { background: rgba(247, 243, 234, 0.9); }
+
+/* מסך הבית: פריסה דו-טורית במקום עמודה אחת */
+.desktop-content .home-clean .content {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px 24px;
+}
+.desktop-content .home-clean .content > * { grid-column: 1 / -1; }
+.desktop-content .home-clean .content > .spend-card,
+.desktop-content .home-clean .content > .recent-card { grid-column: auto; }
+.desktop-content .home-clean .content > .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* טפסים ורשימות לא נמתחים לרוחב מלא של המסך */
+.desktop-content .content > form,
+.desktop-content .content > .card.form-card { max-width: 720px; }
+
+.desktop-content .sync-failure { bottom: 20px; inset-inline: auto 24px; max-width: 420px; }
+.btn-danger { background: var(--expense); color: #fff; }
+
+@media (max-width: 1100px) {
+  .desktop-shell { grid-template-columns: 232px minmax(0, 1fr); }
+  .desktop-content .content { padding: 24px 24px 40px; }
+  .desktop-content .home-clean .content { grid-template-columns: minmax(0, 1fr); }
+  .desktop-content .home-clean .content > .spend-card, .desktop-content .home-clean .content > .recent-card { grid-column: 1 / -1; }
+  .entry { grid-template-columns: minmax(280px, 4fr) minmax(0, 7fr); }
+  .entry-brand { padding: 40px 32px; }
+}
+
+.entry-brand .feature-list { background: transparent; box-shadow: none; padding: 0; border: 0; }
+.entry-brand .feature-list li { color: #fff; }
+.entry-brand .feature-icon { background: rgba(255, 255, 255, 0.12); color: var(--gold); }
+.entry-main { background: var(--bg); }
