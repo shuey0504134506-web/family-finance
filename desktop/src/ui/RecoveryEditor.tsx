@@ -9,6 +9,16 @@ export const SUGGESTED_QUESTIONS = [
   'מה שם בית הספר היסודי שלך?',
   'מה שם הרחוב שגדלת בו?',
   'מה שם החבר הכי טוב מהילדות?',
+  'מה שם הת"ת או החדר שבו למדת בילדותך?',
+  'מה שם המלמד או המורה הראשונה שאהבת?',
+  'מה שם הישיבה או הסמינר שבהם למדת?',
+  'באיזה בית כנסת התפללת בילדותך?',
+  'איזו פרשה נקראה בשבת של בר המצווה או בת המצווה שלך?',
+  'על שם מי נקראת?',
+  'מה שם המשפחה של סבתך מצד אמך?',
+  'מה היה המאכל האהוב עליך בסעודת שבת בילדות?',
+  'מה שם הרב או המחנך שהשפיע עליך הכי הרבה?',
+  'באיזו עיר או באיזה אולם התקיימה החתונה שלך?',
 ];
 
 type Slot = { mode: 'custom'; text: string; answer: string } | { mode: 'derived'; pick: number };
@@ -84,6 +94,13 @@ export function RecoveryEditor({
           </div>
           {s.mode === 'custom' ? (
             <>
+              <div className="field">
+                <label htmlFor={`sqp-${i}`}>בחירה מרשימת שאלות</label>
+                <select id={`sqp-${i}`} className="input" value="" onChange={(e) => e.target.value && patch(i, { ...s, text: e.target.value })}>
+                  <option value="">בחירת שאלה מוכנה…</option>
+                  {SUGGESTED_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
+                </select>
+              </div>
               <Field label="השאלה" value={s.text} maxLength={120} onChange={(e) => patch(i, { ...s, text: e.target.value })} list={`sq-${i}`} />
               <datalist id={`sq-${i}`}>{SUGGESTED_QUESTIONS.map((q) => <option key={q} value={q} />)}</datalist>
               <Field label="התשובה" value={s.answer} autoComplete="off" onChange={(e) => patch(i, { ...s, answer: e.target.value })} />
