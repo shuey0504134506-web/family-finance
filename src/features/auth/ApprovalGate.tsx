@@ -119,10 +119,11 @@ export function ApprovalGate({
     setGate('loading');
     let requested = false;
     // בלי רשת Firestore ממתין עד 10 שניות לפני שהוא מודה שאין חיבור; לא מחכים לו.
-    const offlineTimer =
-      typeof navigator !== 'undefined' && navigator.onLine === false
-        ? window.setTimeout(() => setGate((g) => (g === 'loading' ? 'unavailable' : g)), 1200)
-        : undefined;
+    // כשהמכשיר מדווח "מחובר" אבל אין אינטרנט בפועל (wifi בלי רשת), מחכים 5 שניות בלבד.
+    const offlineTimer = window.setTimeout(
+      () => setGate((g) => (g === 'loading' ? 'unavailable' : g)),
+      typeof navigator !== 'undefined' && navigator.onLine === false ? 1200 : 5000,
+    );
     const stop = subscribeApproval(
       uid,
       (snapshot) => {
