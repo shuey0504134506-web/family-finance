@@ -140,3 +140,11 @@ body::before {
   .desktop-content .home-clean .content > .recent-card { contain: none; }
   .desktop-content .home-clean .content > .recent-card .recent-row:nth-child(n+7) { display: none; }
 }
+
+/* סרגל הצד: הכותרת עם הלוגו נשארת קבועה בגלילה, וסרגל הגלילה בצד ימין */
+.side { direction: ltr; padding-top: 0; scrollbar-width: thin; }
+.side > * { direction: rtl; }
+.side > .side-brand {
+  position: sticky; top: 0; z-index: 3; margin-inline: -16px; padding: 22px 24px 12px;
+  background: rgba(252, 250, 245, 0.96); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
