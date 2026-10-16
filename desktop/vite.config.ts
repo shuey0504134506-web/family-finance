@@ -29,7 +29,7 @@ function moreRecent(): Plugin {
     enforce: 'pre',
     transform(code, id) {
       if (!id.replace(/\\/g, '/').endsWith('/src/features/home/HomeScreen.tsx')) return null;
-      const out = code.replace('.slice(0, 3);\n  }, [isBusiness, business.all, household.all', '.slice(0, 12);\n  }, [isBusiness, business.all, household.all');
+      const out = code.replace(/\.slice\(0, 3\);(\r?\n\s*\}, \[isBusiness, business\.all, household\.all)/, '.slice(0, 12);$1');
       if (out === code) throw new Error('desktop-more-recent: הקטע ב-HomeScreen השתנה, יש לעדכן את התוסף');
       return out;
     },
