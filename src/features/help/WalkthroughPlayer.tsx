@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { getLang } from '../../i18n/lang';
 import scenes from './scenes.json';
@@ -20,6 +20,18 @@ interface Scene {
 }
 
 const STEP_MS = 3400;
+
+/**
+ * מקור חלופי לצילומים. ברירת המחדל היא צילומי הטלפון של האפליקציה; תוכנת המחשב מספקת
+ * צילומים משלה, של מסכי התוכנה, ביחס רוחב-גובה אחר.
+ */
+export interface WalkthroughSource {
+  scenes: Record<string, Scene>;
+  imageUrl: (img: string) => string;
+  width: number;
+  height: number;
+}
+export const WalkthroughSourceContext = createContext<WalkthroughSource | null>(null);
 
 const sceneFor = (id: string): { scene: Scene; lang: 'he' | 'en' } | null => {
   const all = scenes as Record<string, Record<string, Scene>>;
@@ -48,7 +60,9 @@ export function WalkthroughPlayer({ steps, label }: { steps: readonly Walkthroug
 
   const step = steps[index];
 
-  const found = sceneFor(step.scene);
+  const custom = useContext(WalkthroughSourceContext);
+  const own = custom?.scenes[step.scene];
+  const found = custom ? (own ? { scene: own, lang: 'he' as const } : null) : sceneFor(step.scene);
   const target = found?.scene;
   // יעד בחלק העליון של המסך: החץ מגיע מלמטה כלפי מעלה. אחרת מלמעלה כלפי מטה.
   const dir: 'down' | 'up' = target && target.y + target.h / 2 < 0.3 ? 'up' : 'down';
@@ -66,16 +80,16 @@ export function WalkthroughPlayer({ steps, label }: { steps: readonly Walkthroug
 
   return (
     <div className="walk" role="group" aria-label={label}>
-      <div className="walk-phone" aria-hidden="true">
+      <div className={custom ? 'walk-phone walk-wide' : 'walk-phone'} aria-hidden="true" style={custom ? { aspectRatio: `${custom.width} / ${custom.height}` } : undefined}>
         {found && target && (
           <>
             <img
               key={`s${index}`}
               className="walk-screen"
-              src={`${import.meta.env.BASE_URL}help/${found.lang}/${target.img}`}
+              src={custom ? custom.imageUrl(target.img) : `${import.meta.env.BASE_URL}help/${found.lang}/${target.img}`}
               alt=""
-              width={540}
-              height={960}
+              width={custom ? custom.width : 540}
+              height={custom ? custom.height : 960}
               loading="lazy"
               draggable={false}
             />

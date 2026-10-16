@@ -1,3 +1,5 @@
+import { WalkthroughSourceContext } from '../../../src/features/help/WalkthroughPlayer';
+import { DESKTOP_DEMOS, DESKTOP_SCENES, imageUrl, SCREEN } from './desktopDemos';
 import { HelpScreen, type HelpContent } from '../../../src/features/help/HelpScreen';
 import { FAQ, SAVINGS, TIPS, type HelpItem } from '../../../src/features/help/helpContent';
 import { useUi } from './useController';
@@ -8,8 +10,8 @@ const PRIVACY = { to: '/privacy', label: 'למדיניות הפרטיות' };
 /** פריטים שמתארים מסך או תנועה שקיימים רק בטלפון. */
 const PHONE_ONLY = new Set(['tip-swipe', 'tip-share-sheet']);
 
-/** ההדגמות המונפשות מציגות את מסכי הטלפון, ולכן בתוכנה הן מוסרות והטקסט נשאר. */
-const plain = (i: HelpItem): HelpItem => ({ ...i, steps: undefined });
+/** ההדגמות של הטלפון מוחלפות בהדגמות מצולמות מהתוכנה עצמה (אם יש), ובלעדיהן נשאר הטקסט בלבד. */
+const plain = (i: HelpItem): HelpItem => ({ ...i, steps: DESKTOP_DEMOS[i.id] });
 
 function desktopFaq(offline: boolean): HelpItem[] {
   const override: Record<string, Partial<HelpItem>> = {
@@ -38,7 +40,7 @@ function desktopFaq(offline: boolean): HelpItem[] {
       ? { id: 'dk-account-type', title: 'מה זה חשבון מנותק?', body: 'חשבון שנשמר במחשב הזה בלבד, בקובץ מוצפן בסיסמה שלך. הוא לא מתחבר לענן, לא מסתנכרן עם האפליקציה או האתר, ואין בו קשר למפעיל האפליקציה.', links: [PRIVACY] }
       : { id: 'dk-account-type', title: 'מה ההבדל בין חשבון מקוון למנותק?', body: 'חשבון מקוון מסתנכרן עם האפליקציה והאתר כשיש אינטרנט, ודורש אישור מהמנהל בפעם הראשונה. חשבון מנותק נשמר רק במחשב הזה ואינו מסתנכרן לעולם. יצירת חשבון מקוון או כניסה ראשונה אליו דורשות אינטרנט.' },
     { id: 'dk-password', title: 'מה הסיסמה עושה, ומה אם שכחתי אותה?', body: 'הסיסמה מצפינה את קובץ הנתונים במחשב, ובלעדיה אי אפשר לפתוח אותו. אם שכחת, במסך הכניסה בוחרים "שכחתי סיסמה" וענים על שלוש שאלות השחזור, ואז קובעים סיסמה חדשה. החלפת סיסמה אפשר גם בהגדרות.', links: [{ to: '/recovery', label: 'לשאלות השחזור' }] },
-    { id: 'dk-recovery', title: 'איך עובדות שאלות השחזור?', body: 'שלוש שאלות, וחייבים לענות נכון על כולן. חלקן שאתה מגדיר, וחלקן נגזרות מפעולות אחרונות שלך (למשל "כמה שילמת ב..."). התשובות מתעדכנות מעצמן ככל שמוסיפים פעולות, ואפשר לשנות אותן בכל עת במסך "שחזור סיסמה".', links: [{ to: '/recovery', label: 'לשאלות השחזור' }] },
+    { id: 'dk-recovery', title: 'איך עובדות שאלות השחזור?', body: 'שלוש שאלות, וחייבים לענות נכון על כולן. חלקן שאתה מגדיר, וחלקן נגזרות מפעולות אחרונות שלך (למשל "כמה שילמת ב..."). התשובות מתעדכנות מעצמן ככל שמוסיפים פעולות, ואפשר לשנות אותן בכל עת במסך "שחזור סיסמה".', links: [{ to: '/recovery', label: 'לשאלות השחזור' }], steps: DESKTOP_DEMOS['dk-recovery'] },
     ...(offline
       ? []
       : [{ id: 'dk-sync', title: 'מה אומר סימן הסנכרון בתפריט הצד?', body: 'נקודה ירוקה: הכול מסונכרן. צהובה: סנכרון מתבצע עכשיו. אדומה: אין חיבור, או שיש פעולה שלא נקלטה. לחיצה עליו פותחת פירוט וכפתור "סנכרן עכשיו". פעולות שהוזנו כשלא היה אינטרנט עולות אוטומטית כשהחיבור חוזר, ופעולות מהאפליקציה והאתר יורדות למחשב.' }]),
@@ -57,5 +59,9 @@ function desktopContent(offline: boolean): HelpContent {
 /** עזרה של תוכנת המחשב: תיאור המסכים והפעולות כפי שהם בתוכנה, ולפי סוג החשבון. */
 export function DesktopHelp() {
   const ui = useUi();
-  return <HelpScreen content={desktopContent(ui.me?.kind === 'offline')} />;
+  return (
+    <WalkthroughSourceContext.Provider value={{ scenes: DESKTOP_SCENES, imageUrl, width: SCREEN.width, height: SCREEN.height }}>
+      <HelpScreen content={desktopContent(ui.me?.kind === 'offline')} />
+    </WalkthroughSourceContext.Provider>
+  );
 }
