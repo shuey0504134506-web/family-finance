@@ -8,7 +8,7 @@ import { useAuth } from '../../../src/features/auth/AuthContext';
 import { CompleteSetupScreen } from '../../../src/features/auth/CompleteSetupScreen';
 import { BudgetScreen } from '../../../src/features/budget/BudgetScreen';
 import { DebtsScreen } from '../../../src/features/debts/DebtsScreen';
-import { HelpScreen } from '../../../src/features/help/HelpScreen';
+import { DesktopHelp } from './desktopHelp';
 import { HomeScreen } from '../../../src/features/home/HomeScreen';
 import { ImportScreen } from '../../../src/features/import/ImportScreen';
 import { ListsProvider } from '../../../src/features/lists/ListsContext';
@@ -18,7 +18,7 @@ import { TasksScreen } from '../../../src/features/lists/TasksScreen';
 import { LockProvider } from '../../../src/features/lock/LockContext';
 import { LockGate } from '../../../src/features/lock/LockScreen';
 import { AccessibilityScreen } from '../../../src/features/privacy/AccessibilityScreen';
-import { PrivacyScreen } from '../../../src/features/privacy/PrivacyScreen';
+import { DesktopPrivacy } from './DesktopPrivacy';
 import { SearchScreen } from '../../../src/features/search/SearchScreen';
 import { AutoBackupHost } from '../../../src/features/settings/AutoBackupHost';
 import { SettingsProvider } from '../../../src/features/settings/SettingsContext';
@@ -91,7 +91,7 @@ function MenuToHome() {
 export function DesktopRoutes() {
   return (
     <Routes>
-      <Route path="/privacy" element={<PrivacyScreen />} />
+      <Route path="/privacy" element={<DesktopPrivacy />} />
       <Route path="/accessibility" element={<AccessibilityScreen />} />
       <Route element={<RequireAccount />}>
         <Route index element={<HomeRedirect />} />
@@ -110,7 +110,7 @@ export function DesktopRoutes() {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
         <Route path="/tithes" element={<TitheScreen />} />
-        <Route path="/help" element={<HelpScreen />} />
+        <Route path="/help" element={<DesktopHelp />} />
         <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/recovery" element={<RecoverySettings />} />
         <Route path="/admin" element={<AdminScreen />} />

@@ -6,17 +6,25 @@ import { WalkthroughPlayer } from './WalkthroughPlayer';
 
 type Tab = 'faq' | 'tips' | 'savings';
 
-/** עזרה: שאלות נפוצות וטיפים, עם הדגמות מונפשות לפעולות מרכזיות. */
-export function HelpScreen() {
+export interface HelpContent {
+  faq: HelpItem[];
+  tips: HelpItem[];
+  savings: HelpItem[];
+}
+
+const DEFAULT_CONTENT: HelpContent = { faq: FAQ, tips: TIPS, savings: SAVINGS };
+
+/** עזרה: שאלות נפוצות וטיפים, עם הדגמות מונפשות לפעולות מרכזיות. התוכנה למחשב מזינה תוכן משלה. */
+export function HelpScreen({ content = DEFAULT_CONTENT }: { content?: HelpContent } = {}) {
   const [tab, setTab] = useState<Tab>('faq');
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
 
   const items = useMemo(() => {
-    const list = tab === 'faq' ? FAQ : tab === 'tips' ? TIPS : SAVINGS;
+    const list = tab === 'faq' ? content.faq : tab === 'tips' ? content.tips : content.savings;
     const q = query.trim();
     return q ? list.filter((i) => i.title.includes(q) || i.body.includes(q)) : list;
-  }, [tab, query]);
+  }, [tab, query, content]);
 
   return (
     <div className="app-shell">
