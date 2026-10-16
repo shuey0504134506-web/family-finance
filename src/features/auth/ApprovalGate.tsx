@@ -92,6 +92,23 @@ function NoticePopup({ uid, notice }: { uid: string; notice: AdminNotice }) {
   );
 }
 
+const OK_KEY = (uid: string) => `ff.gate.ok.${uid}`;
+function wasApproved(uid: string): boolean {
+  try {
+    return localStorage.getItem(OK_KEY(uid)) === '1';
+  } catch {
+    return false;
+  }
+}
+function rememberApproved(uid: string, ok: boolean): void {
+  try {
+    if (ok) localStorage.setItem(OK_KEY(uid), '1');
+    else localStorage.removeItem(OK_KEY(uid));
+  } catch {
+    /* אחסון חסום: ממשיכים בלי זיכרון */
+  }
+}
+
 function UsageTracker({ uid }: { uid: string }) {
   useEffect(() => recordAppOpen(uid), [uid]);
   return null;
@@ -112,11 +129,12 @@ export function ApprovalGate({
   whileLoading: ReactNode;
 }) {
   const { signOutUser } = useAuth();
-  const [gate, setGate] = useState<Gate>('loading');
+  const [gate, setGate] = useState<Gate>(() => (wasApproved(uid) ? 'unavailable' : 'loading'));
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setGate('loading');
+    // חשבון שכבר אושר בעבר נפתח מיד גם בלי רשת; העדכון מהשרת יחליף כשיגיע.
+    setGate((g) => (wasApproved(uid) ? (typeof g === 'object' ? g : 'unavailable') : 'loading'));
     let requested = false;
     // בלי רשת Firestore ממתין עד 10 שניות לפני שהוא מודה שאין חיבור; לא מחכים לו.
     // כשהמכשיר מדווח "מחובר" אבל אין אינטרנט בפועל (wifi בלי רשת), מחכים 5 שניות בלבד.
@@ -127,6 +145,7 @@ export function ApprovalGate({
     const stop = subscribeApproval(
       uid,
       (snapshot) => {
+        rememberApproved(uid, snapshot.state === 'approved');
         setGate(snapshot);
         if (snapshot.state === 'none' && !requested) {
           requested = true;
