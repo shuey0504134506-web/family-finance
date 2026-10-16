@@ -7,5 +7,8 @@ declare global {
       remove(name: string): Promise<void>;
       where(): Promise<string>;
     };
+    desktopFiles?: {
+      pick(accept: string, multiple: boolean): Promise<{ name: string; data: Uint8Array }[]>;
+    };
   }
 }

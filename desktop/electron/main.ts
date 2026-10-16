@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
-import { promises as fs } from 'node:fs';
+import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } from 'electron';
+import { accessSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -48,6 +48,50 @@ ipcMain.handle('store:remove', async (_e, name: unknown) => {
 });
 ipcMain.handle('store:where', () => dataDir());
 
+const MIME_EXT: Record<string, string[]> = {
+  'image/*': ['png', 'jpg', 'jpeg', 'webp', 'gif', 'heic'],
+  'image/png': ['png'], 'image/jpeg': ['jpg', 'jpeg'], 'image/webp': ['webp'],
+  'text/csv': ['csv'], 'text/plain': ['txt'], 'application/json': ['json'], 'application/pdf': ['pdf'],
+  'application/vnd.ms-excel': ['xls'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['xlsx'],
+};
+const MAX_PICK = 60 * 1024 * 1024;
+
+/** בחירת קבצים בחלון מובנה של המערכת. מחליף את חלון הבחירה של הדפדפן, שבחלק מהמחשבים לא נפתח. */
+ipcMain.handle('files:pick', async (e, accept: unknown, multiple: unknown) => {
+  const win = BrowserWindow.fromWebContents(e.sender) ?? undefined;
+  const tokens = typeof accept === 'string' ? accept.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean) : [];
+  const exts = [...new Set(tokens.flatMap((t) => (t.startsWith('.') ? [t.slice(1)] : MIME_EXT[t] ?? [])))].filter((x) => /^[a-z0-9]{1,8}$/.test(x));
+  const options: Electron.OpenDialogOptions = {
+    title: 'בחירת קובץ',
+    properties: multiple === true ? ['openFile', 'multiSelections'] : ['openFile'],
+    filters: [...(exts.length ? [{ name: 'קבצים נתמכים', extensions: exts }] : []), { name: 'כל הקבצים', extensions: ['*'] }],
+  };
+  const res = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
+  if (res.canceled) return [];
+  const out: { name: string; data: Uint8Array }[] = [];
+  for (const file of res.filePaths.slice(0, multiple === true ? 20 : 1)) {
+    const stat = await fs.stat(file);
+    if (stat.size > MAX_PICK) throw new Error('file-too-large');
+    out.push({ name: path.basename(file), data: new Uint8Array(await fs.readFile(file)) });
+  }
+  return out;
+});
+
+/** הורדות (גיבוי, אקסל) נשמרות ישר בתיקיית ההורדות, בלי חלון שמירה, ובשם שאינו דורס קובץ קיים. */
+function setupDownloads(): void {
+  session.defaultSession.on('will-download', (_e, item) => {
+    const dir = app.getPath('downloads');
+    const base = path.basename(item.getFilename() || 'download');
+    const ext = path.extname(base);
+    const stem = base.slice(0, base.length - ext.length);
+    let target = path.join(dir, base);
+    for (let i = 1; i < 500; i++) {
+      try { accessSync(target); target = path.join(dir, `${stem} (${i})${ext}`); } catch { break; }
+    }
+    item.setSavePath(target);
+  });
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1360,
@@ -85,6 +129,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   void app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    setupDownloads();
     createWindow();
   });
   app.on('window-all-closed', () => app.quit());

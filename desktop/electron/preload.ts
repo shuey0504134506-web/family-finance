@@ -6,3 +6,7 @@ contextBridge.exposeInMainWorld('desktopStore', {
   remove: (name: string): Promise<void> => ipcRenderer.invoke('store:remove', name),
   where: (): Promise<string> => ipcRenderer.invoke('store:where'),
 });
+
+contextBridge.exposeInMainWorld('desktopFiles', {
+  pick: (accept: string, multiple: boolean): Promise<{ name: string; data: Uint8Array }[]> => ipcRenderer.invoke('files:pick', accept, multiple),
+});
