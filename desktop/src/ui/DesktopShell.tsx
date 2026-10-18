@@ -61,6 +61,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
     { to: `/${key}/budget`, label: 'תקציב' },
     { to: '/summary', label: 'סיכומים והשוואות' },
     { to: `/${key}/debts`, label: 'חובות' },
+    { to: `/${key}/standing`, label: 'הוראות הקבע שלי' },
     { to: `/${key}/import`, label: 'ייבוא נתונים' },
     ...(current.scope === 'household' ? [{ to: '/tithes', label: 'מעשרות' }] : []),
     { to: `/${key}/tasks`, label: 'רשימת משימות' },

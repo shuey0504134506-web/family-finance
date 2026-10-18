@@ -287,6 +287,45 @@ service cloud.firestore {
              && data.amountAgorot > 0
              && data.amountAgorot <= 100000000000
              && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
+             && (!data.keys().hasAny(['standingOrderId']) || isNonEmptyString(data.standingOrderId, 120))
+             && data.createdAt is int
+             && data.updatedAt is int
+             && validOptionalBusinessId(data);
+    }
+
+    // ---------- הוראות קבע: users/{uid}/standingOrders/{orderId} ----------
+
+    function validStandingOrder(data, orderId) {
+      return data.keys().hasOnly([
+               'id', 'scope', 'businessId', 'type', 'name', 'amountAgorot', 'currency', 'categoryId',
+               'categoryName', 'paymentMethod', 'paymentLabel', 'note', 'titheStatus', 'isTithePayment',
+               'dayOfMonth', 'nextDue', 'active', 'createdAt', 'updatedAt'
+             ])
+             && data.keys().hasAll([
+               'id', 'scope', 'type', 'name', 'amountAgorot', 'categoryId', 'categoryName', 'paymentMethod',
+               'note', 'titheStatus', 'isTithePayment', 'dayOfMonth', 'nextDue', 'active', 'createdAt', 'updatedAt'
+             ])
+             && data.id == orderId
+             && data.scope in ['business', 'household']
+             && data.type in ['income', 'expense']
+             && isNonEmptyString(data.name, 120)
+             && data.amountAgorot is int
+             && data.amountAgorot > 0
+             && data.amountAgorot <= 100000000000
+             && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
+             && isNonEmptyString(data.categoryId, 100)
+             && isShortString(data.categoryName, 60)
+             && data.paymentMethod in ['cash', 'credit', 'direct', 'check', 'transfer', 'other']
+             && (!data.keys().hasAny(['paymentLabel']) || isNonEmptyString(data.paymentLabel, 30))
+             && isShortString(data.note, 1000)
+             && data.titheStatus in ['liable', 'exempt']
+             && data.isTithePayment is bool
+             && data.dayOfMonth is int
+             && data.dayOfMonth >= 1
+             && data.dayOfMonth <= 31
+             && data.nextDue is string
+             && data.nextDue.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+             && data.active is bool
              && data.createdAt is int
              && data.updatedAt is int
              && validOptionalBusinessId(data);
@@ -338,7 +377,8 @@ service cloud.firestore {
       return data.keys().hasOnly([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
                'counterparty', 'categoryId', 'categoryName', 'paymentMethod',
-               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId', 'currency', 'paymentLabel'
+               'note', 'titheStatus', 'isTithePayment', 'createdAt', 'updatedAt', 'businessId', 'currency', 'paymentLabel',
+               'standingOrderId'
              ])
              && data.keys().hasAll([
                'id', 'type', 'amountAgorot', 'date', 'yearMonth', 'year', 'month',
@@ -457,6 +497,15 @@ service cloud.firestore {
                               && request.resource.data.images.size() >= 1
                               && request.resource.data.images.size() <= 3
                               && request.resource.data.updatedAt is int;
+        allow delete: if isWriter(uid);
+      }
+
+      match /standingOrders/{orderId} {
+        allow read: if isReader(uid);
+        allow create: if isWriter(uid) && validStandingOrder(request.resource.data, orderId);
+        allow update: if isWriter(uid)
+                      && validStandingOrder(request.resource.data, orderId)
+                      && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if isWriter(uid);
       }
 

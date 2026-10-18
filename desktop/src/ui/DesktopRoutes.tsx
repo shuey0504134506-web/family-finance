@@ -12,6 +12,8 @@ import { DesktopHelp } from './desktopHelp';
 import { HomeScreen } from '../../../src/features/home/HomeScreen';
 import { ImportScreen } from '../../../src/features/import/ImportScreen';
 import { ListsProvider } from '../../../src/features/lists/ListsContext';
+import { StandingOrdersScreen } from '../../../src/features/standing/StandingOrdersScreen';
+import { StandingOrdersHost } from '../../../src/features/standing/StandingOrdersHost';
 import { RemindersHost } from '../../../src/features/lists/RemindersHost';
 import { ShoppingScreen } from '../../../src/features/lists/ShoppingScreen';
 import { TasksScreen } from '../../../src/features/lists/TasksScreen';
@@ -61,6 +63,7 @@ function RequireAccount() {
                 <ListsProvider uid={state.user.uid}>
                   <LockGate>
                     <RemindersHost />
+                    <StandingOrdersHost />
                     {isAdminEmail(state.user.email) ? <AdminMessageHost /> : null}
                     <AutoBackupHost />
                     <DesktopShell>
@@ -104,6 +107,7 @@ export function DesktopRoutes() {
           <Route path="/:scope/menu" element={<MenuToHome />} />
           <Route path="/:scope/import" element={<ImportScreen />} />
           <Route path="/:scope/debts" element={<DebtsScreen />} />
+          <Route path="/:scope/standing" element={<StandingOrdersScreen />} />
           <Route path="/:scope/tasks" element={<TasksScreen />} />
           <Route path="/:scope/shopping" element={<ShoppingScreen />} />
         </Route>

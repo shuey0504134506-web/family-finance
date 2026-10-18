@@ -27,7 +27,7 @@ export type SyncStatus =
 
 /** usage/{uid} נכתב בלבד: הכללים אוסרים קריאה (allow read: if false), ולכן הוא אינו יעד למשיכה. */
 export function targetsFor(uid: string): Target[] {
-  const sub = ['settings', 'businessProfile', 'householdProfile', 'businesses', 'categories', 'businessTransactions', 'householdTransactions', 'attachments', 'debts', 'budgets', 'tasks', 'shoppingItems'];
+  const sub = ['settings', 'businessProfile', 'householdProfile', 'businesses', 'categories', 'businessTransactions', 'householdTransactions', 'attachments', 'debts', 'standingOrders', 'budgets', 'tasks', 'shoppingItems'];
   return [
     { kind: 'doc', path: `users/${uid}` },
     { kind: 'doc', path: `approvals/${uid}` },

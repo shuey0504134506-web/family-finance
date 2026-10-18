@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AttachmentsField } from './AttachmentsField';
+import { SimilarActionsDialog } from '../standing/SimilarActionsDialog';
+import { findSimilarAfter, orderFromTransaction } from '../../domain/standingOrder';
+import { linkTransactionsToOrder, loadTransactionsAfter, orderContinuingAfter, saveStandingOrder } from '../../services/standingOrderService';
 import { getAttachments, saveAttachments } from '../../services/attachmentService';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
 import { choiceKey, choiceText, choicesFor, validateCustomMethod, type PaymentChoice } from '../../domain/payment';
@@ -22,6 +25,7 @@ import {
 } from '../../domain/transactionInput';
 import { businessIdOf, inSpace, type Space } from '../../domain/spaces';
 import {
+  type StandingOrder,
   type Transaction,
   type TransactionType,
 } from '../../domain/types';
@@ -158,6 +162,11 @@ function TransactionForm({
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
 
   const [draft, setDraft] = useState<TransactionDraft>(initial);
+  // מזהה הוראת קבע חדשה, נוצר פעם אחת בפתיחת הטופס (כמו מזהה הפעולה)
+  const [newOrderId] = useState(newId);
+  const [suggest, setSuggest] = useState<{ order: StandingOrder; candidates: Transaction[]; targetMonth: string } | null>(null);
+  const [suggestBusy, setSuggestBusy] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [errors, setErrors] = useState<DraftErrors>({});
   // מונע שליחה כפולה גם אם לוחצים מהר מכפי שהמסך מתעדכן.
   const submitted = useRef(false);
@@ -317,6 +326,7 @@ function TransactionForm({
       now: Date.now(),
       createdAt: existing?.createdAt,
       businessId: space.businessId,
+      standingOrderId: existing?.standingOrderId ?? newOrderId,
     });
 
     try {
@@ -325,8 +335,18 @@ function TransactionForm({
       // אחסון חסום: רק הסדר לא ייזכר
     }
     submitted.current = true;
+    // הוראת קבע חדשה: נוצרת יחד עם הפעולה הראשונה שלה
+    const newOrder =
+      transaction.standingOrderId && !existing?.standingOrderId
+        ? orderFromTransaction(transaction, scope, { id: transaction.standingOrderId, now: Date.now(), today: todayIso() })
+        : null;
     // לא ממתינים לשרת: בלי אינטרנט ההבטחה מתממשת רק בסנכרון. הפעולה נשמרת במכשיר
     // ומופיעה מיד ברשימה כ"ממתין לסנכרון". אם השרת דוחה אותה, מציגים הודעה.
+    if (newOrder) {
+      saveStandingOrder(user.uid, newOrder).catch(() =>
+        reportFailure('לא הצלחנו לשמור את הוראת הקבע. יש לנסות שוב.'),
+      );
+    }
     saveTransaction(user.uid, scope, transaction).catch(() =>
       reportFailure('לא הצלחנו לסנכרן פעולה אחרונה, והיא לא נשמרה בשרת. יש לבדוק ולהזין אותה שוב.'),
     );
@@ -335,7 +355,31 @@ function TransactionForm({
         reportFailure('לא הצלחנו לשמור את התמונות המצורפות. יש לנסות שוב.'),
       );
     }
-    leave(transaction.yearMonth);
+    if (!newOrder) {
+      leave(transaction.yearMonth);
+      return;
+    }
+    // מחפשים פעולות דומות בחודשים שאחרי, כדי להציע לקטלג גם אותן. לא מעכבים את המשתמש יותר מרגע.
+    setFinishing(true);
+    const timeout = new Promise<Transaction[]>((resolve) => window.setTimeout(() => resolve([]), 1500));
+    Promise.race([loadTransactionsAfter(user.uid, scope, transaction.date), timeout])
+      .catch(() => [] as Transaction[])
+      .then((later) => {
+        const candidates = findSimilarAfter(transaction, later);
+        if (candidates.length === 0) leave(transaction.yearMonth);
+        else setSuggest({ order: newOrder, candidates, targetMonth: transaction.yearMonth });
+      });
+  };
+
+  const confirmSimilar = (selected: Transaction[]) => {
+    if (!suggest) return;
+    setSuggestBusy(true);
+    const last = selected.reduce((max, t) => (t.date > max ? t.date : max), selected[0].date);
+    const order = orderContinuingAfter(suggest.order, last, todayIso(), Date.now());
+    linkTransactionsToOrder(user.uid, scope, selected, order, Date.now()).catch(() =>
+      reportFailure('לא הצלחנו לקטלג את הפעולות הדומות. יש לנסות שוב.'),
+    );
+    leave(suggest.targetMonth);
   };
 
   return (
@@ -602,17 +646,39 @@ function TransactionForm({
             </label>
           )}
 
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={!!draft.standingOrder}
+              onChange={(e) => update('standingOrder', e.target.checked)}
+            />
+            <span>
+              {isIncome
+                ? 'הוראת קבע: ההכנסה תיכנס אוטומטית כל חודש בתאריך הזה'
+                : 'הוראת קבע: ההוצאה תיווצר אוטומטית כל חודש בתאריך הזה'}
+            </span>
+          </label>
+
           <AttachmentsField images={attachments} onChange={setAttachments} loading={attLoading} failed={attFailed} isIncome={isIncome} />
 
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-primary" disabled={finishing}>
             {existing ? 'שמירת שינויים' : 'שמירה'}
           </button>
         </form>
 
       </main>
+      {suggest && (
+        <SimilarActionsDialog
+          order={suggest.order}
+          candidates={suggest.candidates}
+          busy={suggestBusy}
+          onConfirm={confirmSimilar}
+          onSkip={() => leave(suggest.targetMonth)}
+        />
+      )}
     </div>
   );
 }

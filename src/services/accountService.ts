@@ -116,7 +116,7 @@ export async function exportAllData(uid: string, options: { withAttachments?: bo
     return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
   };
 
-  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts, attachments] = await Promise.all([
+  const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts, standingOrders, attachments] = await Promise.all([
     read<Transaction>('businessTransactions'),
     read<Transaction>('householdTransactions'),
     read<{ id: string; name?: string }>('businesses'),
@@ -126,6 +126,7 @@ export async function exportAllData(uid: string, options: { withAttachments?: bo
     read<object>('shoppingItems'),
     read<object>('settings'),
     read<object>('debts'),
+    read<object>('standingOrders'),
     // תמונות מצורפות כבדות, ולכן נכללות רק כשמבקשים (גיבוי אוטומטי אינו כולל אותן)
     options.withAttachments ? read<object>('attachments') : Promise.resolve([] as object[]),
   ]);
@@ -146,6 +147,7 @@ export async function exportAllData(uid: string, options: { withAttachments?: bo
     categories,
     budgets,
     debts,
+    standingOrders,
     tasks,
     shoppingItems,
     ...(options.withAttachments ? { attachments } : {}),
@@ -174,6 +176,7 @@ const RESTORE_COLLECTIONS = [
   ['businesses', 'businesses'],
   ['categories', 'categories'],
   ['debts', 'debts'],
+  ['standingOrders', 'standingOrders'],
   ['budgets', 'budgets'],
   ['tasks', 'tasks'],
   ['shoppingItems', 'shoppingItems'],
@@ -195,7 +198,7 @@ export interface NewDataPlan {
  */
 export async function planNewData(uid: string, plan: RestorePlan): Promise<NewDataPlan> {
   requireOnline();
-  const result: RestorePlan = { ...plan, businesses: [], categories: [], debts: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [], attachments: [], extraSettings: [] };
+  const result: RestorePlan = { ...plan, businesses: [], categories: [], debts: [], standingOrders: [], budgets: [], tasks: [], shoppingItems: [], businessTransactions: [], householdTransactions: [], attachments: [], extraSettings: [] };
   let alreadyExisting = 0;
   for (const [key, name] of RESTORE_COLLECTIONS) {
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
@@ -231,6 +234,7 @@ const USER_COLLECTIONS = [
   'businesses',
   'categories',
   'debts',
+  'standingOrders',
   'attachments',
   'budgets',
   'tasks',

@@ -202,3 +202,24 @@ describe('parseBackup: תמונות והגדרות נוספות', () => {
     expect(r.plan.extraSettings).toEqual([]);
   });
 });
+
+
+describe('הוראות קבע בגיבוי', () => {
+  const order = {
+    id: 'o1', scope: 'household', type: 'expense', name: 'חברת חשמל', amountAgorot: 50000, categoryId: 'c', categoryName: 'חשבונות',
+    paymentMethod: 'direct', note: '', titheStatus: 'liable', isTithePayment: false, dayOfMonth: 10, nextDue: '2026-11-10',
+    active: true, createdAt: 1, updatedAt: 1,
+  };
+  const file = (orders: unknown[]) => JSON.stringify({ format: 'family-finance-backup', version: 1, exportedAt: 'x', data: { standingOrders: orders } });
+
+  it('קורא הוראת קבע תקינה', () => {
+    const result = parseBackup(file([order]));
+    expect(result.ok && result.plan.standingOrders.map((d) => d.id)).toEqual(['o1']);
+  });
+  it('דוחה הוראה לא תקינה וגיבוי ישן בלי הוראות קבע', () => {
+    const bad = parseBackup(file([order, { ...order, id: 'o2', dayOfMonth: 40 }]));
+    expect(bad.ok && bad.plan.invalid).toBe(1);
+    const old = parseBackup(JSON.stringify({ format: 'family-finance-backup', version: 1, exportedAt: 'x', data: { debts: [] } }));
+    expect(old.ok).toBe(false);
+  });
+});

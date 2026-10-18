@@ -488,3 +488,50 @@ describe('אישור חשבונות', () => {
     await assertFails(getDoc(doc(bob(), 'messages/a1')));
   });
 });
+
+describe('הוראות קבע', () => {
+  const order = (overrides: Record<string, unknown> = {}, id = 'o1') => ({
+    id,
+    scope: 'household',
+    type: 'expense',
+    name: 'חברת חשמל',
+    amountAgorot: 50000,
+    categoryId: 'household-expense-bills',
+    categoryName: 'חשבונות',
+    paymentMethod: 'direct',
+    note: '',
+    titheStatus: 'liable',
+    isTithePayment: false,
+    dayOfMonth: 10,
+    nextDue: '2026-11-10',
+    active: true,
+    createdAt: 1_790_000_000_000,
+    updatedAt: 1_790_000_000_000,
+    ...overrides,
+  });
+
+  it('בעל החשבון יוצר, קורא ומעדכן את שלו', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order()));
+    await assertSucceeds(getDoc(doc(alice(), 'users/alice/standingOrders/o1')));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order({ amountAgorot: 60000, updatedAt: 1_790_000_000_001 })));
+  });
+
+  it('משתמש אחר ולא מחובר חסומים', async () => {
+    await assertFails(setDoc(doc(bob(), 'users/alice/standingOrders/o1'), order()));
+    await assertFails(getDoc(doc(anonymous(), 'users/alice/standingOrders/o1')));
+  });
+
+  it('דוחה נתונים לא תקינים', async () => {
+    await assertFails(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order({ dayOfMonth: 32 })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order({ amountAgorot: 0 })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order({ nextDue: '10/11/2026' })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/standingOrders/o1'), order({ extra: 1 })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/standingOrders/o2'), order()));
+  });
+
+  it('פעולה יכולה לשאת מזהה הוראה, ורק מחרוזת תקינה', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/householdTransactions/tx1'), transaction({ standingOrderId: 'o1' })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/householdTransactions/tx2'), transaction({ standingOrderId: '' }, 'tx2')));
+    await assertFails(setDoc(doc(alice(), 'users/alice/householdTransactions/tx3'), transaction({ standingOrderId: 5 }, 'tx3')));
+  });
+});

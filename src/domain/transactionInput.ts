@@ -25,6 +25,8 @@ export interface TransactionDraft {
   titheStatus: TitheStatus;
   isTithePayment: boolean;
   currency: CurrencyCode;
+  /** סימון "הוראת קבע": הפעולה חוזרת אוטומטית כל חודש */
+  standingOrder?: boolean;
 }
 
 export type DraftField = 'amount' | 'date' | 'counterparty' | 'category' | 'paymentMethod' | 'note';
@@ -91,6 +93,8 @@ export interface BuildContext {
   createdAt?: number;
   /** באיזה עסק נרשמת הפעולה (רק בעסק). */
   businessId?: string;
+  /** הוראת הקבע שהפעולה שייכת לה (כשהסימון דלוק) */
+  standingOrderId?: string;
 }
 
 /** בונה פעולה מוכנה לשמירה. מניח שהטיוטה עברה validateDraft בהצלחה. */
@@ -125,6 +129,7 @@ export function buildTransaction(draft: TransactionDraft, context: BuildContext)
     ...(draft.currency !== LEGACY_CURRENCY ? { currency: draft.currency } : {}),
     // העסק הראשון נשמר בלי מזהה (כמו נתונים ישנים). עסק נוסף נשמר עם מזהה.
     ...(context.businessId && context.businessId !== DEFAULT_BUSINESS_ID ? { businessId: context.businessId } : {}),
+    ...(draft.standingOrder && context.standingOrderId ? { standingOrderId: context.standingOrderId } : {}),
   };
 }
 
@@ -144,5 +149,6 @@ export function draftFromTransaction(transaction: Transaction): TransactionDraft
     titheStatus: transaction.titheStatus,
     isTithePayment: transaction.isTithePayment,
     currency: currencyOf(transaction),
+    standingOrder: !!transaction.standingOrderId,
   };
 }

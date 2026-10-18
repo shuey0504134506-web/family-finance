@@ -1,0 +1,38 @@
+name: פריסת כללי האבטחה של Firestore
+
+# רצה ידנית בלבד: לשונית Actions ← שם ה-workflow ← Run workflow.
+# נדרשת כל פעם שמשתנה הקובץ firestore.rules (למשל כשנוסף סוג נתונים חדש).
+# דורשת שני סודות בהגדרות המאגר: FIREBASE_SERVICE_ACCOUNT ו-VITE_FIREBASE_PROJECT_ID.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: כתיבת מפתח השירות לקובץ זמני
+        env:
+          KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$KEY" ]; then echo "חסר הסוד FIREBASE_SERVICE_ACCOUNT"; exit 1; fi
+          printf '%s' "$KEY" > "$RUNNER_TEMP/sa.json"
+
+      - name: פריסת הכללים
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        run: npx --yes firebase-tools@14 deploy --only firestore:rules --project "$PROJECT_ID" --non-interactive
+
+      - name: מחיקת המפתח הזמני
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

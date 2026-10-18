@@ -14,6 +14,8 @@ export interface RestorePlan {
   businesses: RestoreDoc[];
   categories: RestoreDoc[];
   debts: RestoreDoc[];
+  /** הוראות קבע. גיבויים ישנים אינם כוללים אותן. */
+  standingOrders: RestoreDoc[];
   budgets: RestoreDoc[];
   tasks: RestoreDoc[];
   shoppingItems: RestoreDoc[];
@@ -82,6 +84,10 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     if (!isNonEmpty(raw.paymentLabel, 30)) return null;
     d.paymentLabel = raw.paymentLabel;
   }
+  if (raw.standingOrderId !== undefined) {
+    if (!isNonEmpty(raw.standingOrderId, 120)) return null;
+    d.standingOrderId = raw.standingOrderId;
+  }
   if ((d.paymentMethod === 'other') !== (d.paymentLabel !== undefined)) return null;
   const ok =
     isNonEmpty(d.id, 100) &&
@@ -95,6 +101,37 @@ function cleanTransaction(raw: unknown): RestoreDoc | null {
     isStr(d.note, 1000) &&
     (d.titheStatus === 'liable' || d.titheStatus === 'exempt') &&
     typeof d.isTithePayment === 'boolean' &&
+    isInt(d.createdAt) && isInt(d.updatedAt);
+  return ok ? { id: d.id as string, data: d } : null;
+}
+
+/** הוראת קבע: אותם כללים כמו ב-firestore.rules (validStandingOrder). */
+function cleanStandingOrder(raw: unknown): RestoreDoc | null {
+  if (!isObj(raw)) return null;
+  const d = pick(raw, ['id', 'scope', 'type', 'name', 'amountAgorot', 'categoryId', 'categoryName', 'paymentMethod', 'note', 'titheStatus', 'isTithePayment', 'dayOfMonth', 'nextDue', 'active', 'createdAt', 'updatedAt']);
+  if (!d) return null;
+  if (raw.currency !== undefined) {
+    if (!isCurrencyCode(raw.currency)) return null;
+    d.currency = raw.currency;
+  }
+  if (raw.paymentLabel !== undefined) {
+    if (!isNonEmpty(raw.paymentLabel, 30)) return null;
+    d.paymentLabel = raw.paymentLabel;
+  }
+  const ok =
+    isNonEmpty(d.id, 100) &&
+    (d.scope === 'business' || d.scope === 'household') &&
+    (d.type === 'income' || d.type === 'expense') &&
+    isNonEmpty(d.name, 120) &&
+    isInt(d.amountAgorot) && d.amountAgorot > 0 && d.amountAgorot <= MAX_AGOROT &&
+    isNonEmpty(d.categoryId, 100) && isStr(d.categoryName, 60) &&
+    ['cash', 'credit', 'direct', 'check', 'transfer', 'other'].includes(d.paymentMethod as string) &&
+    isStr(d.note, 1000) &&
+    (d.titheStatus === 'liable' || d.titheStatus === 'exempt') &&
+    typeof d.isTithePayment === 'boolean' &&
+    isInt(d.dayOfMonth) && d.dayOfMonth >= 1 && d.dayOfMonth <= 31 &&
+    typeof d.nextDue === 'string' && DATE_RE.test(d.nextDue) &&
+    typeof d.active === 'boolean' &&
     isInt(d.createdAt) && isInt(d.updatedAt);
   return ok ? { id: d.id as string, data: d } : null;
 }
@@ -297,6 +334,7 @@ export function parseBackup(text: string): ParseResult {
   const businesses = cleanList(data.businesses, cleanBusiness);
   const categories = cleanList(data.categories, cleanCategory);
   const debts = cleanList(data.debts, cleanDebt);
+  const orders = cleanList(data.standingOrders, cleanStandingOrder);
   const budgets = cleanList(data.budgets, cleanBudget);
   const tasks = cleanList(data.tasks, cleanTask);
   const shopping = cleanList(data.shoppingItems, cleanItem);
@@ -317,6 +355,7 @@ export function parseBackup(text: string): ParseResult {
     businesses: businesses.docs,
     categories: categories.docs,
     debts: debts.docs,
+    standingOrders: orders.docs,
     budgets: budgets.docs,
     tasks: tasks.docs,
     shoppingItems: shopping.docs,
@@ -326,11 +365,11 @@ export function parseBackup(text: string): ParseResult {
     extraSettings: extra.docs,
     settings,
     invalid:
-      businesses.invalid + categories.invalid + debts.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid + attachments.invalid +
+      businesses.invalid + categories.invalid + debts.invalid + orders.invalid + budgets.invalid + tasks.invalid + shopping.invalid + business.invalid + household.invalid + attachments.invalid +
       (settingsDoc !== undefined && settings === null ? 1 : 0),
   };
   const total =
-    plan.businesses.length + plan.categories.length + plan.debts.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
+    plan.businesses.length + plan.categories.length + plan.debts.length + plan.standingOrders.length + plan.budgets.length + plan.tasks.length + plan.shoppingItems.length +
     plan.businessTransactions.length + plan.householdTransactions.length + plan.attachments.length + plan.extraSettings.length;
   if (total === 0 && !plan.settings) return { ok: false, error: 'בקובץ אין נתונים לשחזור.' };
   return { ok: true, plan };

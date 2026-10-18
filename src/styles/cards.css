@@ -409,3 +409,32 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
   gap: 10px;
   flex-wrap: wrap;
 }
+
+/* הוראות קבע */
+.standing-pick-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.standing-pick-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+}
+.standing-tx-link {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px;
+  color: inherit;
+  text-decoration: none;
+}
+.suggest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

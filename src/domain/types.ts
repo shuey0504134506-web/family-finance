@@ -90,6 +90,8 @@ export interface Transaction {
   updatedAt: number;
   /** באיזה עסק נרשמה הפעולה. חסר = העסק הראשון (נתונים שנשמרו לפני שנוספה תמיכה בכמה עסקים). */
   businessId?: string;
+  /** הוראת הקבע שהפעולה שייכת לה. חסר = פעולה רגילה. */
+  standingOrderId?: string;
 }
 
 /** פעולה כפי שמגיעה מ-Firestore, עם מידע על מצב הסנכרון שלה. */
@@ -136,4 +138,35 @@ export interface Budget {
   period?: string;
   /** רק לתקציבי עסק. חסר = העסק הראשון. */
   businessId?: string;
+}
+
+/**
+ * הוראת קבע: פעולה חודשית קבועה (הכנסה או הוצאה) שנוצרת אוטומטית בתאריך החיוב.
+ * הפעולות עצמן הן פעולות רגילות שנושאות standingOrderId של ההוראה שלהן.
+ */
+export interface StandingOrder {
+  id: string;
+  scope: Scope;
+  /** רק בעסק. חסר = העסק הראשון. */
+  businessId?: string;
+  type: TransactionType;
+  /** שם משותף לכל הפעולות של ההוראה (שם הספק / מקור ההכנסה) */
+  name: string;
+  amountAgorot: number;
+  currency?: CurrencyCode;
+  categoryId: string;
+  categoryName: string;
+  paymentMethod: PaymentMethod;
+  paymentLabel?: string;
+  note: string;
+  titheStatus: TitheStatus;
+  isTithePayment: boolean;
+  /** יום החיוב בחודש, 1 עד 31 (בחודש קצר יותר החיוב ביום האחרון שלו) */
+  dayOfMonth: number;
+  /** תאריך החיוב הבא שעדיין לא נוצר, YYYY-MM-DD */
+  nextDue: string;
+  /** כבויה = לא נוצרות פעולות חדשות; הפעולות הקיימות נשארות */
+  active: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
