@@ -12,6 +12,8 @@ export const EN: Record<string, string> = {
   "מסך הבית": "Home screen",
   "כניסה והתקנה": "Sign in and install",
   "הצצה לתוכנה": "A look at the app",
+  "ראו איך זה עובד": "See how it works",
+  "איך זה עובד": "How it works",
   "ככה זה נראה": "Here is how it looks",
   "בדפדפן: לוחצים על סמל ההתקנה בשורת הכתובת, או בתפריט הדפדפן בוחרים \"התקנת אפליקציה\".": "In the browser: click the install icon in the address bar, or choose \"Install app\" from the browser menu.",
   "במק: ב-Safari בוחרים \"קובץ\" ואז \"הוספה ל-Dock\". ב-Chrome לוחצים על סמל ההתקנה בשורת הכתובת.": "On Mac: in Safari choose \"File\" then \"Add to Dock\". In Chrome, click the install icon in the address bar.",

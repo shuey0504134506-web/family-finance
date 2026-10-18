@@ -115,8 +115,16 @@ export function LandingScreen() {
 
   const [promptReady, setPromptReady] = useState(canPromptInstall());
   const [showHow, setShowHow] = useState(false);
+  const [tour, setTour] = useState(false);
   const [installed, setInstalled] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!tour) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setTour(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tour]);
 
   useEffect(() => onInstallPromptChange(() => setPromptReady(canPromptInstall())), []);
 
@@ -155,6 +163,10 @@ export function LandingScreen() {
           <img src={`${base}icon-192.png`} alt="" width={84} height={84} draggable={false} />
           <h1>ניהול כספים לעסק ולמשק הבית</h1>
           <p className="muted">הכול במקום אחד, כל חלק בנפרד וברור.</p>
+          <button type="button" className="btn btn-secondary landing-how" onClick={() => setTour(true)}>
+            <span aria-hidden="true" className="landing-how-play">▶</span>
+            <span>ראו איך זה עובד</span>
+          </button>
         </header>
 
         <section className="landing-actions" aria-label="כניסה והתקנה">
@@ -179,22 +191,34 @@ export function LandingScreen() {
             )}
 
             {installer && (
-              <a className="btn btn-secondary landing-download" href={downloadHref} rel="noopener">
-                <span>{installer === 'windows' ? 'הורדת התוכנה למחשב' : 'הורדת האפליקציה (APK)'}</span>
-                <small>מיועד למי שמעוניין בחשבון לא מקוון, שנשמר על המכשיר בלבד</small>
-              </a>
+              <>
+                <a className="btn btn-secondary landing-download" href={downloadHref} rel="noopener">
+                  {installer === 'windows' ? 'הורדת התוכנה למחשב' : 'הורדת האפליקציה (APK)'}
+                </a>
+                <p className="landing-offline">מיועד למי שמעוניין בחשבון לא מקוון, שנשמר על המכשיר בלבד</p>
+              </>
             )}
           </div>
         </section>
         </div>
 
-        <Slides set={set} base={base} />
         </div>
 
         <p className="auth-footer-link">
           <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
         </p>
       </div>
+      {tour && (
+        <div className="landing-modal" role="dialog" aria-modal="true" aria-label="איך זה עובד">
+          <div className="landing-modal-head">
+            <h2>איך זה עובד</h2>
+            <button type="button" className="landing-modal-close" aria-label="סגירה" onClick={() => setTour(false)}>
+              ✕
+            </button>
+          </div>
+          <Slides set={set} base={base} />
+        </div>
+      )}
     </main>
   );
 }

@@ -1,62 +1,119 @@
-/* דף הנחיתה של האתר (/start). רקע הנוף קבוע למסך: תמונת טלפון לאורך, תמונה רחבה לרוחב, כדי שלא תימרח. */
+/* דף הנחיתה של האתר (/start): עיצוב בהיר ועדין על רקע הנוף. הרקע קבוע למסך: תמונת טלפון לאורך, תמונה רחבה לרוחב. */
 .landing {
+  --land-navy: #14304f;
+  --land-teal: #1f6f66;
+  --land-text: #3f5166;
   min-height: 100vh;
-  padding: calc(16px + var(--safe-top)) calc(18px + var(--safe-right)) calc(32px + var(--safe-bottom)) calc(18px + var(--safe-left));
+  padding: calc(16px + var(--safe-top)) calc(18px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(18px + var(--safe-left));
   position: relative;
   display: flex;
   justify-content: center;
+  font-family: Arial, Arimo, 'Helvetica Neue', Helvetica, sans-serif;
+  color: var(--land-navy);
 }
-.landing-inner { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 20px; }
+.landing-inner { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; min-height: calc(100vh - 40px); }
 .landing-top { display: flex; justify-content: center; }
-.landing-main { display: flex; flex-direction: column; gap: 22px; }
-.landing-intro { display: flex; flex-direction: column; gap: 18px; }
-.landing-hero { text-align: center; }
-.landing-hero img { border-radius: 20px; box-shadow: var(--shadow); margin-bottom: 12px; }
-.landing-hero h1 { font-size: 1.55rem; line-height: 1.25; }
-.landing-hero p { margin-top: 6px; }
-.landing-actions { display: flex; flex-direction: column; gap: 12px; }
+.landing-main { display: flex; flex-direction: column; gap: 18px; flex: 1; }
+.landing-intro { display: flex; flex-direction: column; gap: 18px; flex: 1; }
+.landing-hero { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.landing-hero img { border-radius: 17px; border: 1px solid var(--land-teal); margin-bottom: 14px; width: 64px; height: 64px; }
+.landing-hero h1 { font-size: 2.1rem; line-height: 1.12; font-weight: 700; letter-spacing: -0.6px; color: var(--land-navy); }
+.landing-hero p { margin-top: 12px; color: var(--land-text); font-size: 1rem; position: relative; }
+.landing-hero p::before { content: ''; display: block; width: 44px; height: 1px; background: var(--land-teal); margin: 0 auto 12px; }
+.landing-how { margin-top: 18px; width: 100%; }
+.landing-actions { margin-top: auto; }
+
+/* כפתורי הדף: כולם באותו עיצוב בדיוק (גובה, מסגרת, עיגול וגופן); רק הכניסה ממולאת */
+.landing .btn {
+  min-height: 50px; height: auto; width: 100%; padding: 10px 18px; text-align: center; line-height: 1.25;
+  border-radius: 999px; border: 1px solid var(--land-teal);
+  background: rgba(255, 255, 255, 0.45); color: var(--land-navy);
+  font-family: inherit; font-size: 1rem; font-weight: 400; box-shadow: none;
+  display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; cursor: pointer;
+}
+.landing .btn:hover { background: rgba(255, 255, 255, 0.7); }
+.landing .btn-primary { background: var(--land-navy); border-color: var(--land-navy); color: #fff; font-weight: 700; }
+.landing .btn-primary:hover { background: #0f2640; }
+.landing-how-play { font-size: 0.7rem; color: var(--land-teal); }
+.landing-actions {
+  display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 26px;
+  background: rgba(255, 255, 255, 0.5); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  border: 1px solid rgba(31, 111, 102, 0.4); box-shadow: 0 20px 50px rgba(20, 48, 79, 0.1);
+}
 .landing-install { display: flex; flex-direction: column; gap: 10px; }
-.landing-recommended { display: flex; align-items: center; justify-content: center; gap: 10px; }
-.landing-badge { background: var(--income-soft); color: var(--income); border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; font-weight: 700; }
-.landing-download { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none; }
-.landing-download small { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; text-align: center; }
-.landing-note { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 0.92rem; line-height: 1.5; }
+.landing-badge { border: 1px solid var(--land-teal); color: var(--land-teal); border-radius: 999px; padding: 1px 9px; font-size: 0.72rem; font-weight: 400; }
+.landing-offline { text-align: center; font-size: 0.78rem; color: #5b6a7b; margin: 0; }
+.landing-note { background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(31, 111, 102, 0.3); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 0.92rem; line-height: 1.5; }
+.landing .auth-footer-link, .landing .auth-footer-link a { color: var(--land-text); }
+
+/* חלון "ראו איך זה עובד": הרקע של האפליקציה מטושטש מאחור */
+.landing-modal {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  padding: calc(18px + var(--safe-top)) calc(18px + var(--safe-right)) calc(18px + var(--safe-bottom)) calc(18px + var(--safe-left));
+  background: #f6efe0; isolation: isolate;
+}
+.landing-modal::before {
+  content: ''; position: fixed; inset: -30px; z-index: -2; filter: blur(16px);
+  background: url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+}
+.landing-modal::after { content: ''; position: fixed; inset: 0; z-index: -1; background: rgba(255, 251, 242, 0.62); }
+@media (min-aspect-ratio: 1/1) {
+  .landing-modal::before { background-image: url('../assets/mountains-wide.jpg'); }
+}
+.landing-modal-head { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 1112px; margin: 0 auto; }
+.landing-modal-head h2 { font-size: 1.3rem; font-weight: 400; color: var(--land-navy); }
+.landing-modal-close {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--land-teal); background: rgba(255, 255, 255, 0.5);
+  color: var(--land-navy); cursor: pointer; font-size: 0.95rem;
+}
 
 /* קרוסלה */
-.slides { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.slides { display: flex; flex-direction: column; gap: 12px; min-width: 0; flex: 1; justify-content: center; width: 100%; max-width: 1112px; margin: 0 auto; }
 .slides-track {
   display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
   gap: 16px; padding: 6px 0; outline: none; overscroll-behavior-x: contain;
 }
 .slides-track::-webkit-scrollbar { display: none; }
-.slide { flex: 0 0 100%; scroll-snap-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.slide-frame { background: var(--surface); box-shadow: var(--shadow), 0 0 0 1px var(--border); overflow: hidden; }
+.slide { flex: 0 0 100%; scroll-snap-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.slide-frame { background: #fff; overflow: hidden; }
 .slide-frame img { display: block; width: 100%; height: auto; }
-.slide-frame-phone { width: min(236px, 64vw); border-radius: 30px; border: 6px solid var(--navy); box-shadow: 0 14px 34px rgba(15, 42, 71, 0.18); }
-.slide-frame-desktop { width: 100%; border-radius: 14px; border-top: 22px solid var(--navy); }
-.slide figcaption { display: flex; flex-direction: column; gap: 4px; text-align: center; max-width: 440px; padding: 0 6px; }
-.slide figcaption strong { font-size: 1.05rem; }
-.slide figcaption span { color: var(--text-muted); line-height: 1.5; font-size: 0.93rem; }
+.slide-frame-phone { width: min(236px, 64vw, 25vh); border-radius: 26px; border: 1px solid var(--land-teal); box-shadow: 0 18px 40px rgba(20, 48, 79, 0.18); }
+.slide-frame-desktop { width: 100%; max-width: 700px; border-radius: 14px; border: 1px solid var(--land-teal); box-shadow: 0 24px 60px rgba(20, 48, 79, 0.2); }
+.slide figcaption { display: flex; flex-direction: column; gap: 6px; text-align: center; max-width: 440px; padding: 0 6px; }
+.slide figcaption strong { font-size: 1.3rem; font-weight: 400; color: var(--land-navy); }
+.slide figcaption span { color: #4a5a6c; line-height: 1.55; font-size: 0.95rem; }
 .slides-nav { display: flex; align-items: center; justify-content: center; gap: 14px; }
 .slides-arrow {
-  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface);
-  color: var(--navy); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--land-teal); background: rgba(255, 255, 255, 0.5);
+  color: var(--land-navy); display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 .slides-dots { display: flex; gap: 8px; }
-.slides-dots button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: var(--border); cursor: pointer; transition: width 0.25s, background 0.25s; }
-.slides-dots button.is-active { width: 24px; border-radius: 6px; background: var(--navy); }
+.slides-dots button { width: 7px; height: 7px; padding: 0; border-radius: 50%; border: 0; background: rgba(20, 48, 79, 0.25); cursor: pointer; transition: width 0.25s, background 0.25s; }
+.slides-dots button.is-active { width: 20px; border-radius: 6px; background: var(--land-teal); }
 @media (prefers-reduced-motion: reduce) { .slides-dots button { transition: none; } }
+html[dir='ltr'] .slides-arrow svg { transform: scaleX(-1); }
 
 @media (min-width: 1000px) {
-  .landing-inner { max-width: 1120px; gap: 28px; }
-  .landing-main { flex-direction: row; align-items: flex-start; gap: 56px; }
-  .landing-intro { flex: 0 0 380px; }
-  .landing-hero { text-align: start; }
-  .landing-hero h1 { font-size: 2.1rem; }
-  .slides { flex: 1; }
-  .slide-frame-desktop { max-width: 640px; }
-  }
-html[dir='ltr'] .slides-arrow svg { transform: scaleX(-1); }
+  .landing-inner { max-width: 1112px; gap: 20px; }
+  .landing-top { justify-content: flex-end; }
+  .landing-main { justify-content: center; }
+  .landing-intro { flex: 0 1 auto; width: 520px; padding: 36px 44px; border-radius: 30px; gap: 22px;
+    background: rgba(255, 255, 255, 0.5); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    border: 1px solid rgba(31, 111, 102, 0.4); box-shadow: 0 20px 50px rgba(20, 48, 79, 0.1); margin-block: auto; }
+  .landing-actions { margin-top: 0; }
+  .landing-hero { text-align: start; align-items: flex-start; }
+  .landing-hero h1 { font-size: 3rem; }
+  .landing-hero p::before { margin: 0 0 12px; }
+  .landing-hero p { font-size: 1.1rem; }
+  .landing-actions { padding: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .landing .btn { min-height: 54px; }
+  .landing-how { margin-top: 24px; }
+  .slides-desktop .slide { flex-direction: row; justify-content: center; align-items: center; gap: 56px; }
+  .slides-desktop .slide figcaption { text-align: start; max-width: 340px; }
+  .slides-desktop .slide figcaption strong { font-size: 2.2rem; line-height: 1.15; }
+  .slides-desktop .slide figcaption span { font-size: 1.1rem; }
+  .slides-desktop .slide-frame-desktop { flex: 0 0 700px; }
+}
 
 .landing::before {
   content: '';
@@ -64,13 +121,12 @@ html[dir='ltr'] .slides-arrow svg { transform: scaleX(-1); }
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(247, 243, 234, 0.55), rgba(247, 243, 234, 0.72)),
-    #f7f3ea url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+  background: linear-gradient(to bottom, rgba(255, 251, 242, 0.78), rgba(255, 251, 242, 0.35) 45%, rgba(255, 251, 242, 0.15) 65%, rgba(255, 251, 242, 0.5)),
+    #f6efe0 url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
 }
 @media (min-aspect-ratio: 1/1) {
   .landing::before {
-    background: linear-gradient(to bottom, rgba(247, 243, 234, 0.55), rgba(247, 243, 234, 0.72)),
-      #f7f3ea url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
+    background: linear-gradient(to bottom, rgba(255, 251, 242, 0.7), rgba(255, 251, 242, 0.3) 50%, rgba(255, 251, 242, 0.15) 72%, rgba(255, 251, 242, 0.5)),
+      #f6efe0 url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
   }
 }
-.slide figcaption { background: rgba(255, 255, 255, 0.78); border-radius: var(--radius-sm); padding: 10px 16px 12px; }
