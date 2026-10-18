@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LangSwitch } from '../../components/LangSwitch';
-import { Icon } from '../../components/Icon';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { detectDevice, installerFor, isMobileKind } from '../../domain/device';
@@ -191,11 +190,6 @@ export function LandingScreen() {
 
         <Slides set={set} base={base} />
         </div>
-
-        <ul className="feature-list landing-points">
-          <li><span className="feature-icon" aria-hidden="true"><Icon name="business" /></span><span>עסק ומשק בית, כל אחד בנפרד וברור</span></li>
-          <li><span className="feature-icon" aria-hidden="true"><Icon name="sync" /></span><span>סנכרון בין מכשירים וגיבוי אוטומטי</span></li>
-        </ul>
 
         <p className="auth-footer-link">
           <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>

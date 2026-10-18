@@ -47,17 +47,15 @@
 .slides-dots button.is-active { width: 24px; border-radius: 6px; background: var(--navy); }
 @media (prefers-reduced-motion: reduce) { .slides-dots button { transition: none; } }
 
-.landing-points { margin: 0; }
 @media (min-width: 1000px) {
   .landing-inner { max-width: 1120px; gap: 28px; }
-  .landing-main { flex-direction: row; align-items: center; gap: 56px; }
+  .landing-main { flex-direction: row; align-items: flex-start; gap: 56px; }
   .landing-intro { flex: 0 0 380px; }
   .landing-hero { text-align: start; }
   .landing-hero h1 { font-size: 2.1rem; }
   .slides { flex: 1; }
   .slide-frame-desktop { max-width: 640px; }
-  .landing-points { max-width: 520px; align-self: center; width: 100%; }
-}
+  }
 html[dir='ltr'] .slides-arrow svg { transform: scaleX(-1); }
 
 .landing::before {
