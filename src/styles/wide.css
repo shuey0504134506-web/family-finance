@@ -105,3 +105,8 @@
       #f7f3ea url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
   }
 }
+
+/* גלילה ראשית של המסך הרחב: גוף הדף הוא אזור הגלילה (כמו בתוכנה), ולכן סרגל הגלילה שלו בצד שמאל,
+   רחוק מסרגל תפריט הצד שבימין, בלי תלות בשפת הדפדפן (סרגל הגלילה של הדף עצמו עוקב אחרי שפת הדפדפן). */
+html:has(body.wide-bg) { height: 100%; }
+body.wide-bg { height: 100%; overflow-x: hidden; }
