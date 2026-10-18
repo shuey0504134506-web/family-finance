@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 PW = 'סיסמה-ארוכה-1'
-SHOTS = [('home', '#/household'), ('expenses', '#/household/list/expense'), ('budget', '#/household/budget'), ('summary', '#/summary'), ('tithes', '#/tithes')]
+SHOTS = [('home', '#/household'), ('expenses', '#/household/list/expense'), ('budget', '#/household/budget'), ('summary', '#/summary'), ('tithes', '#/tithes'), ('standing', '#/household/standing')]
 
 def demo_csv(path: Path) -> Path:
     random.seed(7)

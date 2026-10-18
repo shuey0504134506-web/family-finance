@@ -1,5 +1,8 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "הבא": "Next",
+  "הקודם": "Previous",
+  "הוצאות והכנסות שחוזרות כל חודש נרשמות מעצמן, והמערכת מציעה לזהות פעולות קבועות שעוד לא סומנו.": "Incomes and expenses that repeat every month are recorded by themselves, and the system suggests recurring transactions you have not marked yet.",
   "חישוב מעשרות אוטומטי לפי ההכנסות, עם מעקב אחרי מה ששולם ומה שנשאר.": "Automatic tithe calculation based on income, tracking what was paid and what remains.",
   "סיכום החודש והשנה והשוואה לתקופות קודמות, כדי להבין לאן הולך הכסף.": "A summary of the month and year, compared with earlier periods, to understand where the money goes.",
   "קובעים תקציב לכל קטגוריה ורואים בזמן אמת כמה נוצל ממנו.": "Set a budget for each category and see in real time how much of it has been used.",
