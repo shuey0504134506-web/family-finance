@@ -27,7 +27,7 @@ function Form({ uid, email }: { uid: string; email: string | null }) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState<'sent' | 'queued' | null>(null);
   const [mine, setMine] = useState<UserMessage[]>([]);
 
   useEffect(() => subscribeMyMessages(uid, setMine, () => setMine([])), [uid]);
@@ -40,11 +40,10 @@ function Form({ uid, email }: { uid: string; email: string | null }) {
     }
     setBusy(true);
     setError(null);
-    setSent(false);
+    setSent(null);
     try {
-      await sendMessageToAdmin(uid, email, text);
+      setSent(await sendMessageToAdmin(uid, email, text));
       setText('');
-      setSent(true);
     } catch {
       setError('לא הצלחנו לשלוח את ההודעה. יש לבדוק חיבור ולנסות שוב.');
     } finally {
@@ -67,7 +66,12 @@ function Form({ uid, email }: { uid: string; email: string | null }) {
           onChange={(e) => setText(e.target.value)}
         />
         {error ? <p className="form-error" role="alert">{error}</p> : null}
-        {sent ? <p className="muted" role="status">ההודעה נשלחה. אם תהיה תשובה, היא תקפוץ כשתפתח את האפליקציה.</p> : null}
+        {sent === 'sent' ? <p className="muted" role="status">ההודעה נשלחה. אם תהיה תשובה, היא תקפוץ כשתפתח את האפליקציה.</p> : null}
+        {sent === 'queued' ? (
+          <p className="muted" role="status">
+            אין כרגע חיבור לאינטרנט. ההודעה נשמרה במכשיר ותישלח אוטומטית כשהחיבור יחזור.
+          </p>
+        ) : null}
         <button type="submit" className="btn btn-primary" disabled={busy}>
           {busy ? 'שולח…' : 'שליחת הודעה למנהל'}
         </button>
@@ -85,7 +89,7 @@ function Form({ uid, email }: { uid: string; email: string | null }) {
                     {`תשובת המנהל (${when(m.repliedAt ?? 0)}): ${m.reply}`}
                   </div>
                 ) : (
-                  <div className="txc-note">ממתינה לתשובה</div>
+                  <div className="txc-note">{m.pending ? 'נשמרה ותישלח כשיהיה חיבור' : 'ממתינה לתשובה'}</div>
                 )}
               </li>
             ))}

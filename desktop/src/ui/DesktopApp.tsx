@@ -5,6 +5,7 @@ import { FullScreenMessage } from '../../../src/components/FullScreenMessage';
 import { AuthProvider } from '../../../src/features/auth/AuthContext';
 import { MonthProvider } from '../../../src/features/month/MonthContext';
 import { SyncNoticeProvider } from '../../../src/features/sync/SyncNotice';
+import { PRIVACY_LABEL_FULL, PRIVACY_LABEL_SHORT, PrivacyLabelContext } from '../../../src/features/privacy/privacyLabel';
 import { createProfile } from './createRecords';
 import { Controller } from './controller';
 import { DesktopRoutes } from './DesktopRoutes';
@@ -50,15 +51,19 @@ function Gate() {
   const ui = useUi();
   if (ui.phase === 'booting') return <FullScreenMessage title="טוען…" />;
   if (ui.phase === 'picker') return <EntryFlow />;
+  // בחשבון מנותק אין יצירת קשר עם מפעיל האפליקציה, ולכן גם השם קצר יותר
+  const label = ui.me?.kind === 'offline' ? PRIVACY_LABEL_SHORT : PRIVACY_LABEL_FULL;
   return (
-    <AuthProvider>
-      <MonthProvider>
-        <SyncNoticeProvider>
-          <HashRouter>
-            <DesktopRoutes />
-          </HashRouter>
-        </SyncNoticeProvider>
-      </MonthProvider>
-    </AuthProvider>
+    <PrivacyLabelContext.Provider value={label}>
+      <AuthProvider>
+        <MonthProvider>
+          <SyncNoticeProvider>
+            <HashRouter>
+              <DesktopRoutes />
+            </HashRouter>
+          </SyncNoticeProvider>
+        </MonthProvider>
+      </AuthProvider>
+    </PrivacyLabelContext.Provider>
   );
 }

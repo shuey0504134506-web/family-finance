@@ -1,3 +1,4 @@
+import { usePrivacyLabel } from './privacyLabel';
 import { ContactAdmin } from './ContactAdmin';
 import { suppressLock } from '../../services/lockSuppress';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -9,9 +10,10 @@ import { APP_NAME, PRIVACY_CONTACT_EMAIL, PRIVACY_CONTACT_PHONE } from '../../co
  * תיפתח לציבור, שיתייעץ באיש מקצוע).
  */
 export function PrivacyScreen() {
+  const label = usePrivacyLabel();
   return (
     <div className="app-shell">
-      <ScreenHeader title="מדיניות פרטיות" />
+      <ScreenHeader title={label} />
       <main className="content prose">
         <p className="muted">
           {`המסמך מסביר בקצרה איזה מידע ${APP_NAME} שומרת, למה, ואיפה.`}

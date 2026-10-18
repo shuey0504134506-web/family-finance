@@ -1,4 +1,5 @@
 import { LangSwitch } from '../../components/LangSwitch';
+import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Field } from '../../components/Field';
@@ -12,6 +13,7 @@ import { isValidEmail } from './validation';
  * (ההתחברות מבוססת מייל, וזהו "שם המשתמש" שהמכשיר זוכר.)
  */
 export function LoginScreen() {
+  const privacyLabel = usePrivacyLabel();
   const { login } = useAuth();
   const [remembered, setRemembered] = useState(() => readDeviceUser());
   const [email, setEmail] = useState('');
@@ -120,7 +122,7 @@ export function LoginScreen() {
           אין לך חשבון? <Link to="/signup">יצירת חשבון</Link>
         </p>
         <p className="auth-footer-link auth-plain">
-          <Link to="/privacy">מדיניות פרטיות</Link>
+          <Link to="/privacy">{privacyLabel}</Link>
         </p>
       </div>
     </main>

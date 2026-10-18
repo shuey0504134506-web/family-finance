@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { Link } from 'react-router-dom';
 import { isAdminEmail } from '../../config/admin';
 import { loadPendingCount } from '../../services/adminService';
@@ -21,6 +22,7 @@ import { useRevealOpen } from '../../hooks/useRevealOpen';
  * פרטי חשבון, ייעוד האפליקציה, ניהול האפליקציה, אבטחה, ובסוף מחיקת חשבון.
  */
 export function SettingsScreen() {
+  const privacyLabel = usePrivacyLabel();
   const { user } = useReadyAuth();
   const [pending, setPending] = useState(0);
   const [unanswered, setUnanswered] = useState(0);
@@ -89,7 +91,7 @@ export function SettingsScreen() {
         ) : null}
 
         <p className="auth-footer-link">
-          <Link to="/privacy">מדיניות פרטיות</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
+          <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
         </p>
         <p className="muted center-text">
           {APP_NAME} · גרסה {APP_VERSION}

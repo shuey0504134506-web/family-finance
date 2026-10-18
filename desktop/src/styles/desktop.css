@@ -120,7 +120,13 @@ select.input { appearance: auto; }
   .side-bottom { gap: 8px; padding-top: 10px; }
 }
 
-.entry-back { align-self: flex-start; width: auto; min-width: 120px; padding-inline: 28px; }
+.entry-back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; padding: 6px 10px 6px 14px; margin-bottom: 4px; border-radius: 999px;
+  color: var(--accent); font: inherit; font-weight: 700; cursor: pointer;
+}
+.entry-back svg { width: 20px; height: 20px; }
+.entry-back:hover, .entry-back:focus-visible { background: var(--accent-soft); text-decoration: underline; }
 .entry-main { align-items: flex-start; }
 .entry-panel { margin-block: auto; }
 

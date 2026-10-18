@@ -1,4 +1,5 @@
 import { LangSwitch } from '../../components/LangSwitch';
+import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Field } from '../../components/Field';
@@ -12,6 +13,7 @@ import { saveLogo } from '../../services/logoService';
 import { LogoControl } from '../settings/LogoControl';
 
 export function SignupScreen() {
+  const privacyLabel = usePrivacyLabel();
   const navigate = useNavigate();
   const { register, justRegistered, dismissWelcome } = useAuth();
   const [values, setValues] = useState<SignupValues>({
@@ -193,7 +195,7 @@ export function SignupScreen() {
           כבר יש לך חשבון? <Link to="/login">כניסה</Link>
         </p>
         <p className="auth-footer-link">
-          <Link to="/welcome">חזרה</Link> · <Link to="/privacy">מדיניות פרטיות</Link>
+          <Link to="/welcome">חזרה</Link> · <Link to="/privacy">{privacyLabel}</Link>
         </p>
       </div>
     </main>

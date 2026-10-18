@@ -1,4 +1,5 @@
 import { LangSwitch } from '../../components/LangSwitch';
+import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Field } from '../../components/Field';
@@ -8,6 +9,7 @@ import { isValidEmail } from './validation';
 import { Icon } from '../../components/Icon';
 
 export function ForgotPasswordScreen() {
+  const privacyLabel = usePrivacyLabel();
   const location = useLocation();
   const initialEmail =
     (location.state as { email?: string } | null)?.email ?? '';
@@ -91,6 +93,9 @@ export function ForgotPasswordScreen() {
             <Link to="/login">חזרה לכניסה</Link>
           </p>
         )}
+        <p className="auth-footer-link auth-plain">
+          <Link to="/privacy">{privacyLabel}</Link>
+        </p>
       </div>
     </main>
   );

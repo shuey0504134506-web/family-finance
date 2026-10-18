@@ -10,6 +10,9 @@ import { isValidEmail, MIN_PASSWORD_LENGTH, normalizePhone, validateSignup, type
 import { describeError } from '../../../src/services/authErrors';
 import { WrongPassword, type AccountMeta } from '../core/session';
 import type { RecoveryQuestion } from '../core/recovery';
+import { PRIVACY_LABEL_FULL } from '../../../src/features/privacy/privacyLabel';
+import { DesktopPrivacyBody } from './DesktopPrivacy';
+import { ChevronRight } from '../../../src/components/icons';
 import type { NewAccount } from './controller';
 import { RecoveryEditor } from './RecoveryEditor';
 import { useController, useUi } from './useController';
@@ -21,7 +24,8 @@ type View =
   | { name: 'online-login' }
   | { name: 'signup-online' }
   | { name: 'signup-offline' }
-  | { name: 'remove'; account: AccountMeta };
+  | { name: 'remove'; account: AccountMeta }
+  | { name: 'privacy' };
 
 const fail = (e: unknown): string => (e instanceof WrongPassword ? 'הסיסמה שגויה.' : describeError(e));
 
@@ -46,14 +50,20 @@ export function EntryFlow() {
       <section className="entry-main">
         <div className="entry-panel">
           <LangSwitch />
-          {view.name !== 'list' && <button type="button" className="btn btn-secondary entry-back" onClick={back}>חזרה</button>}
+          {view.name !== 'list' && <button type="button" className="entry-back" onClick={back}><ChevronRight />חזור</button>}
           {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
-          {view.name === 'unlock' && <Unlock account={view.account} back={back} go={setView} />}
-          {view.name === 'recover' && <Recover account={view.account} back={back} />}
-          {view.name === 'online-login' && <OnlineLogin back={back} />}
-          {view.name === 'signup-online' && <Signup kind="online" back={back} />}
-          {view.name === 'signup-offline' && <Signup kind="offline" back={back} />}
+          {view.name === 'unlock' && <Unlock account={view.account} go={setView} />}
+          {view.name === 'recover' && <Recover account={view.account} />}
+          {view.name === 'online-login' && <OnlineLogin />}
+          {view.name === 'signup-online' && <Signup kind="online" />}
+          {view.name === 'signup-offline' && <Signup kind="offline" />}
           {view.name === 'remove' && <RemoveAccount account={view.account} back={back} />}
+          {view.name === 'privacy' && <DesktopPrivacyBody kind={null} />}
+          {view.name !== 'privacy' && (
+            <p className="auth-footer-link">
+              <button type="button" className="link-btn" onClick={() => setView({ name: 'privacy' })}>{PRIVACY_LABEL_FULL}</button>
+            </p>
+          )}
         </div>
       </section>
     </main>
@@ -106,7 +116,7 @@ function useAction() {
   };
 }
 
-function Unlock({ account, back, go }: { account: AccountMeta; back: () => void; go: (v: View) => void }) {
+function Unlock({ account, go }: { account: AccountMeta; go: (v: View) => void }) {
   const c = useController();
   const [password, setPassword] = useState('');
   const a = useAction();
@@ -133,13 +143,13 @@ function Unlock({ account, back, go }: { account: AccountMeta; back: () => void;
           : hasQuestions === false && account.kind === 'offline' ? <span className="muted small">לא הוגדרו שאלות שחזור לחשבון הזה, ולכן אי אפשר לשחזר סיסמה.</span> : null}
       </p>
       <p className="auth-footer-link">
-        <button type="button" className="link-btn" onClick={back}>חזרה</button> · <button type="button" className="link-btn" onClick={() => go({ name: 'remove', account })}>הסרת החשבון מהמחשב</button>
+        <button type="button" className="link-btn" onClick={() => go({ name: 'remove', account })}>הסרת החשבון מהמחשב</button>
       </p>
     </form>
   );
 }
 
-function Recover({ account, back }: { account: AccountMeta; back: () => void }) {
+function Recover({ account }: { account: AccountMeta }) {
   const c = useController();
   const [questions, setQuestions] = useState<RecoveryQuestion[] | null>(null);
   const [answers, setAnswers] = useState<string[]>(['', '', '']);
@@ -172,12 +182,11 @@ function Recover({ account, back }: { account: AccountMeta; back: () => void }) 
         {a.error && <div className="form-error" role="alert">{a.error === 'אירעה שגיאה לא צפויה. יש לנסות שוב.' ? 'אחת או יותר מהתשובות שגויה. אפשר לנסות שוב.' : a.error}</div>}
         <button type="submit" className="btn btn-primary" disabled={a.busy}>{a.busy ? 'משחזר…' : 'שחזור וקביעת סיסמה'}</button>
       </div>
-      <p className="auth-footer-link"><button type="button" className="link-btn" onClick={back}>חזרה</button></p>
     </form>
   );
 }
 
-function OnlineLogin({ back }: { back: () => void }) {
+function OnlineLogin() {
   const c = useController();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -197,7 +206,7 @@ function OnlineLogin({ back }: { back: () => void }) {
         {a.error && <div className="form-error" role="alert">{a.error}</div>}
         <button type="submit" className="btn btn-primary" disabled={a.busy}>{a.busy ? 'מתחבר ומוריד נתונים…' : 'כניסה'}</button>
       </div>
-      <p className="auth-footer-link"><ResetPassword email={email} /> · <button type="button" className="link-btn" onClick={back}>חזרה</button></p>
+      <p className="auth-footer-link"><ResetPassword email={email} /></p>
     </form>
   );
 }
@@ -213,7 +222,7 @@ function ResetPassword({ email }: { email: string }) {
   );
 }
 
-function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }) {
+function Signup({ kind }: { kind: 'online' | 'offline' }) {
   const c = useController();
   const [values, setValues] = useState<SignupValues>({ firstName: '', lastName: '', businessName: '', phone: '', email: '', password: '', confirmPassword: '' });
   const [extras, setExtras] = useState<string[]>([]);
@@ -284,7 +293,6 @@ function Signup({ kind, back }: { kind: 'online' | 'offline'; back: () => void }
         {a.error && <div className="form-error" role="alert">{a.error}</div>}
         <button type="submit" className="btn btn-primary" disabled={a.busy}>{a.busy ? 'יוצר חשבון…' : offline ? 'המשך לשאלות שחזור' : 'יצירת חשבון'}</button>
       </div>
-      <p className="auth-footer-link"><button type="button" className="link-btn" onClick={back}>חזרה</button></p>
     </form>
   );
 }
@@ -303,7 +311,6 @@ function RemoveAccount({ account, back }: { account: AccountMeta; back: () => vo
         {a.error && <div className="form-error" role="alert">{a.error}</div>}
         <button type="button" className="btn btn-primary btn-danger" disabled={a.busy || text.trim() !== word} onClick={() => void a.run(async () => { await c.removeLocal(account.id); back(); })}>הסרה סופית</button>
       </div>
-      <p className="auth-footer-link"><button type="button" className="link-btn" onClick={back}>ביטול</button></p>
     </>
   );
 }

@@ -1,9 +1,11 @@
 import { LangSwitch } from '../../components/LangSwitch';
+import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 
 /** מסך פתיחה: מופיע בכניסה הראשונה ממכשיר חדש. */
 export function WelcomeScreen() {
+  const privacyLabel = usePrivacyLabel();
   const navigate = useNavigate();
 
   return (
@@ -48,7 +50,7 @@ export function WelcomeScreen() {
           </div>
 
           <p className="auth-footer-link">
-            <Link to="/privacy">מדיניות פרטיות</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
+            <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
           </p>
         </div>
       </div>

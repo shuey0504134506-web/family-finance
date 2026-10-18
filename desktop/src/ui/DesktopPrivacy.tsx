@@ -1,6 +1,7 @@
 import { ScreenHeader } from '../../../src/components/ScreenHeader';
 import { PRIVACY_CONTACT_EMAIL, PRIVACY_CONTACT_PHONE } from '../../../src/config/appInfo';
 import { ContactAdmin } from '../../../src/features/privacy/ContactAdmin';
+import { usePrivacyLabel } from '../../../src/features/privacy/privacyLabel';
 import { useUi } from './useController';
 
 /**
@@ -9,12 +10,21 @@ import { useUi } from './useController';
  */
 export function DesktopPrivacy() {
   const ui = useUi();
+  const label = usePrivacyLabel();
   const kind = ui.phase === 'in' ? ui.me?.kind ?? null : null;
+  return (
+    <div className="app-shell">
+      <ScreenHeader title={label} />
+      <DesktopPrivacyBody kind={kind} />
+    </div>
+  );
+}
+
+/** גוף המדיניות. kind=null = עוד לא נכנסו לחשבון (מסך הכניסה), ואז מוצגים שני סוגי החשבון. */
+export function DesktopPrivacyBody({ kind }: { kind: 'online' | 'offline' | null }) {
   const offline = kind === 'offline';
   const online = kind === 'online';
   return (
-    <div className="app-shell">
-      <ScreenHeader title="מדיניות פרטיות" />
       <main className="content prose">
         <p className="muted">
           {offline
@@ -114,12 +124,11 @@ export function DesktopPrivacy() {
             <h2>פנייה למנהל האפליקציה</h2>
             <p>
               משתמש בחשבון מקוון יכול לשלוח הודעה ישירות למנהל האפליקציה, גם בנושאי פרטיות. ההודעה נקראת על ידי המנהל בלבד ונשמרת יחד עם כתובת האימייל של השולח, כדי שאפשר יהיה להשיב. התשובה מוצגת כאן.
-              לשליחה נדרש חיבור לאינטרנט.
+              אם אין חיבור לאינטרנט, ההודעה נשמרת ונשלחת אוטומטית כשהחיבור חוזר.
             </p>
             <ContactAdmin />
           </>
         )}
       </main>
-    </div>
   );
 }
