@@ -101,6 +101,10 @@ export async function requestEmailChange(user: User, currentPassword: string, ne
   await verifyBeforeUpdateEmail(user, newEmail.trim());
 }
 
+function isPermissionDenied(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: string }).code === 'permission-denied';
+}
+
 // ---------- יצוא וגיבוי ----------
 
 export interface ExportResult {
@@ -110,10 +114,16 @@ export interface ExportResult {
 
 /** קורא את כל נתוני המשתמש (מהשרת כשיש חיבור, אחרת מהמטמון המקומי). */
 export async function exportAllData(uid: string, options: { withAttachments?: boolean } = {}): Promise<ExportResult> {
-  const read = async <T>(name: string): Promise<T[]> => {
+  const read = async <T>(name: string, optional = false): Promise<T[]> => {
     const ref = collection(db, 'users', uid, name);
-    const snapshot = await (navigator.onLine === false ? getDocs(ref) : getDocsFromServer(ref));
-    return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
+    try {
+      const snapshot = await (navigator.onLine === false ? getDocs(ref) : getDocsFromServer(ref));
+      return snapshot.docs.map((d) => ({ ...(d.data() as object), id: d.id }) as T);
+    } catch (e) {
+      // אוסף חדש שכללי השרת עוד לא מכירים (הוראות קבע) לא יכשיל את כל הייצוא והגיבוי.
+      if (optional && isPermissionDenied(e)) return [];
+      throw e;
+    }
   };
 
   const [businessTx, householdTx, businesses, categories, budgets, tasks, shoppingItems, settingsDocs, debts, standingOrders, attachments] = await Promise.all([
@@ -126,7 +136,7 @@ export async function exportAllData(uid: string, options: { withAttachments?: bo
     read<object>('shoppingItems'),
     read<object>('settings'),
     read<object>('debts'),
-    read<object>('standingOrders'),
+    read<object>('standingOrders', true),
     // תמונות מצורפות כבדות, ולכן נכללות רק כשמבקשים (גיבוי אוטומטי אינו כולל אותן)
     options.withAttachments ? read<object>('attachments') : Promise.resolve([] as object[]),
   ]);
@@ -256,7 +266,14 @@ export async function deleteAccountAndData(user: User, password: string): Promis
 
   const uid = user.uid;
   for (const name of USER_COLLECTIONS) {
-    const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
+    let snapshot;
+    try {
+      snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
+    } catch (e) {
+      // אוסף שכללי השרת עוד לא מכירים (הוראות קבע) אינו חוסם את מחיקת החשבון.
+      if (name === 'standingOrders' && isPermissionDenied(e)) continue;
+      throw e;
+    }
     for (let i = 0; i < snapshot.docs.length; i += BATCH_SIZE) {
       const batch = writeBatch(db);
       snapshot.docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
