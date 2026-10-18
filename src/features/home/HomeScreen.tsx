@@ -131,9 +131,9 @@ export function HomeScreen() {
 
   const activeItems = isBusiness ? ownBusinessItems : household.items;
 
-  // מאז תחילת התיעוד: כל ההיסטוריה עד סוף החודש הנוכחי, לפי אותם כללים כמו בסיכום החודשי
-  const allBusiness = useTransactionsUpTo(user.uid, 'business', month.current, needBusiness);
-  const allHousehold = useTransactionsUpTo(user.uid, 'household', month.current, !isBusiness && hasHousehold);
+  // מאז תחילת התיעוד: כל ההיסטוריה, כולל פעולות עם תאריך עתידי שכבר הוזנו, לפי אותם כללים כמו בסיכום החודשי
+  const allBusiness = useTransactionsUpTo(user.uid, 'business', '9999-12', needBusiness);
+  const allHousehold = useTransactionsUpTo(user.uid, 'household', '9999-12', !isBusiness && hasHousehold);
   const sinceStart = useMemo(() => {
     if (allBusiness.loading || allHousehold.loading || allBusiness.error || allHousehold.error) return null;
     if (isBusiness) {

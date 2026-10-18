@@ -21,6 +21,7 @@ import {
 import { AccordionItem } from '../settings/Accordion';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
+import { useRevealOpen } from '../../hooks/useRevealOpen';
 
 const USAGE_LABEL: Record<UsageLevel, string> = {
   high: 'שימוש גבוה',
@@ -309,6 +310,7 @@ function AdminContent() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  useRevealOpen(openId);
   const [openDay, setOpenDay] = useState<string | null>(null);
   // פרטי בעל החשבון: פתוחים כברירת מחדל בחשבון שממתין להחלטה, וניתנים להצגה והסתרה בכפתור
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});

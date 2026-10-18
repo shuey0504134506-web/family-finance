@@ -46,7 +46,7 @@ export function TitheScreen() {
         ) : (
           <>
             <section className="card tithe-hero" aria-label="יתרת מעשרות מצטברת">
-              <div className="muted">מצטבר עד סוף {formatMonthYear(month.selected)}</div>
+              <div className="muted">מצטבר עד סוף {formatMonthYear(current.yearMonth)}</div>
               {current.cumulative.remainingAgorot > 0 ? (
                 <>
                   <div className="tithe-label">נותר לתת</div>
@@ -172,7 +172,7 @@ export function TitheScreen() {
                   })}
                 </ul>
               )}
-              <p className="muted small">מצטבר מתחילת הנתונים ועד סוף {formatMonthYear(month.selected)}.</p>
+              <p className="muted small">מצטבר מתחילת הנתונים ועד סוף {formatMonthYear(current.yearMonth)}.</p>
             </section>
 
             {rows.length > 1 && (

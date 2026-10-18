@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useRevealOpen } from '../../hooks/useRevealOpen';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { fuzzyMatchAll } from '../../domain/fuzzy';
 import { FAQ, SAVINGS, TIPS, type HelpItem } from './helpContent';
 import { WalkthroughPlayer } from './WalkthroughPlayer';
 
@@ -19,18 +21,21 @@ export function HelpScreen({ content = DEFAULT_CONTENT }: { content?: HelpConten
   const [tab, setTab] = useState<Tab>('faq');
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  useRevealOpen(openId);
+
+  const q = query.trim();
+  const searching = q.length > 0;
 
   const items = useMemo(() => {
-    const list = tab === 'faq' ? content.faq : tab === 'tips' ? content.tips : content.savings;
-    const q = query.trim();
-    return q ? list.filter((i) => i.title.includes(q) || i.body.includes(q)) : list;
-  }, [tab, query, content]);
+    if (!searching) return tab === 'faq' ? content.faq : tab === 'tips' ? content.tips : content.savings;
+    return searchHelp(content, q);
+  }, [tab, q, searching, content]);
 
   return (
     <div className="app-shell">
       <ScreenHeader title="עזרה" />
       <main className="content">
-        <div className="segmented" role="group" aria-label="סוג תוכן">
+        <div className="segmented" role="group" aria-label="סוג תוכן" hidden={searching}>
           {(
             [
               ['faq', 'שאלות נפוצות'],
@@ -49,14 +54,14 @@ export function HelpScreen({ content = DEFAULT_CONTENT }: { content?: HelpConten
           <input id="help-search" className="input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" />
         </div>
 
-        {tab === 'savings' && <p className="muted small">טיפים כלליים בלבד, לא ייעוץ פיננסי או מס.</p>}
+        {!searching && tab === 'savings' && <p className="muted small">טיפים כלליים בלבד, לא ייעוץ פיננסי או מס.</p>}
 
         {items.length === 0 ? (
           <p className="muted">לא נמצא תוכן מתאים.</p>
         ) : (
           <div className="acc-list">
             {items.map((item) => (
-              <HelpEntry key={item.id} item={item} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} />
+              <HelpEntry key={item.id} item={item} kind={searching ? kindOf(content, item.id) : undefined} open={openId === item.id} onToggle={() => setOpenId(openId === item.id ? null : item.id)} />
             ))}
           </div>
         )}
@@ -65,12 +70,13 @@ export function HelpScreen({ content = DEFAULT_CONTENT }: { content?: HelpConten
   );
 }
 
-function HelpEntry({ item, open, onToggle }: { item: HelpItem; open: boolean; onToggle: () => void }) {
+function HelpEntry({ item, open, onToggle, kind }: { item: HelpItem; open: boolean; onToggle: () => void; kind?: string }) {
   const panelId = `help-${item.id}`;
   return (
-    <div className="help-entry">
+    <div className="help-entry" data-reveal={item.id}>
       <button type="button" className="acc-trigger" aria-expanded={open} aria-controls={panelId} onClick={onToggle}>
         <span>{item.title}</span>
+        {kind && <span className="help-kind">{kind}</span>}
       </button>
       {open && (
         <div id={panelId} className="help-body">
@@ -89,4 +95,26 @@ function HelpEntry({ item, open, onToggle }: { item: HelpItem; open: boolean; on
       )}
     </div>
   );
+}
+
+const KIND_LABEL = { faq: 'שאלה נפוצה', tips: 'טיפ', savings: 'חיסכון' } as const;
+
+function kindOf(content: HelpContent, id: string): string | undefined {
+  if (content.faq.some((i) => i.id === id)) return KIND_LABEL.faq;
+  if (content.tips.some((i) => i.id === id)) return KIND_LABEL.tips;
+  if (content.savings.some((i) => i.id === id)) return KIND_LABEL.savings;
+  return undefined;
+}
+
+/**
+ * חיפוש אחד בכל התוכן (שאלות, טיפים וחיסכון). קודם התאמה מדויקת; אם אין, מחפשים בקירוב
+ * כדי שגם טעות כתיב תגיע לתשובה. כותרת שמתאימה קודמת להתאמה בגוף הטקסט.
+ */
+export function searchHelp(content: HelpContent, q: string): HelpItem[] {
+  const all = [...content.faq, ...content.tips, ...content.savings];
+  const words = q.split(/\s+/).filter(Boolean);
+  const exact = all.filter((i) => words.every((w) => i.title.includes(w) || i.body.includes(w)));
+  const pool = exact.length > 0 ? exact : all.filter((i) => fuzzyMatchAll(`${i.title} ${i.body}`, q));
+  const inTitle = (i: HelpItem) => (words.every((w) => i.title.includes(w)) || fuzzyMatchAll(i.title, q) ? 0 : 1);
+  return [...pool].sort((a, b) => inTitle(a) - inTitle(b));
 }

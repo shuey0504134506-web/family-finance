@@ -18,7 +18,7 @@ export function AccordionItem({
   children: ReactNode;
 }) {
   return (
-    <div className={`acc-item${open ? ' is-open' : ''}${danger ? ' is-danger' : ''}`}>
+    <div className={`acc-item${open ? ' is-open' : ''}${danger ? ' is-danger' : ''}`} data-reveal={id}>
       <h2 className="acc-heading">
         <button
           type="button"

@@ -1,3 +1,4 @@
+import { fuzzyMatchAll } from './fuzzy';
 import { formatAgorotNumber } from './money';
 import type { Transaction, TransactionType } from './types';
 
@@ -26,11 +27,9 @@ export function searchTransactions<T extends SearchableTx>(
   filters: SearchFilters,
 ): T[] {
   const words = normalize(filters.text).split(' ').filter(Boolean);
-  const matches = transactions.filter((t) => {
-    if (filters.type !== 'all' && t.type !== filters.type) return false;
-    if (words.length === 0) return true;
+  const haystackOf = (t: T): string => {
     const fullAmount = formatAgorotNumber(t.amountAgorot);
-    const haystack = normalize(
+    return normalize(
       [
         t.counterparty,
         t.categoryName,
@@ -42,8 +41,18 @@ export function searchTransactions<T extends SearchableTx>(
         `${t.date.slice(8, 10)}/${t.date.slice(5, 7)}/${t.date.slice(0, 4)}`,
       ].join(' '),
     );
+  };
+  const byType = transactions.filter((t) => filters.type === 'all' || t.type === filters.type);
+  let matches = byType.filter((t) => {
+    if (words.length === 0) return true;
+    const haystack = haystackOf(t);
     return words.every((word) => haystack.includes(word));
   });
+  // אין התאמה מדויקת: מחפשים בקירוב (טעות כתיב), על שם, קטגוריה והערה בלבד
+  if (matches.length === 0 && words.length > 0) {
+    const text = filters.text;
+    matches = byType.filter((t) => fuzzyMatchAll([t.counterparty, t.categoryName, t.note].join(' '), text));
+  }
   // החדש ביותר קודם. באותו תאריך: האחרון שנוסף.
   return [...matches].sort((a, b) =>
     a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1,

@@ -14,6 +14,7 @@ import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
 import { PurposeSection } from './PurposeSection';
 import { PasswordForm } from './SecuritySection';
+import { useRevealOpen } from '../../hooks/useRevealOpen';
 
 /**
  * מסך הגדרות: רשימת כותרות מתקפלות.
@@ -37,6 +38,7 @@ export function SettingsScreen() {
       });
   }, [isAdmin]);
   const [openId, setOpenId] = useState<string | null>(null);
+  useRevealOpen(openId);
   const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
 
   return (

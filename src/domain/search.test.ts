@@ -32,7 +32,7 @@ describe('searchTransactions', () => {
 
   it('כל המילים חייבות להתאים', () => {
     expect(searchTransactions(data, { text: 'סופר ילדים', type: 'all' })).toHaveLength(1);
-    expect(searchTransactions(data, { text: 'סופר שופרסל', type: 'all' })).toHaveLength(0);
+    expect(searchTransactions(data, { text: 'סופר מכונית', type: 'all' })).toHaveLength(0);
   });
 
   it('מוצא לפי סכום, עם פסיקים ובלי', () => {
@@ -49,5 +49,18 @@ describe('searchTransactions', () => {
   it('מסנן לפי סוג', () => {
     expect(searchTransactions(data, { text: '', type: 'income' })).toHaveLength(1);
     expect(searchTransactions(data, { text: '', type: 'expense' })).toHaveLength(2);
+  });
+});
+
+describe('searchTransactions בקירוב', () => {
+  const data = [
+    { type: 'expense' as const, amountAgorot: 10_000, date: '2026-03-15', counterparty: 'שופרסל', categoryName: 'מזון', note: '', createdAt: 1 },
+  ];
+  it('מוצא גם עם טעות כתיב כשאין התאמה מדויקת', () => {
+    expect(searchTransactions(data, { text: 'שופרסול', type: 'all' })).toHaveLength(1);
+    expect(searchTransactions(data, { text: 'מזן', type: 'all' })).toHaveLength(1);
+  });
+  it('לא מוצא מילה שונה לגמרי', () => {
+    expect(searchTransactions(data, { text: 'דלק', type: 'all' })).toHaveLength(0);
   });
 });
