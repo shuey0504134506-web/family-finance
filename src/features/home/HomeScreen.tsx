@@ -1,4 +1,5 @@
 import { MultiCurrencySummary } from '../../components/MultiCurrencySummary';
+import { useIsWide } from '../../hooks/useIsWide';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
@@ -121,13 +122,14 @@ export function HomeScreen() {
   );
   const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
-  // שלוש הפעולות האחרונות של המרחב והחודש שמוצגים, במטבע המקורי
+  const wide = useIsWide();
+  // שלוש הפעולות האחרונות של המרחב (במסך רחב יותר, והכרטיס חותך לפי הגובה שנכנס) והחודש שמוצגים, במטבע המקורי
   const recent = useMemo(() => {
     const list = isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all;
     return [...list]
       .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1))
-      .slice(0, 3);
-  }, [isBusiness, business.all, household.all, space.businessId]);
+      .slice(0, wide ? 12 : 3);
+  }, [isBusiness, business.all, household.all, space.businessId, wide]);
 
   const activeItems = isBusiness ? ownBusinessItems : household.items;
 

@@ -14,6 +14,8 @@ import { HomeScreen } from './features/home/HomeScreen';
 import { ImportScreen } from './features/import/ImportScreen';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
+import { WideShell } from './features/shell/WideShell';
+import { useIsWide } from './hooks/useIsWide';
 import { StandingOrdersScreen } from './features/standing/StandingOrdersScreen';
 import { StandingOrdersHost } from './features/standing/StandingOrdersHost';
 import { RemindersHost } from './features/lists/RemindersHost';
@@ -85,7 +87,7 @@ function RequireAccount() {
                   <StandingOrdersHost />
                   {isAdminEmail(state.user.email) ? <AdminMessageHost /> : null}
                   <AutoBackupHost />
-                  <Outlet />
+                  <WebShell />
                 </LockGate>
               </ListsProvider>
             </SpacesProvider>
@@ -155,5 +157,19 @@ export function AppRoutes() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </>
+  );
+}
+
+/** בטלפון: המסך עצמו. במחשב (מסך רחב): אותה מעטפת עם תפריט צד כמו בתוכנה. */
+function WebShell() {
+  const wide = useIsWide();
+  const { signOutUser } = useAuth();
+  const { state } = useAuth();
+  if (!wide) return <Outlet />;
+  const label = state.status === 'ready' ? `${state.profile.firstName} ${state.profile.lastName}`.trim() : '';
+  return (
+    <WideShell userLabel={label} logoutLabel="יציאה מהחשבון" onLogout={() => void signOutUser()}>
+      <Outlet />
+    </WideShell>
   );
 }

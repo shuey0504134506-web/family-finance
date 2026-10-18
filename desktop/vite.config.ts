@@ -22,20 +22,6 @@ function redirectConfig(): Plugin {
   };
 }
 
-/** במסך הבית של התוכנה מושכים יותר פעולות אחרונות (3 באפליקציה); ההתאמה לגובה הכרטיס הסמוך נעשית ב-DesktopShell. הקוד המקורי לא משתנה. */
-function moreRecent(): Plugin {
-  return {
-    name: 'desktop-more-recent',
-    enforce: 'pre',
-    transform(code, id) {
-      if (!id.replace(/\\/g, '/').endsWith('/src/features/home/HomeScreen.tsx')) return null;
-      const out = code.replace(/\.slice\(0, 3\);(\r?\n\s*\}, \[isBusiness, business\.all, household\.all)/, '.slice(0, 12);$1');
-      if (out === code) throw new Error('desktop-more-recent: הקטע ב-HomeScreen השתנה, יש לעדכן את התוסף');
-      return out;
-    },
-  };
-}
-
 /** גרסת הטלפון (VITE_TARGET=phone): נבנית ל-dist-phone, ונארזת באפליקציית האנדרואיד תחת /offline/. */
 const phone = process.env.VITE_TARGET === 'phone';
 
@@ -55,7 +41,7 @@ function phoneEntry(): Plugin {
 
 export default defineConfig({
   base: './',
-  plugins: [redirectConfig(), ...(phone ? [phoneEntry()] : [moreRecent()]), react({ jsxImportSource: 'ff-i18n' })],
+  plugins: [redirectConfig(), ...(phone ? [phoneEntry()] : []), react({ jsxImportSource: 'ff-i18n' })],
   publicDir: here('../public'),
   resolve: {
     alias: [
