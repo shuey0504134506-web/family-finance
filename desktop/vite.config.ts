@@ -36,9 +36,26 @@ function moreRecent(): Plugin {
   };
 }
 
+/** גרסת הטלפון (VITE_TARGET=phone): נבנית ל-dist-phone, ונארזת באפליקציית האנדרואיד תחת /offline/. */
+const phone = process.env.VITE_TARGET === 'phone';
+
+function phoneEntry(): Plugin {
+  return {
+    name: 'phone-entry-name',
+    enforce: 'post',
+    generateBundle: {
+      order: 'post',
+      handler(_options, bundle) {
+        const html = bundle['index.phone.html'];
+        if (html) html.fileName = 'index.html';
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [redirectConfig(), moreRecent(), react({ jsxImportSource: 'ff-i18n' })],
+  plugins: [redirectConfig(), ...(phone ? [phoneEntry()] : [moreRecent()]), react({ jsxImportSource: 'ff-i18n' })],
   publicDir: here('../public'),
   resolve: {
     alias: [
@@ -52,5 +69,11 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
   server: { fs: { allow: [here('..')] } },
-  build: { outDir: 'dist', emptyOutDir: true, target: 'chrome120', sourcemap: false },
+  build: {
+    outDir: phone ? 'dist-phone' : 'dist',
+    emptyOutDir: true,
+    target: phone ? 'es2020' : 'chrome120',
+    sourcemap: false,
+    ...(phone ? { rollupOptions: { input: here('index.phone.html') } } : {}),
+  },
 });

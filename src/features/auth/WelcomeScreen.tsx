@@ -1,6 +1,7 @@
 import { LangSwitch } from '../../components/LangSwitch';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { Link, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '../../components/Icon';
 
 /** מסך פתיחה: מופיע בכניסה הראשונה ממכשיר חדש. */
@@ -47,6 +48,15 @@ export function WelcomeScreen() {
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/login')}>
               כניסה לחשבון קיים
             </button>
+            {Capacitor.isNativePlatform() && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => window.location.assign(`${import.meta.env.BASE_URL}offline/index.html`)}
+              >
+                חשבון לא מקוון (נשמר על הטלפון בלבד)
+              </button>
+            )}
           </div>
 
           <p className="auth-footer-link">

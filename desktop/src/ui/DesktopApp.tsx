@@ -13,9 +13,12 @@ import { EntryFlow } from './EntryFlow';
 import { createStorage } from './storage';
 import { ControllerContext, useUi } from './useController';
 import { createFirebaseCloud, type CloudAuth } from '../sync/firebaseCloud';
+import { createNoCloud } from '../sync/noCloud';
+import { IS_PHONE } from './target';
 
 /** בבדיקות קצה-לקצה (mode=e2e בלבד) אפשר להזריק ענן מדומה. בבנייה רגילה הענף הזה נמחק. */
 function pickCloud(): CloudAuth {
+  if (IS_PHONE) return createNoCloud();
   if (import.meta.env.MODE === 'e2e') {
     const fake = (window as unknown as { __fakeCloud?: CloudAuth }).__fakeCloud;
     if (fake) return fake;
@@ -59,7 +62,7 @@ function Gate() {
         <MonthProvider>
           <SyncNoticeProvider>
             <HashRouter>
-              <DesktopRoutes />
+              <DesktopRoutes phone={IS_PHONE} />
             </HashRouter>
           </SyncNoticeProvider>
         </MonthProvider>

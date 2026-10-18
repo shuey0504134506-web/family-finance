@@ -78,6 +78,12 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_PRIVACY_CONTACT_EMAIL: ${{ secrets.VITE_PRIVACY_CONTACT_EMAIL }}
 
+      - name: בניית גרסת החשבון הלא מקוון (נארזת בתוך האפליקציה)
+        run: |
+          VITE_TARGET=phone npx vite build -c desktop/vite.config.ts
+          mkdir -p dist/offline
+          cp -r desktop/dist-phone/. dist/offline/
+
       - name: העתקת האתר לפרויקט האנדרואיד
         run: npx cap sync android
 

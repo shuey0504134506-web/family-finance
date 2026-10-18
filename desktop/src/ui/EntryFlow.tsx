@@ -10,6 +10,7 @@ import { isValidEmail, MIN_PASSWORD_LENGTH, normalizePhone, validateSignup, type
 import { describeError } from '../../../src/services/authErrors';
 import { WrongPassword, type AccountMeta } from '../core/session';
 import type { RecoveryQuestion } from '../core/recovery';
+import { IS_PHONE } from './target';
 import { PRIVACY_LABEL_FULL } from '../../../src/features/privacy/privacyLabel';
 import { DesktopPrivacyBody } from './DesktopPrivacy';
 import { ChevronRight } from '../../../src/components/icons';
@@ -26,6 +27,9 @@ type View =
   | { name: 'signup-offline' }
   | { name: 'remove'; account: AccountMeta }
   | { name: 'privacy' };
+
+/** בגרסת הטלפון "מחשב" הופך ל"טלפון" */
+const ph = (t: string): string => (IS_PHONE ? t.replace(/המחשב הזה/g, 'הטלפון הזה').replace(/מהמחשב/g, 'מהטלפון').replace(/במחשב/g, 'בטלפון') : t);
 
 const fail = (e: unknown): string => (e instanceof WrongPassword ? 'הסיסמה שגויה.' : describeError(e));
 
@@ -75,10 +79,10 @@ function AccountList({ accounts, online, go }: { accounts: AccountMeta[]; online
     <>
       <header className="auth-header">
         <h1>{accounts.length ? 'ברוכים השבים' : 'ברוכים הבאים'}</h1>
-        <p className="muted">{accounts.length ? 'בחרו חשבון כדי להיכנס.' : 'אפשר ליצור חשבון מנותק (הכול נשאר במחשב), או להתחבר לחשבון מקוון.'}</p>
+        <p className="muted">{accounts.length ? 'בחרו חשבון כדי להיכנס.' : IS_PHONE ? 'חשבון לא מקוון נשמר על הטלפון בלבד, מוצפן בסיסמה, בלי שרת ובלי סנכרון.' : 'אפשר ליצור חשבון מנותק (הכול נשאר במחשב), או להתחבר לחשבון מקוון.'}</p>
       </header>
       {accounts.length > 0 && (
-        <ul className="account-list" aria-label="חשבונות במחשב הזה">
+        <ul className="account-list" aria-label={ph("חשבונות במחשב הזה")}>
           {accounts.map((a) => (
             <li key={a.id}>
               <button type="button" className="card account-row" onClick={() => go({ name: 'unlock', account: a })}>
@@ -94,11 +98,12 @@ function AccountList({ accounts, online, go }: { accounts: AccountMeta[]; online
         </ul>
       )}
       <div className="auth-actions">
-        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-online' })} disabled={!online}>יצירת חשבון מקוון</button>
-        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'online-login' })} disabled={!online}>כניסה לחשבון מקוון קיים</button>
-        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-offline' })}>יצירת חשבון מנותק (ללא סנכרון)</button>
+        {!IS_PHONE && <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-online' })} disabled={!online}>יצירת חשבון מקוון</button>}
+        {!IS_PHONE && <button type="button" className="btn btn-primary" onClick={() => go({ name: 'online-login' })} disabled={!online}>כניסה לחשבון מקוון קיים</button>}
+        <button type="button" className="btn btn-primary" onClick={() => go({ name: 'signup-offline' })}>{IS_PHONE ? 'יצירת חשבון לא מקוון' : 'יצירת חשבון מנותק (ללא סנכרון)'}</button>
+        {IS_PHONE && <a className="btn btn-secondary phone-exit" href="../index.html">חזרה לכניסה עם חשבון מקוון</a>}
       </div>
-      {!online && <p className="muted small" role="status">אין חיבור לאינטרנט. כניסה ראשונה ויצירת חשבון מקוון דורשות חיבור. חשבונות שכבר נמצאים במחשב נפתחים גם בלי חיבור.</p>}
+      {!IS_PHONE && !online && <p className="muted small" role="status">אין חיבור לאינטרנט. כניסה ראשונה ויצירת חשבון מקוון דורשות חיבור. חשבונות שכבר נמצאים במחשב נפתחים גם בלי חיבור.</p>}
     </>
   );
 }
@@ -132,7 +137,7 @@ function Unlock({ account, go }: { account: AccountMeta; go: (v: View) => void }
     <form onSubmit={submit} noValidate>
       <header className="auth-header">
         <h1>שלום {account.displayName || ''}</h1>
-        <p className="muted">{account.kind === 'offline' ? 'חשבון מנותק: הנתונים נמצאים במחשב הזה בלבד.' : account.email}</p>
+        <p className="muted">{account.kind === 'offline' ? ph('חשבון מנותק: הנתונים נמצאים במחשב הזה בלבד.') : account.email}</p>
       </header>
       <div className="card form-card">
         <Field label="סיסמה" type="password" dir="ltr" autoFocus autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={a.error} />
@@ -143,7 +148,7 @@ function Unlock({ account, go }: { account: AccountMeta; go: (v: View) => void }
           : hasQuestions === false && account.kind === 'offline' ? <span className="muted small">לא הוגדרו שאלות שחזור לחשבון הזה, ולכן אי אפשר לשחזר סיסמה.</span> : null}
       </p>
       <p className="auth-footer-link">
-        <button type="button" className="link-btn" onClick={() => go({ name: 'remove', account })}>הסרת החשבון מהמחשב</button>
+        <button type="button" className="link-btn" onClick={() => go({ name: 'remove', account })}>{ph('הסרת החשבון מהמחשב')}</button>
       </p>
     </form>
   );
@@ -278,7 +283,7 @@ function Signup({ kind }: { kind: 'online' | 'offline' }) {
     <form onSubmit={next} noValidate>
       <header className="auth-header">
         <h1>{offline ? 'יצירת חשבון מנותק' : 'יצירת חשבון מקוון'}</h1>
-        <p className="muted">{offline ? 'הנתונים נשמרים במחשב הזה בלבד, מוצפנים, ולעולם לא יסונכרנו, גם כשיש אינטרנט.' : 'הנתונים נשמרים במחשב ומסונכרנים לענן כשיש חיבור. נדרש אינטרנט ליצירה.'}</p>
+        <p className="muted">{offline ? ph('הנתונים נשמרים במחשב הזה בלבד, מוצפנים, ולעולם לא יסונכרנו, גם כשיש אינטרנט.') : 'הנתונים נשמרים במחשב ומסונכרנים לענן כשיש חיבור. נדרש אינטרנט ליצירה.'}</p>
       </header>
       <div className="card form-card form-grid">
         <Field label="שם פרטי" autoComplete="given-name" value={values.firstName} onChange={set('firstName')} error={errors.firstName} />
@@ -304,7 +309,7 @@ function RemoveAccount({ account, back }: { account: AccountMeta; back: () => vo
   const word = 'מחיקה';
   return (
     <>
-      <header className="auth-header"><h1>הסרת החשבון מהמחשב</h1>
+      <header className="auth-header"><h1>{ph('הסרת החשבון מהמחשב')}</h1>
         <p className="muted">{account.kind === 'offline' ? 'זה חשבון מנותק: אין לו עותק בשום מקום אחר. המחיקה סופית וכל הנתונים יאבדו.' : 'הקובץ המקומי יימחק. הנתונים שכבר סונכרנו נשארים בענן, אבל שינויים שעוד לא סונכרנו יאבדו.'}</p></header>
       <div className="card form-card">
         <Field label={`להקלדת "${word}" לאישור`} value={text} onChange={(e) => setText(e.target.value)} autoComplete="off" />

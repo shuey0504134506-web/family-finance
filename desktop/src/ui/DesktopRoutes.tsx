@@ -9,6 +9,7 @@ import { CompleteSetupScreen } from '../../../src/features/auth/CompleteSetupScr
 import { BudgetScreen } from '../../../src/features/budget/BudgetScreen';
 import { DebtsScreen } from '../../../src/features/debts/DebtsScreen';
 import { DesktopHelp } from './desktopHelp';
+import { HelpScreen } from '../../../src/features/help/HelpScreen';
 import { HomeScreen } from '../../../src/features/home/HomeScreen';
 import { ImportScreen } from '../../../src/features/import/ImportScreen';
 import { ListsProvider } from '../../../src/features/lists/ListsContext';
@@ -33,11 +34,12 @@ import { TransactionFormScreen } from '../../../src/features/transactions/Transa
 import { TransactionListScreen } from '../../../src/features/transactions/TransactionListScreen';
 import { DesktopShell } from './DesktopShell';
 import { RecoverySettings } from './RecoverySettings';
+import { PhoneMenu } from './PhoneMenu';
 
 const Loading = () => <FullScreenMessage title="טוען…" />;
 
 /** כמו RequireAccount באפליקציה, אבל ה-Outlet עטוף במעטפת עם תפריט צד קבוע. */
-function RequireAccount() {
+function RequireAccount({ phone }: { phone: boolean }) {
   const { state, signOutUser } = useAuth();
   switch (state.status) {
     case 'loading':
@@ -66,9 +68,13 @@ function RequireAccount() {
                     <StandingOrdersHost />
                     {isAdminEmail(state.user.email) ? <AdminMessageHost /> : null}
                     <AutoBackupHost />
-                    <DesktopShell>
+                    {phone ? (
                       <Outlet />
-                    </DesktopShell>
+                    ) : (
+                      <DesktopShell>
+                        <Outlet />
+                      </DesktopShell>
+                    )}
                   </LockGate>
                 </ListsProvider>
               </SpacesProvider>
@@ -91,12 +97,12 @@ function MenuToHome() {
   return <Navigate to={`/${scope ?? ''}`} replace />;
 }
 
-export function DesktopRoutes() {
+export function DesktopRoutes({ phone = false }: { phone?: boolean } = {}) {
   return (
     <Routes>
       <Route path="/privacy" element={<DesktopPrivacy />} />
       <Route path="/accessibility" element={<AccessibilityScreen />} />
-      <Route element={<RequireAccount />}>
+      <Route element={<RequireAccount phone={phone} />}>
         <Route index element={<HomeRedirect />} />
         <Route element={<SpaceRoute />}>
           <Route path="/:scope" element={<HomeScreen />} />
@@ -104,7 +110,7 @@ export function DesktopRoutes() {
           <Route path="/:scope/add/:type" element={<TransactionFormScreen mode="add" />} />
           <Route path="/:scope/edit/:id" element={<TransactionFormScreen mode="edit" />} />
           <Route path="/:scope/budget" element={<BudgetScreen />} />
-          <Route path="/:scope/menu" element={<MenuToHome />} />
+          <Route path="/:scope/menu" element={phone ? <PhoneMenu /> : <MenuToHome />} />
           <Route path="/:scope/import" element={<ImportScreen />} />
           <Route path="/:scope/debts" element={<DebtsScreen />} />
           <Route path="/:scope/standing" element={<StandingOrdersScreen />} />
@@ -114,10 +120,10 @@ export function DesktopRoutes() {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
         <Route path="/tithes" element={<TitheScreen />} />
-        <Route path="/help" element={<DesktopHelp />} />
+        <Route path="/help" element={phone ? <HelpScreen /> : <DesktopHelp />} />
         <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/recovery" element={<RecoverySettings />} />
-        <Route path="/admin" element={<AdminScreen />} />
+        {!phone && <Route path="/admin" element={<AdminScreen />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -1,5 +1,9 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "חשבון לא מקוון (נשמר על הטלפון בלבד)": "Offline account (stored on this phone only)",
+  "יצירת חשבון לא מקוון": "Create an offline account",
+  "חזרה לכניסה עם חשבון מקוון": "Back to signing in with an online account",
+  "חשבון לא מקוון נשמר על הטלפון בלבד, מוצפן בסיסמה, בלי שרת ובלי סנכרון.": "An offline account is stored on this phone only, encrypted with a password, with no server and no sync.",
   "איך מגדירים הוראת קבע?": "How do I set up a standing order?",
   "בהוספה או בעריכה של הכנסה או הוצאה, תחת \"פרטים נוספים\", מסמנים \"הוראת קבע\". מאותו רגע הפעולה תיווצר מעצמה כל חודש באותו תאריך (בחודש קצר היא תיווצר ביום האחרון שלו). אם סימנת פעולה ישנה, ההוראה תתחיל רק בתאריך החיוב הבא, בלי להשלים חודשים שעברו.": "When adding or editing an income or expense, under \"More details\", tick \"Standing order\". From then on the transaction is created by itself every month on the same date (in a shorter month, on its last day). If you mark an old transaction, the order starts only on the next charge date, without filling in past months.",
   "איפה רואים ומנהלים את הוראות הקבע שלי?": "Where do I see and manage my standing orders?",

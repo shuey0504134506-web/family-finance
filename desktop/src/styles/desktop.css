@@ -131,9 +131,11 @@ select.input { appearance: auto; }
 .entry-panel { margin-block: auto; }
 
 /* רקע רחב למסך מחשב: אותו נוף של האפליקציה, מורחב לצדדים (שיקוף ברצף) כדי שלא יתקרב יותר מדי */
-body::before {
-  background: linear-gradient(to bottom, rgba(247, 243, 234, 0.8), rgba(247, 243, 234, 0.9)),
-    #f7f3ea url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
+@media (min-width: 900px) {
+  body::before {
+    background: linear-gradient(to bottom, rgba(247, 243, 234, 0.8), rgba(247, 243, 234, 0.9)),
+      #f7f3ea url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
+  }
 }
 
 /* פעולות אחרונות: בגובה הכרטיס "לאן הלך הכסף החודש" שלידו; הרשימה נחתכת לפי השורות שנכנסות */
@@ -157,3 +159,12 @@ body::before {
 
 /* הדגמות מצולמות בעזרה: מסך מחשב רחב במקום טלפון */
 .walk-phone.walk-wide { width: min(100%, 760px); border-radius: 12px; }
+
+/* מסך צר (גרסת הטלפון של חשבון לא מקוון): כניסה במסך אחד בלי לוח המותג */
+@media (max-width: 820px) {
+  .entry { display: block; min-height: 100vh; }
+  .entry-brand { display: none; }
+  .entry-main { padding: 20px 16px 32px; max-height: none; min-height: 100vh; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+.phone-exit { text-align: center; }
