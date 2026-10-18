@@ -39,6 +39,9 @@ import { TransactionFormScreen } from './features/transactions/TransactionFormSc
 import { SpaceRoute } from './features/spaces/SpaceRoute';
 import { SpacesProvider, useSpaces } from './features/spaces/SpacesContext';
 import { readDeviceUser } from './services/deviceUser';
+import { LandingScreen } from './features/landing/LandingScreen';
+import { isInstalledApp } from './native/installPrompt';
+import { Capacitor } from '@capacitor/core';
 
 function LoadingScreen() {
   return <FullScreenMessage title="טוען…" />;
@@ -53,7 +56,9 @@ function RequireAccount() {
       return <LoadingScreen />;
     case 'signedOut':
       // מכשיר שכבר השתמש בחשבון נכנס ישר למסך הכניסה, מכשיר חדש למסך הפתיחה.
-      return <Navigate to={readDeviceUser() ? '/login' : '/welcome'} replace />;
+      // באתר בדפדפן (לא מותקן) מכשיר חדש רואה קודם את דף ההסבר וההתקנה.
+      if (readDeviceUser()) return <Navigate to="/login" replace />;
+      return <Navigate to={isInstalledApp() || Capacitor.isNativePlatform() ? '/welcome' : '/start'} replace />;
     case 'checking': {
       const waiting = (
         <FullScreenMessage title="ממתין לחיבור">
@@ -121,6 +126,7 @@ export function AppRoutes() {
     <>
     <Routes>
       <Route element={<PublicOnly />}>
+        <Route path="/start" element={<LandingScreen />} />
         <Route path="/welcome" element={<WelcomeScreen />} />
         <Route path="/signup" element={<SignupScreen />} />
         <Route path="/login" element={<LoginScreen />} />
