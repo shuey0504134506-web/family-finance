@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { AttachmentsField } from './AttachmentsField';
 import { SimilarActionsDialog } from '../standing/SimilarActionsDialog';
 import { findSimilarAfter, orderFromTransaction } from '../../domain/standingOrder';
+import { useStandingOrders } from '../../hooks/useStandingOrders';
 import { linkTransactionsToOrder, loadTransactionsAfter, orderContinuingAfter, saveStandingOrder } from '../../services/standingOrderService';
 import { getAttachments, saveAttachments } from '../../services/attachmentService';
 import { useCustomMethods } from '../../hooks/useCustomMethods';
@@ -164,6 +165,9 @@ function TransactionForm({
   const [draft, setDraft] = useState<TransactionDraft>(initial);
   // מזהה הוראת קבע חדשה, נוצר פעם אחת בפתיחת הטופס (כמו מזהה הפעולה)
   const [newOrderId] = useState(newId);
+  // אם אי אפשר לקרוא הוראות קבע (למשל כללי השרת עוד לא עודכנו) לא מציעים את הסימון, כדי שלא תיכשל שמירת הפעולה
+  const { error: ordersError } = useStandingOrders(user.uid);
+  const standingAllowed = !ordersError || !!existing?.standingOrderId;
   const [suggest, setSuggest] = useState<{ order: StandingOrder; candidates: Transaction[]; targetMonth: string } | null>(null);
   const [suggestBusy, setSuggestBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -320,7 +324,7 @@ function TransactionForm({
     const category = options.find((c) => c.id === draft.categoryId);
     if (!category) return;
 
-    const transaction = buildTransaction(draft, {
+    const transaction = buildTransaction({ ...draft, standingOrder: !!draft.standingOrder && standingAllowed }, {
       id,
       categoryName: category.name,
       now: Date.now(),
@@ -646,6 +650,7 @@ function TransactionForm({
             </label>
           )}
 
+          {standingAllowed && (
           <label className="check-row">
             <input
               type="checkbox"
@@ -658,6 +663,7 @@ function TransactionForm({
                 : 'הוראת קבע: ההוצאה תיווצר אוטומטית כל חודש בתאריך הזה'}
             </span>
           </label>
+          )}
 
           <AttachmentsField images={attachments} onChange={setAttachments} loading={attLoading} failed={attFailed} isIncome={isIncome} />
 
