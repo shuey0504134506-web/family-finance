@@ -31,7 +31,14 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-        run: npx --yes firebase-tools@14 deploy --only firestore:rules --project "$PROJECT_ID" --non-interactive
+        run: |
+          set +e
+          npx --yes firebase-tools@14 deploy --only firestore:rules --project "$PROJECT_ID" --non-interactive 2>&1 | tee "$RUNNER_TEMP/out.txt"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "::error title=פריסת הכללים נכשלה::$(tail -c 1500 "$RUNNER_TEMP/out.txt" | tr '\n' ' ')"
+          fi
+          exit "$code"
 
       - name: מחיקת המפתח הזמני
         if: always()
