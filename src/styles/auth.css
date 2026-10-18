@@ -692,3 +692,31 @@
 .home-clean .tiles {
   margin: 0;
 }
+
+/* מסך כניסה: בלי מסגרת לבנה. שטח המילוי שקוף והשדה עצמו נשאר מוגדר */
+.login-screen .form-card {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.login-screen .form-card label {
+  color: var(--navy);
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* מסך לרוחב: תמונת הנוף הרחבה, כדי שלא תימרח תמונת הטלפון על מסך מחשב */
+@media (min-aspect-ratio: 1/1) {
+  .welcome-screen,
+  .login-screen {
+    background-image: url('../assets/mountains-wide.jpg');
+  }
+
+  .lock-screen {
+    background: linear-gradient(to bottom, rgba(247, 243, 234, 0.1), rgba(247, 243, 234, 0.2)),
+      #f7f3ea url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
+  }
+}
