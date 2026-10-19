@@ -4,6 +4,7 @@ import { Modal } from '../../components/Modal';
 import {
   ensureApprovalRequest,
   subscribeApproval,
+  subscribeApprovalRequired,
   type AdminNotice,
   type ApprovalSnapshot,
   type PaymentNotice,
@@ -131,6 +132,18 @@ export function ApprovalGate({
   const { signOutUser } = useAuth();
   const [gate, setGate] = useState<Gate>(() => (wasApproved(uid) ? 'unavailable' : 'loading'));
   const [now, setNow] = useState(() => Date.now());
+  // האם המנהל דורש אישור לחשבון חדש. null = עדיין לא ידוע
+  const [required, setRequired] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const stop = subscribeApprovalRequired(setRequired);
+    // לא ידוע אחרי כמה שניות (בלי רשת): נשארים בהתנהגות הזהירה, כלומר נדרש אישור
+    const t = window.setTimeout(() => setRequired((r) => (r === null ? true : r)), 6000);
+    return () => {
+      window.clearTimeout(t);
+      stop();
+    };
+  }, []);
 
   useEffect(() => {
     // חשבון שכבר אושר בעבר נפתח מיד גם בלי רשת; העדכון מהשרת יחליף כשיגיע.
@@ -190,14 +203,19 @@ export function ApprovalGate({
     );
   }
   if (state === 'pending' || state === 'none') {
-    return (
-      <FullScreenMessage title="החשבון ממתין לאישור">
-        <p className="muted">
-          הרישום נקלט. אחרי שמנהל האפליקציה יאשר את החשבון, האפליקציה תיפתח כאן אוטומטית. אין צורך לעשות דבר.
-        </p>
-        {logout}
-      </FullScreenMessage>
-    );
+    if (required === null) return <>{whileLoading}</>;
+    if (required) {
+      return (
+        <FullScreenMessage title="החשבון ממתין לאישור">
+          <p className="muted">
+            הרישום נקלט. אחרי שמנהל האפליקציה יאשר את החשבון, האפליקציה תיפתח כאן אוטומטית. אין צורך לעשות דבר.
+          </p>
+          {logout}
+        </FullScreenMessage>
+      );
+    }
+    // דרישת האישור כבויה: חשבון ממתין נכנס כרגיל. חשבון בלי רשומה עדיין ממתין ליצירת הרשומה שלו.
+    if (state === 'none') return <>{whileLoading}</>;
   }
 
   if (payment && payment.dueAt <= now) {

@@ -2,7 +2,7 @@
 .landing {
   --land-navy: #14304f;
   --land-teal: #1f6f66;
-  --land-text: #34475c;
+  --land-text: #2b3f55;
   --bar-h: clamp(40px, 6vh, 52px);
   position: fixed;
   inset: 0;
@@ -22,12 +22,12 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(255, 252, 246, 0.62), rgba(255, 252, 246, 0.48) 55%, rgba(255, 252, 246, 0.4)),
+  background: linear-gradient(to bottom, rgba(255, 252, 246, 0.84), rgba(255, 252, 246, 0.76) 55%, rgba(255, 252, 246, 0.7)),
     #f8f2e6 url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
 }
 @media (min-aspect-ratio: 1/1) {
   .landing::before {
-    background: linear-gradient(to bottom, rgba(255, 252, 246, 0.6), rgba(255, 252, 246, 0.46) 55%, rgba(255, 252, 246, 0.38)),
+    background: linear-gradient(to bottom, rgba(255, 252, 246, 0.84), rgba(255, 252, 246, 0.76) 55%, rgba(255, 252, 246, 0.7)),
       #f8f2e6 url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
   }
 }
@@ -43,10 +43,10 @@
 }
 .landing-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .landing-brand img { width: calc(var(--bar-h) * 0.66); height: calc(var(--bar-h) * 0.66); border-radius: 22%; border: 1px solid var(--land-teal); }
-.landing-brand h1 { font-size: clamp(1.05rem, 2.6vh, 1.4rem); font-weight: 700; letter-spacing: -0.2px; color: var(--land-navy); white-space: nowrap; }
+.landing-brand h1 { font-size: clamp(1.15rem, 2.9vh, 1.5rem); font-weight: 700; letter-spacing: -0.2px; color: var(--land-navy); white-space: nowrap; }
 .landing-lang {
   flex-shrink: 0; height: 28px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(31, 111, 102, 0.55);
-  background: transparent; color: var(--land-navy); font: inherit; font-size: 0.82rem; cursor: pointer;
+  background: transparent; color: var(--land-navy); font: inherit; font-size: 0.92rem; cursor: pointer;
 }
 .landing-lang:hover { background: rgba(255, 255, 255, 0.6); }
 
@@ -62,13 +62,13 @@
 }
 .landing-about {
   margin: 0; padding: 0;
-  font-size: clamp(0.76rem, 2vh, 1.05rem); line-height: 1.55; color: #1f3248;
+  font-size: clamp(0.86rem, 2.3vh, 1.18rem); line-height: 1.55; margin-top: clamp(6px, 3.2vh, 40px); color: #1f3248;
   text-shadow: 0 0 8px rgba(255, 252, 246, 0.9), 0 0 2px rgba(255, 252, 246, 0.9);
   text-align: justify; text-align-last: center; hyphens: auto;
 }
 .landing-how { flex: 0 0 auto; }
 .landing-actions { margin-top: auto; display: flex; flex-direction: column; gap: clamp(6px, 1.2vh, 10px); }
-.landing-side .auth-footer-link { margin: 0; text-align: center; font-size: clamp(0.7rem, 1.6vh, 0.82rem); color: var(--land-text); }
+.landing-side .auth-footer-link { margin: 0; text-align: center; font-size: clamp(0.78rem, 1.8vh, 0.92rem); color: var(--land-text); }
 .landing-side .auth-footer-link a { color: var(--land-text); }
 
 /* כפתורי הדף: כולם באותו עיצוב בדיוק (גובה, מסגרת, עיגול וגופן); רק הכניסה ממולאת */
@@ -76,18 +76,18 @@
   min-height: clamp(38px, 6.2vh, 52px); height: auto; width: 100%; padding: 6px 18px;
   border-radius: 999px; border: 1px solid var(--land-teal);
   background: rgba(255, 255, 255, 0.5); color: var(--land-navy);
-  font-family: inherit; font-size: clamp(0.85rem, 2vh, 1rem); font-weight: 400; line-height: 1.2; box-shadow: none;
+  font-family: inherit; font-size: clamp(0.93rem, 2.25vh, 1.1rem); font-weight: 400; line-height: 1.2; box-shadow: none;
   display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; text-decoration: none; cursor: pointer;
 }
 .landing .btn:hover { background: rgba(255, 255, 255, 0.78); }
 .landing .btn-primary { background: var(--land-navy); border-color: var(--land-navy); color: #fff; font-weight: 700; }
 .landing .btn-primary:hover { background: #0f2640; }
 .landing-how-play { font-size: 0.7rem; color: var(--land-teal); }
-.landing-badge { border: 1px solid var(--land-teal); color: var(--land-teal); border-radius: 999px; padding: 0 9px; font-size: 0.72rem; font-weight: 400; white-space: nowrap; }
-.landing-offline { text-align: center; font-size: clamp(0.68rem, 1.5vh, 0.78rem); color: #4d5d70; margin: 0; }
+.landing-badge { border: 1px solid var(--land-teal); color: var(--land-teal); border-radius: 999px; padding: 0 9px; font-size: 0.8rem; font-weight: 400; white-space: nowrap; }
+.landing-offline { text-align: center; font-size: clamp(0.76rem, 1.7vh, 0.88rem); color: #3f5166; margin: 0; }
 
 /* "כך זה נראה": חץ לכיוון השקופיות (שמאלה בעברית, ימינה באנגלית) */
-.landing-seehint { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: clamp(0.9rem, 2.2vh, 1.15rem); color: var(--land-teal); }
+.landing-seehint { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: clamp(1rem, 2.5vh, 1.3rem); color: var(--land-teal); }
 .landing-seehint svg { width: 1.3em; height: 1.3em; stroke: currentColor; }
 html[dir='ltr'] .landing-seehint svg { transform: scaleX(-1); }
 
@@ -114,7 +114,7 @@ html[dir='ltr'] .landing-seehint svg { transform: scaleX(-1); }
 }
 .landing-modal::after { content: ''; position: absolute; inset: 0; z-index: -1; background: rgba(255, 252, 246, 0.6); }
 .landing-modal-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; }
-.landing-modal-head h2 { font-size: 1.2rem; font-weight: 400; color: var(--land-navy); }
+.landing-modal-head h2 { font-size: 1.35rem; font-weight: 400; color: var(--land-navy); }
 .landing-modal-close {
   width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--land-teal); background: rgba(255, 255, 255, 0.6);
   color: var(--land-navy); cursor: pointer; font-size: 0.9rem;
@@ -134,8 +134,8 @@ html[dir='ltr'] .landing-seehint svg { transform: scaleX(-1); }
 .slide-frame-phone { aspect-ratio: 780 / 1688; width: min(100cqw, 46.2cqh); height: auto; border-radius: 26px; box-shadow: 0 18px 40px rgba(20, 48, 79, 0.18); }
 .slide-frame-desktop { aspect-ratio: 1280 / 800; width: min(100cqw, 160cqh); height: auto; border-radius: 14px; box-shadow: 0 24px 60px rgba(20, 48, 79, 0.2); }
 .slide figcaption { flex: 0 0 auto; display: flex; flex-direction: column; gap: 3px; text-align: center; max-width: 520px; padding: 0 6px; }
-.slide figcaption strong { font-size: clamp(0.95rem, 2.6vh, 1.4rem); font-weight: 400; color: var(--land-navy); }
-.slide figcaption span { color: #3f5166; line-height: 1.45; font-size: clamp(0.76rem, 1.8vh, 0.98rem); }
+.slide figcaption strong { font-size: clamp(1.05rem, 2.9vh, 1.55rem); font-weight: 400; color: var(--land-navy); }
+.slide figcaption span { color: #3f5166; line-height: 1.45; font-size: clamp(0.86rem, 2.05vh, 1.08rem); }
 .slides-nav { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 14px; }
 .slides-arrow {
   width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--land-teal); background: rgba(255, 255, 255, 0.6);

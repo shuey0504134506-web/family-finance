@@ -33,10 +33,18 @@ service cloud.firestore {
       return a.keys().hasAny(['payment']) && a.payment.dueAt <= request.time.toMillis();
     }
 
+    // דרישת האישור כבויה כברירת מחדל: config/approval = {required: true} מפעיל אותה (נכתב רק על ידי המנהל).
+    // כשהיא כבויה, חשבון חדש (ממתין) נחשב כמאושר. חשבון חסום או בלי רשומה נשאר סגור בכל מקרה.
+    function approvalRequired() {
+      return exists(/databases/$(database)/documents/config/approval)
+             && get(/databases/$(database)/documents/config/approval).data.required == true;
+    }
+
     function isReader(uid) {
       // בלי רשומה, get מחזיר ריק והבדיקה נכשלת: סגור כברירת מחדל
       return isOwner(uid)
-             && get(approvalPath(uid)).data.status == 'approved'
+             && (get(approvalPath(uid)).data.status == 'approved'
+                 || (get(approvalPath(uid)).data.status == 'pending' && !approvalRequired()))
              && !paymentDue(get(approvalPath(uid)).data);
     }
 
@@ -78,6 +86,16 @@ service cloud.firestore {
                     && get(approvalPath(request.auth.uid)).data.status in ['approved', 'pending'];
       allow read: if (request.auth != null && resource.data.uid == request.auth.uid) || isAdminUser();
       allow update, delete: if false;
+    }
+
+    // הגדרות כלליות של המנהל. כל משתמש מחובר קורא, רק המנהל כותב.
+    match /config/approval {
+      allow read: if request.auth != null;
+      allow create, update: if isAdminUser()
+                            && request.resource.data.keys().hasOnly(['required', 'updatedAt'])
+                            && request.resource.data.required is bool
+                            && request.resource.data.updatedAt is int;
+      allow delete: if false;
     }
 
     match /approvals/{uid} {

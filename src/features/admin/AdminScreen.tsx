@@ -10,6 +10,8 @@ import {
   type AdminMessage,
   loadAdminOverview,
   setAccountStatus,
+  setApprovalRequired,
+  subscribeApprovalRequired,
   sendNotice,
   setPaymentRequest,
   type AdminOverview,
@@ -321,6 +323,21 @@ function AdminContent() {
   const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [approvalRequired, setApprovalRequiredState] = useState<boolean | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  useEffect(() => subscribeApprovalRequired(setApprovalRequiredState), []);
+  const toggleApproval = async () => {
+    if (approvalRequired === null) return;
+    setApprovalBusy(true);
+    setActionError(null);
+    try {
+      await setApprovalRequired(!approvalRequired);
+    } catch {
+      setActionError('השינוי נכשל. אם כללי האבטחה החדשים עוד לא פורסמו, יש לפרוס אותם קודם. אחרת, לבדוק חיבור ולנסות שוב.');
+    } finally {
+      setApprovalBusy(false);
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -449,6 +466,29 @@ function AdminContent() {
                 {loading ? 'מרענן…' : 'רענון'}
               </button>
 
+                </div>
+              </AccordionItem>
+
+              <AccordionItem id="approval" title="אישור חשבונות חדשים" open={openId === 'approval'} onToggle={toggle}>
+                <div className="stack">
+                  <p>
+                    {approvalRequired === null
+                      ? 'טוען…'
+                      : approvalRequired
+                        ? 'דרישת האישור פעילה: חשבון חדש ממתין עד שתאשר אותו.'
+                        : 'דרישת האישור כבויה: חשבון חדש נכנס ומשתמש באפליקציה מיד, בלי אישור.'}
+                  </p>
+                  <p className="muted small">
+                    אפשר להפעיל או לכבות בכל עת. כשהיא מופעלת, חשבונות ממתינים נעצרים עד אישור, וחשבונות שכבר אושרו ממשיכים כרגיל.
+                  </p>
+                  <button
+                    type="button"
+                    className={approvalRequired ? 'btn btn-secondary' : 'btn btn-primary'}
+                    disabled={approvalRequired === null || approvalBusy}
+                    onClick={() => void toggleApproval()}
+                  >
+                    {approvalRequired ? 'כיבוי דרישת האישור' : 'הפעלת דרישת אישור'}
+                  </button>
                 </div>
               </AccordionItem>
 

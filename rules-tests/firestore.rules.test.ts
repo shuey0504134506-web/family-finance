@@ -402,13 +402,55 @@ describe('אישור חשבונות', () => {
     await assertFails(getDoc(doc(as('carol'), 'users/carol')));
   });
 
-  it('ממתין: יכול לכתוב את רשומות ההרשמה ולקרוא את הפרופיל, אבל לא נתונים', async () => {
+  const setRequired = (required: boolean) =>
+    env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'config/approval'), { required, updatedAt: 1 });
+    });
+
+  it('ממתין כשדרישת האישור מופעלת: יכול לכתוב את רשומות ההרשמה ולקרוא את הפרופיל, אבל לא נתונים', async () => {
+    await setRequired(true);
     await seed('carol', 'pending');
     await assertSucceeds(setDoc(doc(as('carol'), 'users/carol'), userProfile));
     await assertSucceeds(getDoc(doc(as('carol'), 'users/carol')));
     await assertSucceeds(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1'), transaction()));
     await assertFails(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
     await assertFails(getDocs(collectionGroup(as('carol'), 'householdTransactions')));
+  });
+
+  it('דרישת האישור כבויה כברירת מחדל: חשבון חדש (ממתין) נכנס ועובד כרגיל', async () => {
+    await seed('carol', 'pending');
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol'), userProfile));
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1'), transaction()));
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
+  });
+
+  it('דרישת האישור כבויה במפורש: אותו דבר; חסום נשאר חסום; בלי רשומה נשאר סגור', async () => {
+    await setRequired(false);
+    await seed('carol', 'pending');
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol')));
+    await seed('dave', 'blocked');
+    await assertFails(getDoc(doc(as('dave'), 'users/dave')));
+    await assertFails(getDoc(doc(as('erin'), 'users/erin')));
+  });
+
+  it('אפשר להפעיל את הדרישה בכל עת: ממתינים נעצרים, מאושרים ממשיכים', async () => {
+    await seed('carol', 'pending');
+    await assertSucceeds(setDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1'), transaction()));
+    await assertSucceeds(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
+    await setRequired(true);
+    await assertFails(getDoc(doc(as('carol'), 'users/carol/householdTransactions/tx1')));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/householdTransactions/tx1'), transaction()));
+  });
+
+  it('הגדרת הדרישה: כל מחובר קורא, רק המנהל כותב', async () => {
+    const admin = () => env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com' }).firestore();
+    await assertSucceeds(setDoc(doc(admin(), 'config/approval'), { required: true, updatedAt: 5 }));
+    await assertSucceeds(getDoc(doc(as('carol'), 'config/approval')));
+    await assertFails(getDoc(doc(anonymous(), 'config/approval')));
+    await assertFails(setDoc(doc(as('carol'), 'config/approval'), { required: false, updatedAt: 6 }));
+    await assertFails(setDoc(doc(admin(), 'config/approval'), { required: 'כן', updatedAt: 6 }));
+    await assertFails(setDoc(doc(admin(), 'config/approval'), { required: true, updatedAt: 6, extra: 1 }));
+    await assertFails(setDoc(doc(admin(), 'config/other'), { required: true, updatedAt: 6 }));
   });
 
   it('חסום: אין קריאה ואין כתיבה', async () => {

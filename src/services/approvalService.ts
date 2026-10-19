@@ -88,3 +88,24 @@ export function subscribeApproval(
     () => onUnavailable(),
   );
 }
+
+/**
+ * האם נדרש אישור מנהל לחשבון חדש. config/approval = {required: true}. כבוי כברירת מחדל (אין מסמך).
+ * שגיאת קריאה (למשל כללי שרת ישנים שעוד לא כוללים את ההגדרה) מדווחת כ"נדרש", כדי לשמור על ההתנהגות הקודמת.
+ * מסמך שלא נשמר במכשיר ובלי רשת לא נחשב "לא קיים", ולכן מחכים לתשובת השרת.
+ */
+export function subscribeApprovalRequired(onValue: (required: boolean) => void): Unsubscribe {
+  return onSnapshot(
+    doc(db, 'config', 'approval'),
+    (snap) => {
+      if (snap.metadata.fromCache && !snap.exists()) return;
+      onValue(snap.exists() && snap.data().required === true);
+    },
+    () => onValue(true),
+  );
+}
+
+/** המנהל בלבד (כללי Firestore): מפעיל או מכבה את דרישת האישור לחשבונות חדשים. */
+export async function setApprovalRequired(required: boolean): Promise<void> {
+  await setDoc(doc(db, 'config', 'approval'), { required, updatedAt: Date.now() });
+}

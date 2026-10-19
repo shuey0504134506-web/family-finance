@@ -1,6 +1,7 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { collection, limit, onSnapshot, orderBy, query, type Unsubscribe } from 'firebase/firestore';
 import { app, db } from '../firebase/config';
+export { setApprovalRequired, subscribeApprovalRequired } from './approvalService';
 
 export type ApprovalStatus = 'approved' | 'pending' | 'blocked' | 'none';
 
