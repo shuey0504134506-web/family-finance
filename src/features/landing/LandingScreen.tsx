@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LangSwitch } from '../../components/LangSwitch';
+import { autoDetectLang, changeLang, getLang } from '../../i18n/lang';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { detectDevice, installerFor, isMobileKind } from '../../domain/device';
@@ -72,6 +72,7 @@ function Slides({ set, base }: { set: 'phone' | 'desktop'; base: string }) {
       <div className="slides-track" ref={track} tabIndex={0}>
         {SHOTS.map((s, i) => (
           <figure key={s.id} className="slide" aria-roledescription="slide" aria-label={`${i + 1} / ${n}`}>
+            <div className="slide-box">
             <div className={`slide-frame slide-frame-${set}`}>
               <img
                 src={`${base}landing/${set}/${s.id}.webp`}
@@ -81,6 +82,7 @@ function Slides({ set, base }: { set: 'phone' | 'desktop'; base: string }) {
                 height={set === 'phone' ? 844 : 800}
                 draggable={false}
               />
+            </div>
             </div>
             <figcaption>
               <strong>{s.title}</strong>
@@ -119,6 +121,11 @@ export function LandingScreen() {
   const installer = installerFor(kind);
   const set = isMobileKind(kind) || !wide ? 'phone' : 'desktop';
   const base = import.meta.env.BASE_URL;
+
+  const lang = getLang();
+  useEffect(() => {
+    autoDetectLang();
+  }, []);
 
   const [promptReady, setPromptReady] = useState(canPromptInstall());
   const [showHow, setShowHow] = useState(false);
@@ -179,7 +186,15 @@ export function LandingScreen() {
           <img src={`${base}icon-192.png`} alt="" width={40} height={40} draggable={false} />
           <h1>ניהול כספים</h1>
         </div>
-        <LangSwitch />
+        <button
+          type="button"
+          className="landing-lang"
+          lang={lang === 'he' ? 'en' : 'he'}
+          aria-label={lang === 'he' ? 'English' : 'עברית'}
+          onClick={() => changeLang(lang === 'he' ? 'en' : 'he')}
+        >
+          {lang === 'he' ? 'English' : 'עברית'}
+        </button>
       </header>
 
       <div className="landing-body">
