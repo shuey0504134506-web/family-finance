@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AuthShell } from './AuthShell';
 
 export function FullScreenMessage({
   title,
@@ -8,11 +9,11 @@ export function FullScreenMessage({
   children?: ReactNode;
 }) {
   return (
-    <main className="center-screen">
+    <AuthShell>
       <div className="center-card">
         <h1 className="center-title">{title}</h1>
         {children}
       </div>
-    </main>
+    </AuthShell>
   );
 }

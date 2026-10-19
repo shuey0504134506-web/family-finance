@@ -24,7 +24,7 @@ body { overflow-x: hidden; }
 .entry-brand p { color: var(--text-muted); max-width: 34ch; }
 .entry-brand .feature-list { margin-top: 12px; }
 .entry-main { display: flex; align-items: center; justify-content: center; padding: 40px; overflow-y: auto; max-height: 100vh; }
-.entry-panel { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 20px; }
+.entry-panel { width: 100%; display: flex; flex-direction: column; gap: 14px; }
 .account-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .account-row { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 18px; text-align: start; cursor: pointer; border: 1px solid var(--border); font: inherit; color: inherit; }
 .account-row:hover, .account-row:focus-visible { border-color: var(--accent); outline: none; }
@@ -58,7 +58,7 @@ select.input { appearance: auto; }
 .entry-back svg { width: 20px; height: 20px; }
 .entry-back:hover, .entry-back:focus-visible { background: var(--accent-soft); text-decoration: underline; }
 .entry-main { align-items: flex-start; }
-.entry-panel { margin-block: auto; }
+
 
 /* רקע רחב למסך מחשב: אותו נוף של האפליקציה, מורחב לצדדים (שיקוף ברצף) כדי שלא יתקרב יותר מדי */
 @media (min-width: 900px) {

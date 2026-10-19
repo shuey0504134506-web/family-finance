@@ -1,0 +1,87 @@
+/* מעטפת אחידה למסכי הכניסה, ההרשמה, הנעילה וכל מסך שלפני האפליקציה. תואמת את דף הנחיתה. */
+.auth-shell {
+  --land-navy: #14304f;
+  --land-teal: #1f6f66;
+  --land-text: #2b3f55;
+  --bar-h: clamp(40px, 6vh, 52px);
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: Arial, Arimo, 'Helvetica Neue', Helvetica, sans-serif;
+  color: var(--land-navy);
+  z-index: 40;
+  background: #f8f2e6;
+}
+.auth-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 252, 246, 0.84), rgba(255, 252, 246, 0.76) 55%, rgba(255, 252, 246, 0.7)),
+    #f8f2e6 url('../assets/mountains-welcome.jpg') center bottom / cover no-repeat;
+}
+@media (min-aspect-ratio: 1/1) {
+  .auth-shell::before {
+    background: linear-gradient(to bottom, rgba(255, 252, 246, 0.84), rgba(255, 252, 246, 0.76) 55%, rgba(255, 252, 246, 0.7)),
+      #f8f2e6 url('../assets/mountains-wide.jpg') center bottom / cover no-repeat;
+  }
+}
+.auth-shell-body {
+  flex: 1 1 0; min-height: 0; display: flex; flex-direction: column;
+  padding: clamp(8px, 2vh, 24px) calc(clamp(14px, 3vw, 40px) + var(--safe-right)) calc(clamp(8px, 1.6vh, 20px) + var(--safe-bottom)) calc(clamp(14px, 3vw, 40px) + var(--safe-left));
+}
+.fit-outer { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+.fit-slot { margin: auto 0; width: 100%; display: flex; justify-content: center; align-items: flex-start; flex: 0 0 auto; }
+.fit-inner { width: min(100%, var(--shell-w, 440px)); transform-origin: top center; flex: 0 0 auto; }
+.fit-scroll .fit-inner { margin: 0 auto; }
+
+/* תוכן המסכים */
+.auth-shell .auth-column { width: 100%; max-width: none; gap: 14px; }
+.auth-shell .auth-header { text-align: center; }
+.auth-shell .auth-header h1, .auth-shell .center-title { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.4px; color: var(--land-navy); text-align: center; }
+.auth-shell .auth-header p, .auth-shell .muted { color: var(--land-text); }
+.auth-shell .card, .auth-shell .form-card {
+  background: rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1px solid rgba(31, 111, 102, 0.35); border-radius: 22px; box-shadow: 0 16px 40px rgba(20, 48, 79, 0.08);
+  padding: 16px; gap: 10px;
+}
+.auth-shell .field label { color: var(--land-navy); font-size: 0.92rem; }
+.auth-shell .input {
+  background: rgba(255, 255, 255, 0.92); border: 1px solid rgba(31, 111, 102, 0.4); border-radius: 12px;
+  min-height: 44px; color: var(--land-navy); font-family: inherit;
+}
+.auth-shell .input:focus { outline: 2px solid var(--land-teal); outline-offset: 1px; }
+.auth-shell .btn {
+  min-height: 48px; height: auto; width: 100%; padding: 6px 18px; border-radius: 999px; border: 1px solid var(--land-teal);
+  background: rgba(255, 255, 255, 0.5); color: var(--land-navy); font-family: inherit; font-size: 1.02rem; font-weight: 400; line-height: 1.2;
+  box-shadow: none; display: flex; align-items: center; justify-content: center; gap: 10px; text-align: center; text-decoration: none; cursor: pointer;
+}
+.auth-shell .btn:hover { background: rgba(255, 255, 255, 0.78); }
+.auth-shell .btn-primary { background: var(--land-navy); border-color: var(--land-navy); color: #fff; font-weight: 700; }
+.auth-shell .btn-primary:hover { background: #0f2640; }
+.auth-shell .btn:disabled { opacity: 0.55; cursor: default; }
+.auth-shell .auth-actions { gap: 10px; }
+.auth-shell .auth-footer-link { text-align: center; font-size: 0.92rem; color: var(--land-text); margin: 0; }
+.auth-shell .auth-footer-link a, .auth-shell .link-btn { color: var(--land-teal); font-weight: 400; text-decoration: underline; background: none; border: 0; padding: 4px; min-height: 0; cursor: pointer; font-family: inherit; font-size: inherit; }
+.auth-shell .stack { gap: 6px; align-items: center; }
+.auth-shell .center-card { background: none; border: 0; box-shadow: none; padding: 0; text-align: center; display: flex; flex-direction: column; gap: 12px; }
+.auth-shell .lock-card { background: none; border: 0; box-shadow: none; padding: 0; display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.auth-shell .success-card { align-items: center; text-align: center; }
+
+/* טפסים ארוכים (הרשמה): צפופים יותר, ובמסך רחב בשתי עמודות, כדי שייכנסו למסך אחד */
+.auth-shell .form-card .field { gap: 2px; }
+.auth-shell .form-card .field label { font-size: 0.85rem; }
+.auth-shell .form-card .input { min-height: 38px; padding-block: 4px; }
+.auth-shell .field-hint, .auth-shell .field-error { font-size: 0.74rem; line-height: 1.25; }
+.auth-shell .form-card { gap: 8px; }
+.signup-shell .auth-header p { display: none; }
+.signup-shell .auth-column { gap: 8px; }
+@media (min-width: 700px) {
+  .signup-shell .form-card { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 8px; align-items: start; }
+  .signup-shell .form-card > .btn, .signup-shell .form-card > .form-error, .signup-shell .form-card > :not(.field) { grid-column: 1 / -1; }
+}

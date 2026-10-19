@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Field } from '../../../src/components/Field';
-import { Icon } from '../../../src/components/Icon';
 import { DEFAULT_BUSINESS_ID } from '../../../src/domain/spaces';
 import { LogoControl } from '../../../src/features/settings/LogoControl';
 import { saveLogo } from '../../../src/services/logoService';
-import { LangSwitch } from '../../../src/components/LangSwitch';
+import { AuthShell } from '../../../src/components/AuthShell';
 import { BusinessesFields } from '../../../src/features/auth/BusinessesFields';
 import { isValidEmail, MIN_PASSWORD_LENGTH, normalizePhone, validateSignup, type SignupValues } from '../../../src/features/auth/validation';
 import { describeError } from '../../../src/services/authErrors';
@@ -40,37 +39,24 @@ export function EntryFlow() {
   const back = () => setView({ name: 'list' });
 
   return (
-    <main className="entry" dir="rtl">
-      <aside className="entry-brand" aria-hidden="true">
-        <div className="welcome-logo"><img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={88} height={88} draggable={false} /></div>
-        <h1>ניהול כספים לעסק ולמשק הבית</h1>
-        <p>הנתונים נשמרים במחשב הזה, מוצפנים בסיסמה שלך. סנכרון לענן רק בחשבון מקוון, וכשיש חיבור.</p>
-        <ul className="feature-list">
-          <li><span className="feature-icon"><Icon name="budget" /></span><span>עובד גם בלי אינטרנט</span></li>
-          <li><span className="feature-icon"><Icon name="sync" /></span><span>סנכרון אוטומטי כשהחיבור חוזר</span></li>
-          <li><span className="feature-icon"><Icon name="business" /></span><span>עסק ומשק בית, כל אחד בנפרד</span></li>
-        </ul>
-      </aside>
-      <section className="entry-main">
-        <div className="entry-panel">
-          <LangSwitch />
-          {view.name !== 'list' && <button type="button" className="entry-back" onClick={back}><ChevronRight />חזור</button>}
-          {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
-          {view.name === 'unlock' && <Unlock account={view.account} go={setView} />}
-          {view.name === 'recover' && <Recover account={view.account} />}
-          {view.name === 'online-login' && <OnlineLogin />}
-          {view.name === 'signup-online' && <Signup kind="online" />}
-          {view.name === 'signup-offline' && <Signup kind="offline" />}
-          {view.name === 'remove' && <RemoveAccount account={view.account} back={back} />}
-          {view.name === 'privacy' && <DesktopPrivacyBody kind={null} />}
-          {view.name !== 'privacy' && (
-            <p className="auth-footer-link">
-              <button type="button" className="link-btn" onClick={() => setView({ name: 'privacy' })}>{PRIVACY_LABEL_FULL}</button>
-            </p>
-          )}
-        </div>
-      </section>
-    </main>
+    <AuthShell width={480} scroll={view.name === 'privacy'}>
+      <div className="entry-panel">
+        {view.name !== 'list' && <button type="button" className="entry-back" onClick={back}><ChevronRight />חזור</button>}
+        {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
+        {view.name === 'unlock' && <Unlock account={view.account} go={setView} />}
+        {view.name === 'recover' && <Recover account={view.account} />}
+        {view.name === 'online-login' && <OnlineLogin />}
+        {view.name === 'signup-online' && <Signup kind="online" />}
+        {view.name === 'signup-offline' && <Signup kind="offline" />}
+        {view.name === 'remove' && <RemoveAccount account={view.account} back={back} />}
+        {view.name === 'privacy' && <DesktopPrivacyBody kind={null} />}
+        {view.name !== 'privacy' && (
+          <p className="auth-footer-link">
+            <button type="button" className="link-btn" onClick={() => setView({ name: 'privacy' })}>{PRIVACY_LABEL_FULL}</button>
+          </p>
+        )}
+      </div>
+    </AuthShell>
   );
 }
 

@@ -1,4 +1,4 @@
-import { LangSwitch } from '../../components/LangSwitch';
+import { AuthShell } from '../../components/AuthShell';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -74,7 +74,7 @@ export function SignupScreen() {
 
   if (justRegistered) {
     return (
-      <main className="auth-screen">
+      <AuthShell>
         <div className="auth-column">
           <div className="card success-card">
             <div className="success-icon" aria-hidden="true">
@@ -96,14 +96,13 @@ export function SignupScreen() {
             </button>
           </div>
         </div>
-      </main>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="auth-screen">
+    <AuthShell className="signup-shell" width={760}>
       <div className="auth-column">
-        <LangSwitch />
         <header className="auth-header">
           <h1>יצירת חשבון</h1>
           <p className="muted">כמה פרטים קצרים ומתחילים.</p>
@@ -198,6 +197,6 @@ export function SignupScreen() {
           <Link to="/welcome">חזרה</Link> · <Link to="/privacy">{privacyLabel}</Link>
         </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }

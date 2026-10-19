@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { autoDetectLang, changeLang, getLang } from '../../i18n/lang';
+import { AuthBar } from '../../components/AuthBar';
 import { ChevronLeft, ChevronRight } from '../../components/icons';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { detectDevice, installerFor, isMobileKind } from '../../domain/device';
@@ -122,11 +122,6 @@ export function LandingScreen() {
   const set = isMobileKind(kind) || !wide ? 'phone' : 'desktop';
   const base = import.meta.env.BASE_URL;
 
-  const lang = getLang();
-  useEffect(() => {
-    autoDetectLang();
-  }, []);
-
   const [promptReady, setPromptReady] = useState(canPromptInstall());
   const [showHow, setShowHow] = useState(false);
   const [tour, setTour] = useState(false);
@@ -181,21 +176,7 @@ export function LandingScreen() {
 
   return (
     <main className="landing">
-      <header className="landing-bar">
-        <div className="landing-brand">
-          <img src={`${base}icon-192.png`} alt="" width={40} height={40} draggable={false} />
-          <h1>ניהול כספים</h1>
-        </div>
-        <button
-          type="button"
-          className="landing-lang"
-          lang={lang === 'he' ? 'en' : 'he'}
-          aria-label={lang === 'he' ? 'English' : 'עברית'}
-          onClick={() => changeLang(lang === 'he' ? 'en' : 'he')}
-        >
-          {lang === 'he' ? 'English' : 'עברית'}
-        </button>
-      </header>
+      <AuthBar heading />
 
       <div className="landing-body">
         <section className="landing-side" aria-label="כניסה והתקנה">

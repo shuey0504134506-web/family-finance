@@ -1,4 +1,4 @@
-import { LangSwitch } from '../../components/LangSwitch';
+import { AuthShell } from '../../components/AuthShell';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -59,9 +59,8 @@ export function LoginScreen() {
   }
 
   return (
-    <main className="auth-screen login-screen">
+    <AuthShell>
       <div className="auth-column">
-        <LangSwitch />
         <header className="auth-header">
           <h1>{remembered ? `שלום ${remembered.firstName}` : 'כניסה לחשבון'}</h1>
           {remembered ? (
@@ -125,6 +124,6 @@ export function LoginScreen() {
           <Link to="/privacy">{privacyLabel}</Link>
         </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }

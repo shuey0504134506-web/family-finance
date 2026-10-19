@@ -1,4 +1,4 @@
-import { LangSwitch } from '../../components/LangSwitch';
+import { AuthShell } from '../../components/AuthShell';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { Link, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
@@ -10,13 +10,9 @@ export function WelcomeScreen() {
   const navigate = useNavigate();
 
   return (
-    <main className="auth-screen welcome-screen">
+    <AuthShell>
       <div className="auth-column">
-        <LangSwitch />
         <header className="welcome-hero">
-          <div className="welcome-logo" aria-hidden="true">
-            <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width={88} height={88} draggable={false} />
-          </div>
           <h1>ניהול כספים לעסק ולמשק הבית</h1>
           <p className="muted">הכול במקום אחד, כל חלק בנפרד וברור.</p>
         </header>
@@ -64,6 +60,6 @@ export function WelcomeScreen() {
           </p>
         </div>
       </div>
-    </main>
+    </AuthShell>
   );
 }

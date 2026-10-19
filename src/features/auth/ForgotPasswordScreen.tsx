@@ -1,4 +1,4 @@
-import { LangSwitch } from '../../components/LangSwitch';
+import { AuthShell } from '../../components/AuthShell';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -45,9 +45,8 @@ export function ForgotPasswordScreen() {
   }
 
   return (
-    <main className="auth-screen">
+    <AuthShell>
       <div className="auth-column">
-        <LangSwitch />
         <header className="auth-header">
           <h1>שחזור סיסמה</h1>
           <p className="muted">נשלח אליך מייל עם קישור לבחירת סיסמה חדשה.</p>
@@ -97,6 +96,6 @@ export function ForgotPasswordScreen() {
           <Link to="/privacy">{privacyLabel}</Link>
         </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }

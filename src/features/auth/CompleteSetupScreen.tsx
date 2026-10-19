@@ -1,4 +1,4 @@
-import { LangSwitch } from '../../components/LangSwitch';
+import { AuthShell } from '../../components/AuthShell';
 import { useRef, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
 import { describeErrorWithCode } from '../../services/authErrors';
@@ -59,9 +59,8 @@ export function CompleteSetupScreen() {
   }
 
   return (
-    <main className="auth-screen">
+    <AuthShell>
       <div className="auth-column">
-        <LangSwitch />
         <header className="auth-header">
           <h1>השלמת הגדרת החשבון</h1>
           <p className="muted">
@@ -116,6 +115,6 @@ export function CompleteSetupScreen() {
           </button>
         </p>
       </div>
-    </main>
+    </AuthShell>
   );
 }
