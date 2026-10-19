@@ -16,7 +16,14 @@ const SHOTS: Array<{ id: string; title: string; text: string }> = [
   { id: 'summary', title: 'סיכומים והשוואות', text: 'סיכום החודש והשנה והשוואה לתקופות קודמות, כדי להבין לאן הולך הכסף.' },
   { id: 'tithes', title: 'מעשרות', text: 'חישוב מעשרות אוטומטי לפי ההכנסות, עם מעקב אחרי מה ששולם ומה שנשאר.' },
   { id: 'standing', title: 'הוראות הקבע שלי', text: 'הוצאות והכנסות שחוזרות כל חודש נרשמות מעצמן, והמערכת מציעה לזהות פעולות קבועות שעוד לא סומנו.' },
+  { id: 'search', title: 'חיפוש מהיר', text: 'מוצאים כל פעולה לפי שם, קטגוריה, הערה, סכום או תאריך, עם סינון להכנסות או להוצאות.' },
+  { id: 'import', title: 'ייבוא נתונים מהבנק', text: 'מעלים קובץ תנועות מהבנק או מחברת האשראי, והאפליקציה מזהה את מבנה הקובץ ומסווגת את הקטגוריות.' },
+  { id: 'tasks', title: 'רשימת משימות', text: 'משימות עם תזכורת אופציונלית שקופצת בכניסה לאפליקציה, ומסמנים "בוצע" בלחיצה.' },
+  { id: 'shopping', title: 'רשימת קניות', text: 'רשימת פריטים לקנייה, ומסמנים "נקנה" תוך כדי הקנייה.' },
 ];
+
+const ABOUT =
+  'פלטפורמת ניהול כספים שנועדה לעזור למשפחה לשמור על סדר כלכלי: לרשום את כל ההוצאות וההכנסות, לראות בכל רגע כמה נכנס, כמה יצא וכמה נשאר, ולהבין לאן הולך הכסף. אפשר להוסיף גם עסק ולנהל אותו בנפרד ממשק הבית. בפנים כל מה שצריך: מעשרות שמחושבים אוטומטית, הוראות קבע, תקציב לכל קטגוריה, סיכומים והשוואות, חובות, ייבוא נתונים מהבנק, רשימת משימות ורשימת קניות וחיפוש מהיר. הכול בקלות ובלי מאמץ.';
 
 
 /** קרוסלה של שקופיות זזות: גלילה במגע, חצים, נקודות והחלפה אוטומטית שנעצרת במגע או ריחוף. */
@@ -99,7 +106,7 @@ function Slides({ set, base }: { set: 'phone' | 'desktop'; base: string }) {
   );
 }
 
-/** דף הנחיתה של האתר: הסבר ויזואלי, כניסה, והתקנה לפי סוג המכשיר. */
+/** דף הנחיתה של האתר: הסבר, כניסה, התקנה ושקופיות. מותאם כך שהכול נכנס למסך אחד בלי גלילה. */
 export function LandingScreen() {
   const navigate = useNavigate();
   const privacyLabel = usePrivacyLabel();
@@ -125,6 +132,9 @@ export function LandingScreen() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [tour]);
+  useEffect(() => {
+    if (wide) setTour(false);
+  }, [wide]);
 
   useEffect(() => onInstallPromptChange(() => setPromptReady(canPromptInstall())), []);
 
@@ -152,44 +162,50 @@ export function LandingScreen() {
 
   const enter = () => navigate(readDeviceUser() ? '/login' : '/welcome');
   const downloadHref = url ?? RELEASES_PAGE;
+  const note = installed
+    ? 'ההתקנה הושלמה. אפשר לפתוח מהמסך הראשי או מתפריט היישומים.'
+    : showHow
+      ? kind === 'ios'
+        ? 'באייפון ובאייפד: לוחצים על כפתור השיתוף בדפדפן Safari ובוחרים "הוספה למסך הבית".'
+        : kind === 'mac'
+          ? 'במק: ב-Safari בוחרים "קובץ" ואז "הוספה ל-Dock". ב-Chrome לוחצים על סמל ההתקנה בשורת הכתובת.'
+          : 'בדפדפן: לוחצים על סמל ההתקנה בשורת הכתובת, או בתפריט הדפדפן בוחרים "התקנת אפליקציה".'
+      : null;
 
   return (
     <main className="landing">
-      <div className="landing-inner">
-        <div className="landing-top"><LangSwitch /></div>
-        <div className="landing-main">
-        <div className="landing-intro">
-        <header className="landing-hero">
-          <img src={`${base}icon-192.png`} alt="" width={84} height={84} draggable={false} />
-          <h1>ניהול כספים לעסק ולמשק הבית</h1>
-          <p className="muted">הכול במקום אחד, כל חלק בנפרד וברור.</p>
-          <button type="button" className="btn btn-secondary landing-how" onClick={() => setTour(true)}>
-            <span aria-hidden="true" className="landing-how-play">▶</span>
-            <span>ראו איך זה עובד</span>
-          </button>
-        </header>
+      <header className="landing-bar">
+        <div className="landing-brand">
+          <img src={`${base}icon-192.png`} alt="" width={40} height={40} draggable={false} />
+          <h1>ניהול כספים</h1>
+        </div>
+        <LangSwitch />
+      </header>
 
-        <section className="landing-actions" aria-label="כניסה והתקנה">
-          <button type="button" className="btn btn-primary" onClick={enter}>
-            כניסה או יצירת חשבון
-          </button>
+      <div className="landing-body">
+        <section className="landing-side" aria-label="כניסה והתקנה">
+          <p className="landing-about">{ABOUT}</p>
 
-          <div className="landing-install">
+          {wide ? (
+            <p className="landing-seehint" aria-hidden="true">
+              <span>כך זה נראה</span>
+              <ChevronLeft />
+            </p>
+          ) : (
+            <button type="button" className="btn btn-secondary landing-how" onClick={() => setTour(true)}>
+              <span aria-hidden="true" className="landing-how-play">▶</span>
+              <span>ראו איך זה נראה</span>
+            </button>
+          )}
+
+          <div className="landing-actions">
+            <button type="button" className="btn btn-primary" onClick={enter}>
+              כניסה או יצירת חשבון
+            </button>
             <button type="button" className="btn btn-secondary landing-recommended" onClick={() => void installWebApp()}>
               <span>{isMobileKind(kind) ? 'התקנת האפליקציה במכשיר' : 'התקנת האתר כתוכנה במחשב'}</span>
               <span className="landing-badge">מומלץ</span>
             </button>
-            {installed && <p className="landing-note" role="status">ההתקנה הושלמה. אפשר לפתוח מהמסך הראשי או מתפריט היישומים.</p>}
-            {showHow && !installed && (
-              <p className="landing-note" role="status">
-                {kind === 'ios'
-                  ? 'באייפון ובאייפד: לוחצים על כפתור השיתוף בדפדפן Safari ובוחרים "הוספה למסך הבית".'
-                  : kind === 'mac'
-                    ? 'במק: ב-Safari בוחרים "קובץ" ואז "הוספה ל-Dock". ב-Chrome לוחצים על סמל ההתקנה בשורת הכתובת.'
-                    : 'בדפדפן: לוחצים על סמל ההתקנה בשורת הכתובת, או בתפריט הדפדפן בוחרים "התקנת אפליקציה".'}
-              </p>
-            )}
-
             {installer && (
               <>
                 <a className="btn btn-secondary landing-download" href={downloadHref} rel="noopener">
@@ -199,19 +215,29 @@ export function LandingScreen() {
               </>
             )}
           </div>
+
+          <p className="auth-footer-link">
+            <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
+          </p>
         </section>
-        </div>
 
-        </div>
-
-        <p className="auth-footer-link">
-          <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
-        </p>
+        {wide && (
+          <section className="landing-stage" aria-label="הצצה לתוכנה">
+            <Slides set={set} base={base} />
+          </section>
+        )}
       </div>
-      {tour && (
-        <div className="landing-modal" role="dialog" aria-modal="true" aria-label="איך זה עובד">
+
+      {note && (
+        <button type="button" className="landing-note" role="status" onClick={() => { setShowHow(false); setInstalled(false); }}>
+          {note}
+        </button>
+      )}
+
+      {tour && !wide && (
+        <div className="landing-modal" role="dialog" aria-modal="true" aria-label="איך זה נראה">
           <div className="landing-modal-head">
-            <h2>איך זה עובד</h2>
+            <h2>איך זה נראה</h2>
             <button type="button" className="landing-modal-close" aria-label="סגירה" onClick={() => setTour(false)}>
               ✕
             </button>

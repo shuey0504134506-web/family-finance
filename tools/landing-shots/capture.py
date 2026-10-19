@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 PW = 'סיסמה-ארוכה-1'
-SHOTS = [('home', '#/household'), ('expenses', '#/household/list/expense'), ('budget', '#/household/budget'), ('summary', '#/summary'), ('tithes', '#/tithes'), ('standing', '#/household/standing')]
+SHOTS = [('home', '#/household'), ('expenses', '#/household/list/expense'), ('budget', '#/household/budget'), ('summary', '#/summary'), ('tithes', '#/tithes'), ('standing', '#/household/standing'), ('search', '#/search'), ('import', '#/household/import'), ('tasks', '#/household/tasks'), ('shopping', '#/household/shopping')]
 
 def demo_csv(path: Path) -> Path:
     random.seed(7)
@@ -48,8 +48,16 @@ def run(kind: str, url: str, viewport: dict, scale: int):
         pg.evaluate("location.hash='#/household/import'"); pg.wait_for_timeout(1200)
         pg.locator('input[type=file]').set_input_files(str(csv)); pg.wait_for_timeout(2500)
         pg.click('button:has-text("סימון הכול")'); pg.click('button:has-text("ייבוא ")'); pg.wait_for_timeout(3000)
+        # נתוני דוגמה למשימות ולרשימת הקניות
+        pg.evaluate("location.hash='#/household/tasks'"); pg.wait_for_timeout(1200)
+        for t in ['לשלם ארנונה', 'לחדש ביטוח רכב', 'לתאם תור לרופא']:
+            pg.get_by_label('משימה חדשה').fill(t); pg.click('button:has-text("הוספת משימה")'); pg.wait_for_timeout(500)
+        pg.evaluate("location.hash='#/household/shopping'"); pg.wait_for_timeout(1200)
+        for t in ['חלב', 'לחם', 'ביצים', 'ירקות לשבת']:
+            pg.get_by_label('פריט חדש').fill(t); pg.click('button:has-text("הוספה לרשימה")'); pg.wait_for_timeout(500)
         for name, h in SHOTS:
             pg.evaluate(f"location.hash='{h}'"); pg.wait_for_timeout(2200)
+            if name == 'search': pg.get_by_role('searchbox').fill('ר') if pg.get_by_role('searchbox').count() else None; pg.wait_for_timeout(800)
             png = tmp / f'{kind}-{name}.png'; pg.screenshot(path=str(png))
             Image.open(png).convert('RGB').save(out / f'{name}.webp', quality=80)
         b.close()
