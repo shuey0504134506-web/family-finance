@@ -7,6 +7,7 @@ import { SyncNoticeProvider } from './features/sync/SyncNotice';
 import { MonthProvider } from './features/month/MonthContext';
 import { NotConfiguredScreen } from './features/setup/NotConfiguredScreen';
 import { AppRoutes } from './routes';
+import { UpdatePrompt } from './native/UpdatePrompt';
 
 /**
  * HashRouter: עובד בכל אחסון סטטי וגם כשהאפליקציה תיארז כאפליקציית אנדרואיד,
@@ -21,6 +22,7 @@ export default function App() {
         <MonthProvider>
           <SyncNoticeProvider>
             <OfflineBanner />
+            <UpdatePrompt />
             <HashRouter>
               <AppRoutes />
             </HashRouter>

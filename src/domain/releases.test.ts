@@ -21,3 +21,18 @@ describe('pickInstaller', () => {
     expect(pickInstaller([], 'android')).toBeNull();
   });
 });
+
+import { isNewerVersion, latestRelease } from './releases';
+
+describe('עדכון מתוך האפליקציה', () => {
+  it('latestRelease מחזיר גם את מספר הגרסה', () => {
+    expect(latestRelease(list, 'windows')).toEqual({ version: '1.0.13', url: 'u-exe13' });
+  });
+  it('isNewerVersion משווה מספרית, לא לפי טקסט', () => {
+    expect(isNewerVersion('1.0.20', '1.0.19')).toBe(true);
+    expect(isNewerVersion('1.0.19', '1.0.19')).toBe(false);
+    expect(isNewerVersion('1.0.9', '1.0.13')).toBe(false);
+    expect(isNewerVersion('1.0.19', '0.1.0')).toBe(true);
+    expect(isNewerVersion('abc', '1.0.1')).toBe(false);
+  });
+});

@@ -10,3 +10,8 @@ contextBridge.exposeInMainWorld('desktopStore', {
 contextBridge.exposeInMainWorld('desktopFiles', {
   pick: (accept: string, multiple: boolean): Promise<{ name: string; data: Uint8Array }[]> => ipcRenderer.invoke('files:pick', accept, multiple),
 });
+
+contextBridge.exposeInMainWorld('desktopUpdate', {
+  version: (): Promise<string> => ipcRenderer.invoke('update:version'),
+  install: (url: string): Promise<void> => ipcRenderer.invoke('update:install', url),
+});

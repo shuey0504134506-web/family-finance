@@ -23,17 +23,29 @@ function compareVersions(a: number[], b: number[]): number {
  * הקובץ מהגרסה הגבוהה ביותר, לא מהראשונה ברשימה (GitHub ממיין לפי תאריך יצירה,
  * ולכן גרסה ישנה יכולה להופיע לפני גרסה חדשה).
  */
-export function pickInstaller(releases: ReleaseInfo[], kind: 'windows' | 'android'): string | null {
+export function latestRelease(releases: ReleaseInfo[], kind: 'windows' | 'android'): { version: string; url: string } | null {
   const ext = kind === 'windows' ? '.exe' : '.apk';
   const prefix = kind === 'windows' ? 'desktop' : 'android';
-  let best: { v: number[]; url: string } | null = null;
+  let best: { v: number[]; url: string; version: string } | null = null;
   for (const r of releases) {
     if (r.draft || r.prerelease) continue;
     if (!r.tag_name.toLowerCase().startsWith(prefix)) continue;
     const asset = (r.assets ?? []).find((a) => a.name.toLowerCase().endsWith(ext) && !/portable/i.test(a.name));
     if (!asset) continue;
     const v = versionOf(r.tag_name);
-    if (!best || compareVersions(v, best.v) > 0) best = { v, url: asset.browser_download_url };
+    if (!best || compareVersions(v, best.v) > 0) best = { v, url: asset.browser_download_url, version: v.join('.') };
   }
-  return best ? best.url : null;
+  return best ? { version: best.version, url: best.url } : null;
+}
+
+export function pickInstaller(releases: ReleaseInfo[], kind: 'windows' | 'android'): string | null {
+  return latestRelease(releases, kind)?.url ?? null;
+}
+
+/** האם a חדשה מ-b. גרסאות כמו "1.0.19" או "desktop-v1.0.19"; גרסה לא מובנת נחשבת ישנה. */
+export function isNewerVersion(a: string, b: string): boolean {
+  const pa = versionOf(a);
+  const pb = versionOf(b);
+  if (pa[0] === 0 && pa.length === 1) return false;
+  return compareVersions(pa, pb) > 0;
 }

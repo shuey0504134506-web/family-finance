@@ -1,6 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } from 'electron';
-import { accessSync, promises as fs } from 'node:fs';
+import { app, BrowserWindow, dialog, ipcMain, Menu, net, session, shell } from 'electron';
+import { accessSync, createWriteStream, promises as fs } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 /**
  * תהליך ראשי: חלון אחד, וקבצי נתונים בתיקיית המשתמש בלבד.
@@ -75,6 +78,25 @@ ipcMain.handle('files:pick', async (e, accept: unknown, multiple: unknown) => {
     out.push({ name: path.basename(file), data: new Uint8Array(await fs.readFile(file)) });
   }
   return out;
+});
+
+/**
+ * עדכון התוכנה מתוך התוכנה: מוריד את קובץ ההתקנה מגרסאות המאגר (כתובת מאושרת בלבד), פותח אותו ונסגר,
+ * כדי שההתקנה תוכל להחליף את הקבצים. הנתונים נשמרים בתיקיית המשתמש ולא נפגעים.
+ */
+const UPDATE_URL = /^https:\/\/github\.com\/shuey0504134506-web\/family-finance\/releases\/download\/desktop-v\d+(?:\.\d+)*\/finance-desktop-\d+(?:\.\d+)*-x64\.exe$/;
+ipcMain.handle('update:version', () => app.getVersion());
+ipcMain.handle('update:install', async (_e, url: unknown) => {
+  if (typeof url !== 'string' || !UPDATE_URL.test(url)) throw new Error('bad-url');
+  const res = await net.fetch(url);
+  if (!res.ok || !res.body) throw new Error('download-failed');
+  const file = path.join(os.tmpdir(), `finance-update-${Date.now()}.exe`);
+  await pipeline(Readable.fromWeb(res.body as never), createWriteStream(file));
+  const stat = await fs.stat(file);
+  if (stat.size < 5 * 1024 * 1024) throw new Error('download-incomplete');
+  const err = await shell.openPath(file);
+  if (err) throw new Error(err);
+  setTimeout(() => app.quit(), 1500);
 });
 
 /** הורדות (גיבוי, אקסל) נשמרות ישר בתיקיית ההורדות, בלי חלון שמירה, ובשם שאינו דורס קובץ קיים. */

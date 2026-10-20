@@ -15,6 +15,7 @@ import { ControllerContext, useUi } from './useController';
 import { createFirebaseCloud, type CloudAuth } from '../sync/firebaseCloud';
 import { createNoCloud } from '../sync/noCloud';
 import { IS_PHONE } from './target';
+import { UpdatePrompt } from '../../../src/native/UpdatePrompt';
 
 /** בבדיקות קצה-לקצה (mode=e2e בלבד) אפשר להזריק ענן מדומה. בבנייה רגילה הענף הזה נמחק. */
 function pickCloud(): CloudAuth {
@@ -44,6 +45,7 @@ export function DesktopApp() {
   return (
     <ControllerContext.Provider value={controller}>
       <ErrorBoundary>
+        <UpdatePrompt />
         <Gate />
       </ErrorBoundary>
     </ControllerContext.Provider>
