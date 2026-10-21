@@ -39,6 +39,11 @@ const STATUS_LABEL: Record<ApprovalStatus, string> = {
   none: 'בלי החלטה',
 };
 
+/** כשדרישת האישור כבויה, חשבון "ממתין" בפועל נכנס רגיל, ולכן לא מציגים אותו כממתין. */
+function statusLabel(status: ApprovalStatus, required: boolean | null): string {
+  return status === 'pending' && required === false ? 'פעיל (בלי אישור)' : STATUS_LABEL[status];
+}
+
 function dateOnly(ms: number): string {
   const d = new Date(ms);
   const p = (n: number) => String(n).padStart(2, '0');
@@ -403,7 +408,7 @@ function AdminContent() {
   const aq = accountSearch.trim().toLowerCase();
   // חשבון המנהל תמיד ראשון
   const filteredUsers = (data?.users ?? [])
-    .filter((u) => !aq || `${u.email} ${STATUS_LABEL[u.status]} ${USAGE_LABEL[u.usage]} ${isAdminEmail(u.email) ? 'חשבון מנהל' : ''}`.toLowerCase().includes(aq))
+    .filter((u) => !aq || `${u.email} ${statusLabel(u.status, approvalRequired)} ${USAGE_LABEL[u.usage]} ${isAdminEmail(u.email) ? 'חשבון מנהל' : ''}`.toLowerCase().includes(aq))
     .sort((a, b) => Number(isAdminEmail(b.email)) - Number(isAdminEmail(a.email)));
 
   return (
@@ -434,7 +439,7 @@ function AdminContent() {
                 <div><dt>חשבונות חדשים בשבוע</dt><dd>{data.totals.newLast7d}</dd></div>
                 <div><dt>חסומים</dt><dd>{data.totals.disabled}</dd></div>
                 <div><dt>עם דרישת תשלום</dt><dd>{data.totals.paymentRequired}</dd></div>
-                <div><dt>ממתינים לאישור</dt><dd>{data.totals.pending}</dd></div>
+                <div><dt>{approvalRequired === false ? 'נרשמו בלי אישור (הדרישה כבויה)' : 'ממתינים לאישור'}</dt><dd>{data.totals.pending}</dd></div>
                 <div><dt>בלי החלטה (קיימים)</dt><dd>{data.totals.undecided}</dd></div>
               </dl>
               {data.totals.pending + data.totals.undecided > 0 && (
@@ -571,7 +576,7 @@ function AdminContent() {
                     <span className="txc-chips">
                       {isAdminEmail(u.email) ? <span className="txc-chip txc-chip-admin">חשבון מנהל</span> : null}
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
-                      <span className="txc-chip">{STATUS_LABEL[u.status]}</span>
+                      <span className="txc-chip">{statusLabel(u.status, approvalRequired)}</span>
                       {u.notice ? <span className="txc-chip">הודעה פעילה</span> : null}
                       {u.payment ? (
                         <span className="txc-chip">
@@ -581,7 +586,7 @@ function AdminContent() {
                     </span>
                   </div>
                   {(() => {
-                    const open = detailsOpen[u.uid] ?? (u.status === 'pending' || u.status === 'none');
+                    const open = detailsOpen[u.uid] ?? ((u.status === 'pending' && approvalRequired !== false) || u.status === 'none');
                     const d = u.details;
                     const empty = 'לא הוזן';
                     return (

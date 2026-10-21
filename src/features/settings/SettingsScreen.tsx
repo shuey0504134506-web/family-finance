@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { Link } from 'react-router-dom';
 import { isAdminEmail } from '../../config/admin';
-import { loadPendingCount } from '../../services/adminService';
+import { loadPendingCount, subscribeApprovalRequired } from '../../services/adminService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
@@ -27,6 +27,9 @@ export function SettingsScreen() {
   const [pending, setPending] = useState(0);
   const [unanswered, setUnanswered] = useState(0);
   const isAdmin = isAdminEmail(user.email);
+  // כשדרישת האישור כבויה, אין "ממתינים לאישור": חשבונות חדשים נכנסים רגיל
+  const [approvalRequired, setApprovalRequired] = useState<boolean | null>(null);
+  useEffect(() => (isAdmin ? subscribeApprovalRequired(setApprovalRequired) : undefined), [isAdmin]);
   useEffect(() => {
     if (!isAdmin) return;
     loadPendingCount()
@@ -84,7 +87,7 @@ export function SettingsScreen() {
 
         {isAdminEmail(user.email) ? (
           <Link to="/admin" className="btn btn-secondary btn-borderless">
-            {['ניהול מתקדם (מנהל)', pending > 0 ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '']
+            {['ניהול מתקדם (מנהל)', pending > 0 && approvalRequired === true ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '']
               .filter(Boolean)
               .join(' · ')}
           </Link>

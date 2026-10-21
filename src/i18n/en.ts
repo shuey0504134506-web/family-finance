@@ -25,6 +25,8 @@ export const EN: Record<string, string> = {
   "עברנו את יעד החיסכון ב-": "We passed the savings goal by ",
   "עוד": "Another",
   "ליעד החיסכון": "to the savings goal",
+  "פעיל (בלי אישור)": "Active (no approval)",
+  "נרשמו בלי אישור (הדרישה כבויה)": "Signed up without approval (requirement off)",
   "גרסה חדשה זמינה": "A new version is available",
   "יצאה גרסה חדשה של התוכנה.": "A new version of the program is out.",
   "יצאה גרסה חדשה של האפליקציה.": "A new version of the app is out.",
