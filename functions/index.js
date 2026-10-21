@@ -76,7 +76,9 @@ async function usageDays(uids) {
   for (let i = 0; i < uids.length; i += 300) {
     const refs = uids.slice(i, i + 300).map((uid) => db.collection('usage').doc(uid));
     const snaps = await db.getAll(...refs);
-    snaps.forEach((snap, k) => out.set(uids[i + k], snap.exists ? snap.data().days ?? {} : {}));
+    snaps.forEach((snap, k) =>
+      out.set(uids[i + k], snap.exists ? { days: snap.data().days ?? {}, updatedAt: Number(snap.data().updatedAt) || 0 } : { days: {}, updatedAt: 0 }),
+    );
   }
   return out;
 }
@@ -90,7 +92,12 @@ async function statsFor(user, now) {
     count(base.collection('businessTransactions').where('createdAt', '>=', since)),
     count(base.collection('householdTransactions').where('createdAt', '>=', since)),
   ]);
-  const lastActive = user.metadata.lastSignInTime ? Date.parse(user.metadata.lastSignInTime) : 0;
+  // כניסה אחרונה: Firebase מעדכן lastSignInTime רק בהתחברות עם סיסמה, ומי שנשאר מחובר נשאר עם זמן ההרשמה.
+  // לכן לוקחים את המאוחר מבין ההתחברות, רענון האישור של המכשיר ופתיחת האפליקציה האחרונה (usage).
+  const lastActive = Math.max(
+    user.metadata.lastSignInTime ? Date.parse(user.metadata.lastSignInTime) || 0 : 0,
+    user.metadata.lastRefreshTime ? Date.parse(user.metadata.lastRefreshTime) || 0 : 0,
+  );
   const tx7d = b7 + h7;
   return {
     uid: user.uid,
@@ -137,7 +144,10 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
   const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
   const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0, accounts: [] }));
   for (const r of rows) {
-    const d = usage.get(r.uid) ?? {};
+    const u = usage.get(r.uid) ?? { days: {}, updatedAt: 0 };
+    const d = u.days;
+    const lastOpen = Math.max(u.updatedAt, ...Object.keys(d).map((k) => Date.parse(`${k}T12:00:00Z`) || 0));
+    if (lastOpen > (r.lastSignInAt ?? 0)) r.lastSignInAt = lastOpen;
     days.forEach((date, i) => {
       const n = Number(d[date]) || 0;
       if (n > 0) {
