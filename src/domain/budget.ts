@@ -115,6 +115,60 @@ export function overallBudgetId(scope: Scope, businessId?: string): string {
   return `overall-${scope}`;
 }
 
+/** מזהה מסמך יעד החיסכון החודשי של תחום. נשמר כמסמך תקציב רגיל, כך שהוא נשמר, מסונכרן ומגובה כמו שאר התקציבים. */
+export function savingsGoalId(scope: Scope, businessId?: string): string {
+  if (scope === 'business' && businessId && businessId !== DEFAULT_BUSINESS_ID) {
+    return `savings-goal-business-${businessId}`;
+  }
+  return `savings-goal-${scope}`;
+}
+
+/** יעד החיסכון לחודש: יעד מיוחד לחודש אם נקבע, אחרת היעד הקבוע; null אם לא הוגדר. */
+export function effectiveSavingsGoal(
+  budgets: readonly Budget[],
+  scope: Scope,
+  businessId: string | undefined,
+  yearMonth: string,
+): Agorot | null {
+  const id = savingsGoalId(scope, businessId);
+  const space = { key: '', scope, businessId: scope === 'business' ? businessId || DEFAULT_BUSINESS_ID : '' };
+  let general: Agorot | null = null;
+  let own: Agorot | null = null;
+  for (const b of budgets) {
+    if (b.categoryId !== id || !inSpace(b, space)) continue;
+    if (b.period === yearMonth) own = b.amountAgorot;
+    else if (!b.period) general = b.amountAgorot;
+  }
+  return own ?? general;
+}
+
+export interface SavingsProgress {
+  goalAgorot: Agorot;
+  /** כמה נחסך החודש (יתרה; יכולה להיות שלילית) */
+  savedAgorot: Agorot;
+  /** כמה חסר ליעד, 0 אם הושג */
+  missingAgorot: Agorot;
+  /** כמה מעבר ליעד, 0 אם לא הושג */
+  exceededAgorot: Agorot;
+  /** 0-100 לסרגל */
+  percent: number;
+  status: 'far' | 'close' | 'reached' | 'exceeded';
+}
+
+/** כמה קרובים ליעד החיסכון: היתרה החודשית מול היעד. מ-75% נחשב "קרוב". */
+export function savingsProgress(goalAgorot: Agorot, savedAgorot: Agorot): SavingsProgress {
+  const reached = savedAgorot >= goalAgorot;
+  const percent = savedAgorot <= 0 ? 0 : Math.min(100, Math.floor((savedAgorot * 100) / goalAgorot));
+  return {
+    goalAgorot,
+    savedAgorot,
+    missingAgorot: reached ? 0 : goalAgorot - savedAgorot,
+    exceededAgorot: savedAgorot > goalAgorot ? savedAgorot - goalAgorot : 0,
+    percent,
+    status: savedAgorot > goalAgorot ? 'exceeded' : reached ? 'reached' : savedAgorot * 4 >= goalAgorot * 3 ? 'close' : 'far',
+  };
+}
+
 export interface SplitBudgets {
   /** התקציב החודשי הכללי, או null אם לא הוגדר */
   overallAgorot: Agorot | null;
@@ -122,6 +176,8 @@ export interface SplitBudgets {
   byCategory: Map<string, Agorot>;
   /** סכום כל התקציבים הפרטניים */
   categoriesTotalAgorot: Agorot;
+  /** יעד החיסכון החודשי באותה רמה (קבוע או לתקופה), או null */
+  savingsGoalAgorot: Agorot | null;
 }
 
 /** מזהה מסמך תקציב: בלי תקופה הוא מזהה הקטגוריה, ועם תקופה `${מזהה}@${תקופה}`. */
@@ -140,13 +196,19 @@ export function splitBudgets(
   period?: string,
 ): SplitBudgets {
   const overallId = overallBudgetId(scope, businessId);
+  const goalId = savingsGoalId(scope, businessId);
   const space = { key: '', scope, businessId: scope === 'business' ? businessId || DEFAULT_BUSINESS_ID : '' };
   let overallAgorot: Agorot | null = null;
+  let savingsGoalAgorot: Agorot | null = null;
   const byCategory = new Map<string, Agorot>();
   let total = 0;
   for (const b of budgets) {
     if (!inSpace(b, space)) continue;
     if ((b.period ?? undefined) !== period) continue;
+    if (b.categoryId === goalId) {
+      savingsGoalAgorot = b.amountAgorot;
+      continue;
+    }
     if (b.categoryId === overallId) {
       overallAgorot = b.amountAgorot;
     } else {
@@ -154,7 +216,7 @@ export function splitBudgets(
       total += b.amountAgorot;
     }
   }
-  return { overallAgorot, byCategory, categoriesTotalAgorot: total };
+  return { overallAgorot, byCategory, categoriesTotalAgorot: total, savingsGoalAgorot };
 }
 
 export interface EffectiveBudgets extends SplitBudgets {
@@ -184,6 +246,7 @@ export function effectiveMonthly(
     overallAgorot: month.overallAgorot ?? general.overallAgorot,
     byCategory,
     categoriesTotalAgorot: total,
+    savingsGoalAgorot: month.savingsGoalAgorot ?? general.savingsGoalAgorot,
     overallOverridden: month.overallAgorot !== null,
     overriddenCategories: new Set(month.byCategory.keys()),
   };

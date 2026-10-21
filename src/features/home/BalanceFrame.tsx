@@ -1,5 +1,4 @@
-import { useId, useState } from 'react';
-import { Amount } from '../../components/Amount';
+import type { ReactNode } from 'react';
 import { CountUpAmount } from '../../components/CountUp';
 import type { MonthStatus, YearMonth } from '../../domain/dates';
 import { balanceHeadline } from './homeText';
@@ -13,15 +12,14 @@ interface Props {
   status: Exclude<MonthStatus, 'future'>;
   yearMonth: YearMonth;
   currentYearMonth: YearMonth;
+  /** שורת ההתקדמות ליעד החיסכון, מתחת ליתרה */
+  savings?: ReactNode;
 }
 
 /**
- * מסגרת הפלוס/מינוס החודשי. בלחיצה נפתח פירוט החישוב:
- * הכנסות, פחות הוצאות, שווה יתרה.
+ * מסגרת הפלוס/מינוס החודשי, ומתחתיה (אם הוגדר) שורת ההתקדמות ליעד החיסכון.
  */
 export function BalanceFrame(props: Props) {
-  const [open, setOpen] = useState(false);
-  const detailsId = useId();
   const headline = balanceHeadline({
     balanceAgorot: props.balanceAgorot,
     status: props.status,
@@ -31,13 +29,7 @@ export function BalanceFrame(props: Props) {
 
   return (
     <section className={`balance-frame tone-${headline.tone}`}>
-      <button
-        type="button"
-        className="balance-button"
-        aria-expanded={open}
-        aria-controls={detailsId}
-        onClick={() => setOpen((value) => !value)}
-      >
+      <div className="balance-button">
         <span className="balance-text">
           {headline.text}
           {headline.amountAgorot !== null && (
@@ -47,50 +39,10 @@ export function BalanceFrame(props: Props) {
             </>
           )}
         </span>
-        <span className="balance-hint">{open ? 'הסתרת הפירוט' : 'לחיצה להצגת הפירוט'}</span>
-      </button>
+      </div>
 
-      {open && (
-        <dl id={detailsId} className="balance-details">
-          <div>
-            <dt>הכנסות</dt>
-            <dd>
-              <Amount agorot={props.incomeAgorot} className="tone-income" />
-            </dd>
-          </div>
-          {props.fromBusinessAgorot !== undefined && props.fromBusinessAgorot !== 0 && (
-            <div className="balance-subrow">
-              {props.fromBusinessAgorot > 0 ? (
-                <>
-                  <dt>מתוכן: הכנסה מהעסק</dt>
-                  <dd>
-                    <Amount agorot={props.fromBusinessAgorot} />
-                  </dd>
-                </>
-              ) : (
-                <>
-                  <dt>מתוכן: הפסד מהעסק (מקטין את ההכנסות)</dt>
-                  <dd>
-                    <Amount agorot={Math.abs(props.fromBusinessAgorot)} className="tone-expense" />
-                  </dd>
-                </>
-              )}
-            </div>
-          )}
-          <div>
-            <dt>פחות הוצאות</dt>
-            <dd>
-              <Amount agorot={props.expenseAgorot} className="tone-expense" />
-            </dd>
-          </div>
-          <div className="balance-total">
-            <dt>שווה יתרה</dt>
-            <dd>
-              <Amount agorot={props.balanceAgorot} className={`tone-${headline.tone}`} />
-            </dd>
-          </div>
-        </dl>
-      )}
+      {props.savings}
+
     </section>
   );
 }

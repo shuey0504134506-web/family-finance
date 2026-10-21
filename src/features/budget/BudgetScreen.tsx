@@ -10,6 +10,7 @@ import {
   buildBudgetRowsFromMap,
   effectiveMonthly,
   overallBudgetId,
+  savingsGoalId,
   splitBudgets,
 } from '../../domain/budget';
 import { formatDisplayDate, formatMonthYear } from '../../domain/dates';
@@ -69,6 +70,7 @@ function BudgetContent({ space }: { space: Space }) {
 
   const period = mode === 'monthly' ? month.selected : annual.id;
   const overallId = overallBudgetId(scope, space.businessId);
+  const goalId = savingsGoalId(scope, space.businessId);
 
   // תקציב מחושב לתקופה שמוצגת: קבוע + דריסות (חודשי), או תקציבי השנה (שנתי)
   const view = useMemo(() => {
@@ -273,6 +275,26 @@ function BudgetContent({ space }: { space: Space }) {
               {...lineProps(overallId, true, totalExpenses)}
             />
 
+            {monthly && (
+              <SavingsGoalLine
+                key={`goal-${period}`}
+                generalAmount={view.general.savingsGoalAgorot}
+                periodAmount={view.own.savingsGoalAgorot}
+                periodLabel={periodLabel}
+                editing={editing === 'savings'}
+                onEdit={() => setEditing('savings')}
+                onCancel={() => setEditing(null)}
+                onSave={(target, amount) => {
+                  save(goalId, target, amount);
+                  setEditing(null);
+                }}
+                onRemove={(target) => {
+                  remove(goalId, target);
+                  setEditing(null);
+                }}
+              />
+            )}
+
             <h2 className="section-title">תקציב לפי קטגוריה</h2>
 
             <ul className="budget-list">
@@ -303,6 +325,125 @@ function BudgetContent({ space }: { space: Space }) {
         )}
       </main>
     </div>
+  );
+}
+
+/**
+ * יעד חיסכון חודשי: סכום שרוצים לחסוך (הכנסות פחות הוצאות) בכל חודש.
+ * אפשר יעד קבוע לכל החודשים, ויעד מיוחד לחודש שנבחר.
+ */
+function SavingsGoalLine({
+  generalAmount,
+  periodAmount,
+  periodLabel,
+  editing,
+  onEdit,
+  onCancel,
+  onSave,
+  onRemove,
+}: {
+  generalAmount: number | null;
+  periodAmount: number | null;
+  periodLabel: string;
+  editing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: (target: Target, amountAgorot: number) => void;
+  onRemove: (target: Target) => void;
+}) {
+  const effective = periodAmount ?? generalAmount;
+  const [target, setTarget] = useState<Target>('general');
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const amountFor = (t: Target) => (t === 'period' ? periodAmount : generalAmount);
+  const fill = (t: Target) => {
+    const current = amountFor(t) ?? generalAmount;
+    setText(current === null ? '' : String(current / 100));
+    setError('');
+  };
+  const open = () => {
+    const initial: Target = periodAmount !== null ? 'period' : 'general';
+    setTarget(initial);
+    fill(initial);
+    onEdit();
+  };
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const amount = parseShekelsToAgorot(text);
+    if (amount === null || amount <= 0 || amount > MAX_TRANSACTION_AGOROT) {
+      setError('יש להזין סכום תקין גדול מאפס. לדוגמה: 2,000');
+      return;
+    }
+    onSave(target, amount);
+  };
+  return (
+    <section className="card budget-row" aria-label="יעד חיסכון חודשי">
+      <div className="row-between">
+        <strong>יעד חיסכון חודשי</strong>
+        {effective !== null && <Amount agorot={effective} />}
+      </div>
+      {periodAmount !== null && <div className="small tone-gold">יעד מיוחד לחודש זה</div>}
+      {periodAmount !== null && generalAmount !== null && (
+        <div className="muted small">
+          היעד הקבוע לכל החודשים: <Amount agorot={generalAmount} />
+        </div>
+      )}
+      {effective === null && <div className="muted small">לא הוגדר יעד. ההתקדמות אליו תוצג במסך הבית.</div>}
+      {editing ? (
+        <form className="budget-edit" onSubmit={submit} noValidate>
+          <div className="segmented" role="group" aria-label="תחולת היעד">
+            {(
+              [
+                ['general', 'לכל החודשים'],
+                ['period', 'לחודש זה בלבד'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={target === value ? 'is-active' : ''}
+                aria-pressed={target === value}
+                onClick={() => {
+                  setTarget(value);
+                  fill(value);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label htmlFor="b-savings" className="small">
+            {`יעד חיסכון חודשי (${currencySymbol()})`}
+          </label>
+          <input
+            id="b-savings"
+            className={`input${error ? ' input-error' : ''}`}
+            inputMode="decimal"
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {error && <div className="field-error">{error}</div>}
+          <div className="budget-actions">
+            <button type="submit" className="btn btn-primary">
+              שמירה
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              ביטול
+            </button>
+            {amountFor(target) !== null && (
+              <button type="button" className="btn btn-danger-outline" onClick={() => onRemove(target)}>
+                {target === 'period' ? `הסרת היעד המיוחד (${periodLabel})` : 'הסרת היעד הקבוע'}
+              </button>
+            )}
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="link-btn" onClick={open}>
+          {effective !== null ? 'שינוי יעד' : 'הגדרת יעד חיסכון'}
+        </button>
+      )}
+    </section>
   );
 }
 

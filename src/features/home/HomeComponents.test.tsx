@@ -59,7 +59,7 @@ describe('BalanceFrame', () => {
     expect(visibleText(html)).toContain('חודש ספטמבר נגמר בפלוס 2,800 ₪');
   });
 
-  it('הפירוט סגור כברירת מחדל ונפתח רק בלחיצה', () => {
+  it('אין כפתור פירוט, ושורת היעד מוצגת כשנשלחה', () => {
     const html = renderToStaticMarkup(
       <BalanceFrame
         incomeAgorot={1}
@@ -68,10 +68,12 @@ describe('BalanceFrame', () => {
         status="current"
         yearMonth="2026-10"
         currentYearMonth="2026-10"
+        savings={<span>יעד-חיסכון</span>}
       />,
     );
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).not.toContain('שווה יתרה');
+    expect(html).not.toContain('aria-expanded');
+    expect(html).not.toContain('הצגת הפירוט');
+    expect(html).toContain('יעד-חיסכון');
   });
 });
 

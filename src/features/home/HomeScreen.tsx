@@ -27,6 +27,9 @@ import { useSpaces } from '../spaces/SpacesContext';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { SpendingCard } from './SpendingCard';
 import { BalanceFrame } from './BalanceFrame';
+import { SavingsMeter } from './SavingsMeter';
+import { useBudgets } from '../../hooks/useBudgets';
+import { effectiveSavingsGoal } from '../../domain/budget';
 import { earliestDate, notStartedText, previousStageHeadline, sinceStartText, uptoDayOfMonth } from './homeText';
 import { TotalsTiles } from './TotalsTiles';
 
@@ -156,6 +159,9 @@ export function HomeScreen() {
   }, [allBusiness, allHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
   const sinceStartHeadline = sinceStart === null ? null : sinceStartText(sinceStart.balanceAgorot);
 
+  const { budgets } = useBudgets(user.uid);
+  const savingsGoal = effectiveSavingsGoal(budgets, scope, space.businessId, month.selected);
+
   const next = neighborSpace(spaces, space.key, 1);
   const previous = neighborSpace(spaces, space.key, -1);
   const swipe = useSwipe(
@@ -213,6 +219,15 @@ export function HomeScreen() {
             status={month.status}
             yearMonth={month.selected}
             currentYearMonth={month.current}
+            savings={
+              savingsGoal === null ? undefined : (
+                <SavingsMeter
+                  goalAgorot={savingsGoal}
+                  savedAgorot={totals.balanceAgorot}
+                  onOpen={() => navigate(`/${space.key}/budget`)}
+                />
+              )
+            }
           />
         )}
 

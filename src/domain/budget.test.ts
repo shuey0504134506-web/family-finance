@@ -246,3 +246,31 @@ describe('תקציב לחודש מסוים ותקציב שנתי', () => {
     expect(splitBudgets(budgets, 'household', undefined, '2026-03y').overallAgorot).toBe(9_000_000);
   });
 });
+
+import { effectiveSavingsGoal, savingsGoalId, savingsProgress } from './budget';
+
+describe('יעד חיסכון חודשי', () => {
+  const mk = (categoryId: string, amountAgorot: number, period?: string) =>
+    ({ id: period ? `${categoryId}@${period}` : categoryId, scope: 'household', categoryId, amountAgorot, createdAt: 1, updatedAt: 1, ...(period ? { period } : {}) }) as never;
+  it('יעד מיוחד לחודש דורס את הקבוע', () => {
+    const id = savingsGoalId('household');
+    const list = [mk(id, 100000), mk(id, 250000, '2026-10')];
+    expect(effectiveSavingsGoal(list, 'household', undefined, '2026-10')).toBe(250000);
+    expect(effectiveSavingsGoal(list, 'household', undefined, '2026-11')).toBe(100000);
+    expect(effectiveSavingsGoal([], 'household', undefined, '2026-11')).toBeNull();
+  });
+  it('היעד לא נספר כתקציב קטגוריה', () => {
+    const id = savingsGoalId('household');
+    const split = splitBudgets([mk(id, 100000), mk('food', 50000)], 'household');
+    expect(split.categoriesTotalAgorot).toBe(50000);
+    expect(split.byCategory.has(id)).toBe(false);
+    expect(split.savingsGoalAgorot).toBe(100000);
+  });
+  it('התקדמות: רחוק, קרוב, הושג, עברנו', () => {
+    expect(savingsProgress(100000, 20000)).toMatchObject({ status: 'far', percent: 20, missingAgorot: 80000 });
+    expect(savingsProgress(100000, 80000).status).toBe('close');
+    expect(savingsProgress(100000, 100000)).toMatchObject({ status: 'reached', missingAgorot: 0 });
+    expect(savingsProgress(100000, 130000)).toMatchObject({ status: 'exceeded', exceededAgorot: 30000, percent: 100 });
+    expect(savingsProgress(100000, -5000)).toMatchObject({ status: 'far', percent: 0, missingAgorot: 105000 });
+  });
+});
