@@ -23,7 +23,7 @@ captureInstallPrompt();
 
 // באתר (לא באפליקציית האנדרואיד, שבה הקבצים כבר בתוך ה-APK): service worker לפתיחה בלי אינטרנט.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {
-  void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+  void import('./native/autoRefresh').then(({ startAutoRefresh }) => startAutoRefresh());
 }
 
 createRoot(document.getElementById('root')!).render(
