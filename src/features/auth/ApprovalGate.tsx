@@ -10,6 +10,7 @@ import {
   type PaymentNotice,
 } from '../../services/approvalService';
 import { recordAppOpen } from '../../services/usageService';
+import { sendMessageToAdmin } from '../../services/messageService';
 import { suppressLock } from '../../services/lockSuppress';
 import { useAuth } from './AuthContext';
 
@@ -64,7 +65,10 @@ function PaymentStrip({ payment }: { payment: PaymentNotice }) {
 const seenKey = (uid: string) => `ff.notice.seen.${uid}`;
 
 /** הודעה מהמנהל: קופצת עד שהמשתמש לוחץ "הבנתי". נזכרת במכשיר, כך שלא חוזרת על עצמה. */
-function NoticePopup({ uid, notice }: { uid: string; notice: AdminNotice }) {
+function NoticePopup({ uid, email, notice }: { uid: string; email: string | null; notice: AdminNotice }) {
+  const [replying, setReplying] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'queued' | 'failed'>('idle');
   const [seen, setSeen] = useState<string | null>(() => {
     try {
       return localStorage.getItem(seenKey(uid));
@@ -81,10 +85,42 @@ function NoticePopup({ uid, notice }: { uid: string; notice: AdminNotice }) {
     }
     setSeen(notice.id);
   };
+  // תגובה למנהל: נשלחת כהודעה רגילה, עם ציטוט ההודעה שאליה מגיבים
+  const sendReply = async () => {
+    const body = draft.trim();
+    if (!body) return;
+    setState('busy');
+    try {
+      const quoted = notice.text.length > 160 ? `${notice.text.slice(0, 160)}…` : notice.text;
+      const result = await sendMessageToAdmin(uid, email, `תגובה להודעה: "${quoted}"\n\n${body}`);
+      setState(result);
+    } catch {
+      setState('failed');
+    }
+  };
+  const answered = state === 'sent' || state === 'queued';
   return (
     <Modal title={notice.title || 'הודעה ממנהל האפליקציה'} onClose={() => undefined}>
       <div className="stack">
         <p style={{ whiteSpace: 'pre-wrap' }}>{notice.text}</p>
+        {answered ? (
+          <p role="status" className="muted">
+            {state === 'sent' ? 'התגובה נשלחה למנהל.' : 'התגובה נשמרה ותישלח כשיהיה חיבור.'}
+          </p>
+        ) : replying ? (
+          <>
+            <label className="field-label" htmlFor="notice-reply">התגובה שלך</label>
+            <textarea id="notice-reply" className="input" rows={3} maxLength={1500} value={draft} onChange={(e) => setDraft(e.target.value)} />
+            {state === 'failed' ? <p className="form-error" role="alert">השליחה נכשלה. אפשר לנסות שוב.</p> : null}
+            <button type="button" className="btn btn-primary" disabled={state === 'busy' || !draft.trim()} onClick={() => void sendReply()}>
+              שליחת תגובה
+            </button>
+          </>
+        ) : (
+          <button type="button" className="btn btn-outline" onClick={() => setReplying(true)}>
+            תגובה
+          </button>
+        )}
         <button type="button" className="btn btn-primary" onClick={dismiss}>
           הבנתי
         </button>
@@ -129,7 +165,8 @@ export function ApprovalGate({
   children: ReactNode;
   whileLoading: ReactNode;
 }) {
-  const { signOutUser } = useAuth();
+  const { signOutUser, state: authState } = useAuth();
+  const email = authState.status === 'ready' ? authState.user.email : null;
   const [gate, setGate] = useState<Gate>(() => (wasApproved(uid) ? 'unavailable' : 'loading'));
   const [now, setNow] = useState(() => Date.now());
   // האם המנהל דורש אישור לחשבון חדש. null = עדיין לא ידוע
@@ -234,7 +271,7 @@ export function ApprovalGate({
   return (
     <>
       <UsageTracker uid={uid} />
-      {gate.notice ? <NoticePopup uid={uid} notice={gate.notice} /> : null}
+      {gate.notice ? <NoticePopup uid={uid} email={email} notice={gate.notice} /> : null}
       {soon && payment ? <PaymentStrip payment={payment} /> : null}
       {children}
     </>
