@@ -23,7 +23,8 @@ function skipVersion(version: string): void {
 /** חלון קופץ שמציע לעדכן כשיצאה גרסה חדשה של האפליקציה (אנדרואיד) או התוכנה (Windows). */
 export function UpdatePrompt() {
   const [info, setInfo] = useState<UpdateInfo | null>(null);
-  const [state, setState] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'busy' | 'failed' | 'permission'>('idle');
+  const [percent, setPercent] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -48,9 +49,9 @@ export function UpdatePrompt() {
   const update = async () => {
     setState('busy');
     try {
-      await applyUpdate(info);
-      setState('idle');
-      if (!windows) setInfo(null);
+      const result = await applyUpdate(info, setPercent);
+      setPercent(null);
+      setState(result === 'needsPermission' ? 'permission' : 'idle');
     } catch {
       setState('failed');
     }
@@ -66,9 +67,16 @@ export function UpdatePrompt() {
         <p className="muted small">
           {windows
             ? 'התוכנה תוריד את העדכון, תיסגר ותפתח את ההתקנה. הנתונים שלך נשמרים.'
-            : 'ההורדה נפתחת בדפדפן. בסיום מקישים על הקובץ שהורד כדי להתקין, והנתונים שלך נשמרים.'}
+            : 'האפליקציה תוריד את העדכון ותפתח את מסך ההתקנה. מאשרים "התקנה", והנתונים שלך נשמרים.'}
         </p>
-        {state === 'busy' && windows ? <p role="status">מוריד את העדכון…</p> : null}
+        {state === 'busy' ? (
+          <p role="status">{percent === null ? 'מוריד את העדכון…' : `מוריד את העדכון… ${percent}%`}</p>
+        ) : null}
+        {state === 'permission' ? (
+          <p role="status">
+            בפעם הראשונה צריך לאשר לאפליקציה להתקין עדכונים: במסך שנפתח מדליקים את המתג וחוזרים לכאן, ואז לוחצים שוב "עדכון עכשיו".
+          </p>
+        ) : null}
         {state === 'failed' ? (
           <p className="form-error" role="alert">
             העדכון נכשל. אפשר לנסות שוב, או להוריד את הגרסה החדשה ממסך האתר.

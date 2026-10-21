@@ -40,6 +40,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- עדכון האפליקציה מתוך האפליקציה: פתיחת מסך ההתקנה של קובץ ה-APK שהורד -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- גיבוי אוטומטי לתיקיית המסמכים: נדרש רק באנדרואיד 10 ומטה -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />

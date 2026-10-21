@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { isNewerVersion, latestRelease, RELEASES_API, type ReleaseInfo } from '../domain/releases';
 
 /** עדכון מתוך האפליקציה: באנדרואיד (APK) ובתוכנת Windows. בדפדפן רגיל האתר מתעדכן לבד. */
@@ -18,6 +18,16 @@ declare global {
     };
   }
 }
+
+interface AppUpdaterPlugin {
+  download(options: { url: string }): Promise<void>;
+  install(): Promise<{ needsPermission: boolean }>;
+  addListener(event: 'progress', fn: (e: { percent: number }) => void): Promise<{ remove: () => Promise<void> }>;
+}
+/** התוסף המקורי באנדרואיד (AppUpdaterPlugin.java). בגרסאות ישנות שאין בהן אותו, הקריאה נכשלת ונופלים להורדה בדפדפן. */
+const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
+
+export type ApplyResult = 'started' | 'needsPermission';
 
 export async function installed(): Promise<{ kind: UpdateKind; version: string } | null> {
   try {
@@ -51,13 +61,29 @@ export async function findUpdate(): Promise<UpdateInfo | null> {
 
 /**
  * Windows: התוכנה מורידה את ההתקנה, פותחת אותה ונסגרת.
- * אנדרואיד: נפתח הקישור להורדת ה-APK בדפדפן, ובסיום מקישים עליו כדי להתקין.
+ * אנדרואיד: האפליקציה מורידה את ה-APK בעצמה (בלי דפדפן) ופותחת את מסך ההתקנה של המערכת.
+ * אם זו הפעם הראשונה, נפתח מסך הגדרות לאישור התקנת עדכונים ('needsPermission'), ואחרי האישור לוחצים שוב.
+ * באפליקציה ישנה שאין בה את התוסף: נפתח קישור ההורדה בדפדפן.
  */
-export async function applyUpdate(info: UpdateInfo): Promise<void> {
+export async function applyUpdate(info: UpdateInfo, onProgress?: (percent: number) => void): Promise<ApplyResult> {
   if (info.kind === 'windows') {
     await window.desktopUpdate?.install(info.url);
-    return;
+    return 'started';
   }
-  // Capacitor פותח כתובות חיצוניות (שאינן של האפליקציה) בדפדפן המערכת, שמוריד את ה-APK
-  window.location.href = info.url;
+  let handle: { remove: () => Promise<void> } | null = null;
+  try {
+    if (onProgress) handle = await AppUpdater.addListener('progress', (e) => onProgress(e.percent));
+    await AppUpdater.download({ url: info.url });
+  } catch (error) {
+    const message = String((error as { message?: string } | null)?.message ?? error);
+    if (/not implemented|not available|UNIMPLEMENTED/i.test(message)) {
+      window.location.href = info.url;
+      return 'started';
+    }
+    throw error;
+  } finally {
+    await handle?.remove().catch(() => undefined);
+  }
+  const result = await AppUpdater.install();
+  return result.needsPermission ? 'needsPermission' : 'started';
 }
