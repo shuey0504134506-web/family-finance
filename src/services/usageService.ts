@@ -1,5 +1,6 @@
 import { doc, increment, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { installed } from '../native/appUpdate';
 
 /**
  * ספירת פתיחות האפליקציה ליום, לסטטיסטיקה כללית של המנהל (מספרים בלבד, בלי תוכן).
@@ -19,11 +20,23 @@ export function recordAppOpen(uid: string): void {
   } catch {
     // אחסון חסום: נספור בכל טעינה
   }
-  setDoc(
-    doc(db, 'usage', uid),
-    { days: { [localDay()]: increment(1) }, updatedAt: Date.now() },
-    { merge: true },
-  ).catch(() => {
+  void write(uid);
+}
+
+/**
+ * הפתיחה נרשמת יחד עם הפלטפורמה והגרסה (android / windows / web), לסטטיסטיקה של המנהל.
+ * הסימון נשמר בתוך days כמפתח "@פלטפורמה@גרסה" עם זמן הפתיחה, כדי לא לשנות את כללי Firestore.
+ */
+async function write(uid: string): Promise<void> {
+  const now = Date.now();
+  const days: Record<string, unknown> = { [localDay()]: increment(1) };
+  try {
+    const app = await installed();
+    days[`@${app ? app.kind : 'web'}@${app ? app.version : ''}`] = now;
+  } catch {
+    // בלי סימון פלטפורמה: הפתיחה עדיין נספרת
+  }
+  setDoc(doc(db, 'usage', uid), { days, updatedAt: now }, { merge: true }).catch(() => {
     // כללים ישנים או בלי חיבור: לא קריטי
   });
 }

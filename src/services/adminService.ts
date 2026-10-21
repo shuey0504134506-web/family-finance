@@ -36,6 +36,10 @@ export interface AdminUserRow {
   txTotal: number;
   tx7d: number;
   usage: UsageLevel;
+  /** פלטפורמה וגרסה בפתיחה האחרונה (חסר לחשבון שלא נפתח מאז שנוסף הנתון) */
+  client?: { platform: string; version: string; seenAt: number } | null;
+  /** הערה פרטית של המנהל */
+  note?: string;
   /** פרטי ההרשמה (חסר אם הפונקציה בשרת עוד לא עודכנה). */
   details?: { firstName: string; lastName: string; phone: string; businessName: string };
 }
@@ -45,6 +49,11 @@ export interface AdminOverview {
   truncated: boolean;
   /** 14 הימים האחרונים: כמה חשבונות פתחו את האפליקציה וכמה פתיחות היו */
   daily: { date: string; activeAccounts: number; opens: number; accounts?: { uid: string; email: string; opens: number }[] }[];
+  /** הרשמות לפי שבוע, 12 שבועות אחרונים */
+  signups?: { weekStart: string; count: number }[];
+  /** כמה חשבונות לפי פלטפורמה (פתיחה אחרונה), ולפי "פלטפורמה גרסה" */
+  platforms?: Record<string, number>;
+  versions?: Record<string, number>;
   totals: {
     accounts: number;
     disabled: number;
@@ -84,8 +93,8 @@ export async function setPaymentRequest(uid: string, payment: PaymentRequest | n
 }
 
 /** מספר החשבונות הממתינים לאישור (לתג בהגדרות). */
-export async function loadPendingCount(): Promise<{ pending: number; unanswered: number }> {
-  const result = await httpsCallable<void, { pending: number; unanswered: number }>(functions(), 'adminPendingCount')();
+export async function loadPendingCount(): Promise<{ pending: number; unanswered: number; newAccounts?: number }> {
+  const result = await httpsCallable<void, { pending: number; unanswered: number; newAccounts?: number }>(functions(), 'adminPendingCount')();
   return result.data;
 }
 
@@ -143,4 +152,30 @@ export async function deleteAccountByAdmin(uid: string): Promise<void> {
 export async function sendNotice(uid: string | 'all', title: string, text: string): Promise<number> {
   const result = await httpsCallable<unknown, { sent: number }>(functions(), 'adminSendNotice')({ uid, title, text });
   return result.data.sent;
+}
+
+/** הודעה לקבוצת חשבונות נבחרת (עד 500). */
+export async function sendNoticeToGroup(uids: string[], title: string, text: string): Promise<number> {
+  const result = await httpsCallable<unknown, { sent: number }>(functions(), 'adminSendNotice')({ uids, title, text });
+  return result.data.sent;
+}
+
+/** הערה פרטית על חשבון. טקסט ריק מוחק. */
+export async function setAccountNote(uid: string, text: string): Promise<void> {
+  await httpsCallable(functions(), 'adminSetNote')({ uid, text });
+}
+
+export interface AdminLogEntry {
+  id: string;
+  at: number;
+  action: string;
+  uid: string;
+  email: string;
+  detail: string;
+}
+
+/** יומן פעולות המנהל (100 האחרונות). */
+export async function loadAdminLog(): Promise<AdminLogEntry[]> {
+  const result = await httpsCallable<void, { entries: AdminLogEntry[] }>(functions(), 'adminListLog')();
+  return result.data.entries;
 }

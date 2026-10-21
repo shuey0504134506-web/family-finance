@@ -26,6 +26,7 @@ export function SettingsScreen() {
   const { user } = useReadyAuth();
   const [pending, setPending] = useState(0);
   const [unanswered, setUnanswered] = useState(0);
+  const [newAccounts, setNewAccounts] = useState(0);
   const isAdmin = isAdminEmail(user.email);
   // כשדרישת האישור כבויה, אין "ממתינים לאישור": חשבונות חדשים נכנסים רגיל
   const [approvalRequired, setApprovalRequired] = useState<boolean | null>(null);
@@ -36,10 +37,12 @@ export function SettingsScreen() {
       .then((r) => {
         setPending(r.pending);
         setUnanswered(r.unanswered);
+        setNewAccounts(r.newAccounts ?? 0);
       })
       .catch(() => {
         setPending(0);
         setUnanswered(0);
+        setNewAccounts(0);
       });
   }, [isAdmin]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -87,7 +90,8 @@ export function SettingsScreen() {
 
         {isAdminEmail(user.email) ? (
           <Link to="/admin" className="btn btn-secondary btn-borderless">
-            {['ניהול מתקדם (מנהל)', pending > 0 && approvalRequired === true ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '']
+            {['ניהול מתקדם (מנהל)', pending > 0 && approvalRequired === true ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '',
+              newAccounts > 0 ? `${newAccounts} חשבונות חדשים` : '']
               .filter(Boolean)
               .join(' · ')}
           </Link>

@@ -20,6 +20,15 @@ function requireAdmin(request) {
   }
 }
 
+/** יומן פעולות מנהל: נכתב בשרת בלבד (הכללים חוסמים כל גישה ישירה). לא נכשל אם הכתיבה נכשלת. */
+async function logAction(action, uid, email, detail) {
+  try {
+    await admin.firestore().collection('adminLog').add({ at: Date.now(), action, uid: uid ?? '', email: email ?? '', detail: detail ?? '' });
+  } catch {
+    // היומן הוא עזר בלבד
+  }
+}
+
 async function count(query) {
   const snap = await query.count().get();
   return snap.data().count;
@@ -66,6 +75,18 @@ async function profileDetails(uids) {
   return out;
 }
 
+/** הערות פרטיות של המנהל על חשבונות: adminNotes/{uid}.text. נקרא ונכתב בשרת בלבד. */
+async function adminNotes(uids) {
+  const db = admin.firestore();
+  const out = new Map();
+  for (let i = 0; i < uids.length; i += 300) {
+    const refs = uids.slice(i, i + 300).map((uid) => db.collection('adminNotes').doc(uid));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((snap, k) => out.set(uids[i + k], snap.exists && typeof snap.data().text === 'string' ? snap.data().text : ''));
+  }
+  return out;
+}
+
 const TZ = 'Asia/Jerusalem';
 const dayKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(ms));
 
@@ -76,9 +97,22 @@ async function usageDays(uids) {
   for (let i = 0; i < uids.length; i += 300) {
     const refs = uids.slice(i, i + 300).map((uid) => db.collection('usage').doc(uid));
     const snaps = await db.getAll(...refs);
-    snaps.forEach((snap, k) =>
-      out.set(uids[i + k], snap.exists ? { days: snap.data().days ?? {}, updatedAt: Number(snap.data().updatedAt) || 0 } : { days: {}, updatedAt: 0 }),
-    );
+    snaps.forEach((snap, k) => {
+      const raw = snap.exists ? snap.data().days ?? {} : {};
+      // סימון גרסה ופלטפורמה נשמר בתוך days כמפתח "@פלטפורמה@גרסה" עם זמן הפתיחה האחרונה (כך אין צורך בשינוי כללי Firestore)
+      const days = {};
+      let client = null;
+      for (const [key, value] of Object.entries(raw)) {
+        if (key.startsWith('@')) {
+          const [, platform = '', version = ''] = key.split('@');
+          const seenAt = Number(value) || 0;
+          if (!client || seenAt > client.seenAt) client = { platform, version, seenAt };
+        } else {
+          days[key] = value;
+        }
+      }
+      out.set(uids[i + k], { days, updatedAt: snap.exists ? Number(snap.data().updatedAt) || 0 : 0, client });
+    });
   }
   return out;
 }
@@ -141,10 +175,13 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
   const profiles = await profileDetails(rows.map((r) => r.uid));
   for (const r of rows) r.details = profiles.get(r.uid) ?? { firstName: '', lastName: '', phone: '', businessName: '' };
   const usage = await usageDays(rows.map((r) => r.uid));
+  const notes = await adminNotes(rows.map((r) => r.uid));
+  for (const r of rows) r.note = notes.get(r.uid) ?? '';
   const days = Array.from({ length: 14 }, (_, i) => dayKey(now - (13 - i) * DAY));
   const daily = days.map((date) => ({ date, activeAccounts: 0, opens: 0, accounts: [] }));
   for (const r of rows) {
-    const u = usage.get(r.uid) ?? { days: {}, updatedAt: 0 };
+    const u = usage.get(r.uid) ?? { days: {}, updatedAt: 0, client: null };
+    r.client = u.client;
     const d = u.days;
     const lastOpen = Math.max(u.updatedAt, ...Object.keys(d).map((k) => Date.parse(`${k}T12:00:00Z`) || 0));
     if (lastOpen > (r.lastSignInAt ?? 0)) r.lastSignInAt = lastOpen;
@@ -161,11 +198,33 @@ exports.adminOverview = onCall({ region: REGION, timeoutSeconds: 120, memory: '5
   for (const d of daily) d.accounts.sort((a, b) => b.opens - a.opens);
   rows.sort((a, b) => (b.lastSignInAt ?? 0) - (a.lastSignInAt ?? 0));
 
+  // הרשמות לפי שבוע (12 שבועות אחרונים, מהישן לחדש) ופילוח פלטפורמה וגרסה לפי הפתיחה האחרונה
+  const signups = Array.from({ length: 12 }, (_, i) => ({ weekStart: dayKey(now - (11 - i) * 7 * DAY), count: 0 }));
+  for (const r of rows) {
+    const age = Math.floor((now - r.createdAt) / (7 * DAY));
+    if (age >= 0 && age < 12) signups[11 - age].count += 1;
+  }
+  const platforms = {};
+  const versions = {};
+  for (const r of rows) {
+    const key = r.client?.platform || 'unknown';
+    platforms[key] = (platforms[key] ?? 0) + 1;
+    if (r.client?.version) {
+      const vk = `${key} ${r.client.version}`;
+      versions[vk] = (versions[vk] ?? 0) + 1;
+    }
+  }
+  const metaRef = admin.firestore().collection('adminMeta').doc('seen');
+  await metaRef.set({ at: now }, { merge: true }).catch(() => undefined);
+
   const activeWithin = (ms) => rows.filter((r) => r.lastSignInAt && now - r.lastSignInAt < ms).length;
   return {
     generatedAt: now,
     truncated: users.length >= MAX_USERS,
     daily,
+    signups,
+    platforms,
+    versions,
     totals: {
       accounts: rows.length,
       disabled: rows.filter((r) => r.disabled).length,
@@ -204,6 +263,7 @@ exports.adminSetStatus = onCall({ region: REGION }, async (request) => {
   );
   await admin.auth().updateUser(uid, { disabled: status === 'blocked' });
   if (status === 'blocked') await admin.auth().revokeRefreshTokens(uid);
+  await logAction(`status:${status}`, uid, target.email, '');
   return { ok: true };
 });
 
@@ -235,6 +295,7 @@ exports.adminApproveExisting = onCall({ region: REGION, timeoutSeconds: 300 }, a
     }
     await batch.commit();
   }
+  await logAction('approve-existing', '', '', `${approved} חשבונות`);
   return { approved };
 });
 
@@ -254,6 +315,7 @@ exports.adminSetPayment = onCall({ region: REGION }, async (request) => {
   const ref = admin.firestore().collection('approvals').doc(uid);
   if (dueAt === null) {
     await ref.set({ payment: admin.firestore.FieldValue.delete() }, { merge: true });
+    await logAction('payment:remove', uid, target.email, '');
     return { ok: true };
   }
   if (typeof dueAt !== 'number' || !Number.isFinite(dueAt) || dueAt <= 0) {
@@ -272,6 +334,7 @@ exports.adminSetPayment = onCall({ region: REGION }, async (request) => {
   }
   const payment = { dueAt: Math.round(dueAt), amountText: text(amountText, 60), url: link, message: text(message, 1000) };
   await ref.set({ payment }, { merge: true });
+  await logAction('payment:set', uid, target.email, `${payment.amountText} עד ${new Date(payment.dueAt).toISOString().slice(0, 10)}`);
   return { ok: true };
 });
 
@@ -284,7 +347,21 @@ exports.adminPendingCount = onCall({ region: REGION }, async (request) => {
     count(db.collection('messages')),
     count(db.collection('messages').where('repliedAt', '>', 0)),
   ]);
-  return { pending, unanswered: Math.max(0, messages - answered) };
+  // חשבונות שנרשמו מאז הביקור האחרון של המנהל במסך הניהול
+  const seen = await db.collection('adminMeta').doc('seen').get().catch(() => null);
+  const since = seen && seen.exists ? Number(seen.data().at) || 0 : 0;
+  let newAccounts = 0;
+  if (since > 0) {
+    let pageToken;
+    let scanned = 0;
+    do {
+      const page = await admin.auth().listUsers(1000, pageToken);
+      newAccounts += page.users.filter((u) => (Date.parse(u.metadata.creationTime) || 0) > since).length;
+      scanned += page.users.length;
+      pageToken = page.pageToken;
+    } while (pageToken && scanned < MAX_USERS);
+  }
+  return { pending, unanswered: Math.max(0, messages - answered), newAccounts };
 });
 
 /**
@@ -308,6 +385,7 @@ exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, asy
     ...msgs.docs.map((d) => d.ref.delete()),
   ]);
   await admin.auth().deleteUser(uid);
+  await logAction('delete-account', uid, target.email, '');
   return { ok: true };
 });
 
@@ -317,12 +395,32 @@ exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, asy
  */
 exports.adminSendNotice = onCall({ region: REGION, timeoutSeconds: 120 }, async (request) => {
   requireAdmin(request);
-  const { uid, title, text } = request.data ?? {};
-  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const { uid, uids, title, text } = request.data ?? {};
   const clean = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
   const body = clean(text, 1000);
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
+
+  // קבוצה נבחרת (למשל אחרי סינון ברשימת החשבונות): רשימת מזהים
+  if (Array.isArray(uids)) {
+    if (!body) throw new HttpsError('invalid-argument', 'יש לכתוב הודעה.');
+    const list = uids.filter((x) => typeof x === 'string' && x).slice(0, 500);
+    const adminUids = new Set();
+    for (const email of ADMIN_EMAILS) {
+      const u = await admin.auth().getUserByEmail(email).catch(() => null);
+      if (u) adminUids.add(u.uid);
+    }
+    const targets = list.filter((x) => !adminUids.has(x));
+    const notice = { id: String(Date.now()), title: clean(title, 80), text: body, createdAt: Date.now() };
+    for (let i = 0; i < targets.length; i += 400) {
+      const batch = db.batch();
+      targets.slice(i, i + 400).forEach((x) => batch.set(db.collection('approvals').doc(x), { notice }, { merge: true }));
+      await batch.commit();
+    }
+    await logAction('notice:group', '', '', `${targets.length} חשבונות`);
+    return { sent: targets.length };
+  }
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
 
   if (uid !== 'all') {
     const target = await admin.auth().getUser(uid).catch(() => null);
@@ -333,6 +431,7 @@ exports.adminSendNotice = onCall({ region: REGION, timeoutSeconds: 120 }, async 
       return { sent: 0 };
     }
     await ref.set({ notice: { id: String(Date.now()), title: clean(title, 80), text: body, createdAt: Date.now() } }, { merge: true });
+    await logAction('notice:one', uid, target.email, '');
     return { sent: 1 };
   }
 
@@ -350,6 +449,7 @@ exports.adminSendNotice = onCall({ region: REGION, timeoutSeconds: 120 }, async 
     docs.slice(i, i + 400).forEach((d) => batch.set(d.ref, { notice }, { merge: true }));
     await batch.commit();
   }
+  await logAction('notice:all', '', '', `${docs.length} חשבונות`);
   return { sent: docs.length };
 });
 
@@ -408,4 +508,24 @@ exports.adminDeleteMessage = onCall({ region: REGION }, async (request) => {
   if (typeof id !== 'string' || !id) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
   await admin.firestore().collection('messages').doc(id).delete();
   return { ok: true };
+});
+
+
+/** הערה פרטית של המנהל על חשבון. טקסט ריק מוחק. */
+exports.adminSetNote = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { uid, text } = request.data ?? {};
+  if (typeof uid !== 'string' || !uid) throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  const body = typeof text === 'string' ? text.trim().slice(0, 500) : '';
+  const ref = admin.firestore().collection('adminNotes').doc(uid);
+  if (!body) await ref.delete();
+  else await ref.set({ text: body, updatedAt: Date.now() });
+  return { ok: true };
+});
+
+/** יומן פעולות המנהל (100 האחרונות). */
+exports.adminListLog = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const snap = await admin.firestore().collection('adminLog').orderBy('at', 'desc').limit(100).get();
+  return { entries: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
 });

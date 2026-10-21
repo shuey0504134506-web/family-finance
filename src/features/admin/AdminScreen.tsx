@@ -8,7 +8,11 @@ import {
   deleteMessage,
   replyToMessage,
   type AdminMessage,
+  loadAdminLog,
   loadAdminOverview,
+  sendNoticeToGroup,
+  setAccountNote,
+  type AdminLogEntry,
   setAccountStatus,
   setApprovalRequired,
   subscribeApprovalRequired,
@@ -20,6 +24,19 @@ import {
   type PaymentRequest,
   type UsageLevel,
 } from '../../services/adminService';
+import { saveFile } from '../../native/saveFile';
+import {
+  accountsCsv,
+  FILTER_LABEL,
+  logLine,
+  matchesFilter,
+  platformLabel,
+  REPLY_TEMPLATES,
+  sortAccounts,
+  SORT_LABEL,
+  type AccountFilter,
+  type AccountSort,
+} from './adminTools';
 import { AccordionItem } from '../settings/Accordion';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
@@ -128,12 +145,14 @@ function PaymentForm({
 
 function NoticeForm({
   target,
+  groupUids,
   existing,
   onDone,
   onCancel,
 }: {
-  /** מזהה חשבון, או 'all' */
+  /** מזהה חשבון, 'all', או 'group' (עם groupUids) */
   target: string;
+  groupUids?: string[];
   existing?: boolean;
   onDone: (message: string) => void;
   onCancel: () => void;
@@ -151,8 +170,10 @@ function NoticeForm({
     setBusy(true);
     setError(null);
     try {
-      const sent = await sendNotice(target, title.trim(), remove ? '' : text.trim());
-      onDone(remove ? 'ההודעה הוסרה.' : target === 'all' ? `ההודעה נשלחה ל-${sent} חשבונות.` : 'ההודעה נשלחה. תקפוץ אצל המשתמש כשיפתח את האפליקציה.');
+      const sent = groupUids
+        ? await sendNoticeToGroup(groupUids, title.trim(), text.trim())
+        : await sendNotice(target, title.trim(), remove ? '' : text.trim());
+      onDone(remove ? 'ההודעה הוסרה.' : target === 'all' || groupUids ? `ההודעה נשלחה ל-${sent} חשבונות.` : 'ההודעה נשלחה. תקפוץ אצל המשתמש כשיפתח את האפליקציה.');
     } catch {
       setError('השליחה נכשלה. יש לבדוק חיבור ולנסות שוב.');
       setBusy(false);
@@ -164,7 +185,7 @@ function NoticeForm({
       <label className="field-label" htmlFor={`notice-title-${target}`}>כותרת (לא חובה)</label>
       <input id={`notice-title-${target}`} className="input" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
       <label className="field-label" htmlFor={`notice-text-${target}`}>
-        {target === 'all' ? 'הודעה לכל החשבונות המאושרים' : 'הודעה'}
+        {target === 'all' ? 'הודעה לכל החשבונות המאושרים' : groupUids ? `הודעה ל-${groupUids.length} החשבונות המסוננים` : 'הודעה'}
       </label>
       <textarea id={`notice-text-${target}`} className="input" rows={4} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} />
       <p className="muted small">ההודעה קופצת מיד אם האפליקציה פתוחה, או בפתיחה הבאה, ונשארת עד שהמשתמש לוחץ "הבנתי".</p>
@@ -253,6 +274,13 @@ function Messages({
             {replyId === m.id ? (
               <div className="stack">
                 <label className="field-label" htmlFor={`reply-${m.id}`}>תשובה (קופצת אצל המשתמש)</label>
+                <div className="form-actions" aria-label="תבניות תשובה">
+                  {REPLY_TEMPLATES.map((t) => (
+                    <button key={t.label} type="button" className="btn btn-outline btn-small" onClick={() => setDraft(t.text)}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
                 <textarea id={`reply-${m.id}`} className="input" rows={3} maxLength={1000} value={draft} onChange={(e) => setDraft(e.target.value)} />
                 <div className="form-actions">
                   <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void send(m)}>שליחת תשובה</button>
@@ -322,6 +350,12 @@ function AdminContent() {
   // פרטי בעל החשבון: פתוחים כברירת מחדל בחשבון שממתין להחלטה, וניתנים להצגה והסתרה בכפתור
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
   const [accountSearch, setAccountSearch] = useState('');
+  const [filter, setFilter] = useState<AccountFilter>('all');
+  const [sort, setSort] = useState<AccountSort>('lastSeen');
+  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [log, setLog] = useState<AdminLogEntry[] | null>(null);
+  const [logError, setLogError] = useState(false);
   const [messageSearch, setMessageSearch] = useState('');
   const messages = useAdminMessages();
   const unanswered = messages.list?.filter((m) => !m.reply).length ?? 0;
@@ -404,10 +438,34 @@ function AdminContent() {
     }
   };
 
+  const exportCsv = async () => {
+    setActionError(null);
+    try {
+      await saveFile('accounts.csv', accountsCsv(filteredUsers), 'text/csv;charset=utf-8');
+    } catch {
+      setActionError('הייצוא נכשל.');
+    }
+  };
+  const saveNote = async (uid: string) => {
+    setActionError(null);
+    try {
+      await setAccountNote(uid, noteDraft);
+      setNoteFor(null);
+      load();
+    } catch {
+      setActionError('שמירת ההערה נכשלה. יש לבדוק חיבור ולנסות שוב.');
+    }
+  };
+  const loadLogNow = () => {
+    setLogError(false);
+    loadAdminLog().then(setLog).catch(() => setLogError(true));
+  };
+
   const emailOf = new Map((data?.users ?? []).map((u) => [u.uid, u.email] as const));
   const aq = accountSearch.trim().toLowerCase();
   // חשבון המנהל תמיד ראשון
-  const filteredUsers = (data?.users ?? [])
+  const filteredUsers = sortAccounts(data?.users ?? [], sort)
+    .filter((u) => matchesFilter(u, filter, data?.generatedAt ?? 0))
     .filter((u) => !aq || `${u.email} ${statusLabel(u.status, approvalRequired)} ${USAGE_LABEL[u.usage]} ${isAdminEmail(u.email) ? 'חשבון מנהל' : ''}`.toLowerCase().includes(aq))
     .sort((a, b) => Number(isAdminEmail(b.email)) - Number(isAdminEmail(a.email)));
 
@@ -563,9 +621,121 @@ function AdminContent() {
                 </div>
               </AccordionItem>
 
+              <AccordionItem id="clients" title="פלטפורמות וגרסאות" open={openId === 'clients'} onToggle={toggle}>
+                <div className="stack">
+                  {data.platforms ? (
+                    <>
+                      <dl className="detail-list">
+                        {Object.entries(data.platforms).sort((a, b) => b[1] - a[1]).map(([k, n]) => (
+                          <div key={k}><dt>{platformLabel(k)}</dt><dd>{n}</dd></div>
+                        ))}
+                      </dl>
+                      {data.versions && Object.keys(data.versions).length > 0 ? (
+                        <>
+                          <h3 className="section-title">גרסאות בשימוש</h3>
+                          <dl className="detail-list">
+                            {Object.entries(data.versions).sort((a, b) => b[0].localeCompare(a[0], 'en', { numeric: true })).map(([k, n]) => {
+                              const [plat, ...ver] = k.split(' ');
+                              return <div key={k}><dt dir="auto">{`${platformLabel(plat)} ${ver.join(' ')}`.trim()}</dt><dd>{n}</dd></div>;
+                            })}
+                          </dl>
+                        </>
+                      ) : null}
+                      <p className="muted small">לפי הפתיחה האחרונה של כל חשבון. חשבון שלא פתח את האפליקציה מאז העדכון מופיע כ"לא ידוע".</p>
+                    </>
+                  ) : (
+                    <p className="muted small">הנתונים יופיעו אחרי פריסה מחדש של פונקציות השרת.</p>
+                  )}
+                </div>
+              </AccordionItem>
+
+              <AccordionItem id="signups" title="הרשמות לפי שבוע" open={openId === 'signups'} onToggle={toggle}>
+                <div className="stack">
+                  {data.signups ? (
+                    <ul className="share-list" aria-label="הרשמות לפי שבוע">
+                      {data.signups.map((w) => {
+                        const max = Math.max(1, ...data.signups!.map((x) => x.count));
+                        return (
+                          <li key={w.weekStart}>
+                            <span className="row-between">
+                              <span>{`שבוע מ-${w.weekStart.slice(8)}/${w.weekStart.slice(5, 7)}`}</span>
+                              <span>{w.count} הרשמות</span>
+                            </span>
+                            <span className="share-bar share-income" aria-hidden="true">
+                              <span style={{ width: `${w.count === 0 ? 0 : Math.max(2, (w.count / max) * 100)}%` }} />
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="muted small">הנתונים יופיעו אחרי פריסה מחדש של פונקציות השרת.</p>
+                  )}
+                </div>
+              </AccordionItem>
+
+              <AccordionItem
+                id="log"
+                title="יומן פעולות מנהל"
+                open={openId === 'log'}
+                onToggle={(id) => {
+                  toggle(id);
+                  if (openId !== 'log' && log === null) loadLogNow();
+                }}
+              >
+                <div className="stack">
+                  {logError ? <p className="form-error" role="alert">לא הצלחנו לטעון את היומן.</p> : null}
+                  {log && log.length === 0 ? <p className="muted">עוד לא נרשמו פעולות.</p> : null}
+                  <ul className="tx-list admin-list" aria-label="יומן פעולות">
+                    {(log ?? []).map((e) => (
+                      <li key={e.id} className="txc">
+                        <div dir="auto">{logLine(e)}</div>
+                        <div className="txc-note">{dateTime(e.at)}</div>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" className="btn btn-secondary" onClick={loadLogNow}>רענון היומן</button>
+                </div>
+              </AccordionItem>
+
               <AccordionItem id="accounts" title={`חשבונות (${data.users.length})`} open={openId === 'accounts'} onToggle={toggle}>
                 <div className="stack">
                   <SearchBox value={accountSearch} onChange={setAccountSearch} label="חיפוש חשבון לפי אימייל או סטטוס" />
+                  <div className="form-actions" role="group" aria-label="סינון">
+                    {(Object.keys(FILTER_LABEL) as AccountFilter[]).map((f) => (
+                      <button key={f} type="button" className={`btn btn-small ${filter === f ? 'btn-primary' : 'btn-outline'}`} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+                        {FILTER_LABEL[f]}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="field-label" htmlFor="acc-sort">מיון לפי</label>
+                  <select id="acc-sort" className="input" value={sort} onChange={(e) => setSort(e.target.value as AccountSort)}>
+                    {(Object.keys(SORT_LABEL) as AccountSort[]).map((k) => (
+                      <option key={k} value={k}>{SORT_LABEL[k]}</option>
+                    ))}
+                  </select>
+                  <p className="muted small">{`מוצגים ${filteredUsers.length} חשבונות`}</p>
+                  <div className="form-actions">
+                    <button type="button" className="btn btn-outline" disabled={filteredUsers.length === 0} onClick={() => void exportCsv()}>
+                      ייצוא לאקסל (CSV)
+                    </button>
+                    {noticeFor !== 'group' ? (
+                      <button type="button" className="btn btn-outline" disabled={filteredUsers.length === 0} onClick={() => setNoticeFor('group')}>
+                        הודעה לחשבונות המסוננים
+                      </button>
+                    ) : null}
+                  </div>
+                  {noticeFor === 'group' ? (
+                    <NoticeForm
+                      target="group"
+                      groupUids={filteredUsers.filter((u) => !isAdminEmail(u.email)).map((u) => u.uid)}
+                      onCancel={() => setNoticeFor(null)}
+                      onDone={(m) => {
+                        setNoticeFor(null);
+                        setNotice(m);
+                      }}
+                    />
+                  ) : null}
             <ul className="tx-list admin-list" aria-label="חשבונות">
               {filteredUsers.map((u) => (
                 <li key={u.uid} className={`txc${isAdminEmail(u.email) ? ' txc-admin' : ''}`}>
@@ -577,6 +747,7 @@ function AdminContent() {
                       {isAdminEmail(u.email) ? <span className="txc-chip txc-chip-admin">חשבון מנהל</span> : null}
                       <span className="txc-chip">{USAGE_LABEL[u.usage]}</span>
                       <span className="txc-chip">{statusLabel(u.status, approvalRequired)}</span>
+                      {u.client ? <span className="txc-chip" dir="auto">{`${platformLabel(u.client.platform)}${u.client.version ? ` ${u.client.version}` : ''}`}</span> : null}
                       {u.notice ? <span className="txc-chip">הודעה פעילה</span> : null}
                       {u.payment ? (
                         <span className="txc-chip">
@@ -629,6 +800,23 @@ function AdminContent() {
                   <div className="txc-note">
                     נרשם: {dateTime(u.createdAt)} · כניסה אחרונה: {dateTime(u.lastSignInAt)}
                   </div>
+                  {noteFor === u.uid ? (
+                    <div className="stack">
+                      <label className="field-label" htmlFor={`note-${u.uid}`}>הערה פרטית (רק אתה רואה)</label>
+                      <textarea id={`note-${u.uid}`} className="input" rows={2} maxLength={500} value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} />
+                      <div className="form-actions">
+                        <button type="button" className="btn btn-primary" onClick={() => void saveNote(u.uid)}>שמירה</button>
+                        <button type="button" className="btn btn-secondary" onClick={() => setNoteFor(null)}>ביטול</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="txc-note" style={{ whiteSpace: 'pre-wrap' }}>
+                      {u.note ? `הערה: ${u.note} ` : ''}
+                      <button type="button" className="link-btn" onClick={() => { setNoteFor(u.uid); setNoteDraft(u.note ?? ''); }}>
+                        {u.note ? 'עריכת הערה' : 'הוספת הערה'}
+                      </button>
+                    </div>
+                  )}
                   <div className="txc-note">
                     פעולות: {u.txTotal} בסך הכול, {u.tx7d} בשבוע האחרון · פתיחות בשבוע: {u.opens7d}
                   </div>

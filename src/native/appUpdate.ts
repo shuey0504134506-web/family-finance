@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-async function installed(): Promise<{ kind: UpdateKind; version: string } | null> {
+export async function installed(): Promise<{ kind: UpdateKind; version: string } | null> {
   try {
     if (typeof window !== 'undefined' && window.desktopUpdate) {
       return { kind: 'windows', version: await window.desktopUpdate.version() };
