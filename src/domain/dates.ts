@@ -34,10 +34,6 @@ export function parseYearMonth(ym: YearMonth): { year: number; month: number } {
   return { year: Number(match[1]), month: Number(match[2]) };
 }
 
-export function isValidYearMonth(ym: string): boolean {
-  return /^(\d{4})-(0[1-9]|1[0-2])$/.test(ym);
-}
-
 export function isValidIsoDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;

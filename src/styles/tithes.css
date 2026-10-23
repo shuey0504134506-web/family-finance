@@ -15,12 +15,6 @@
   font-weight: 800;
 }
 
-.tithe-link {
-  margin: 16px 0;
-  color: var(--tithe);
-  border-color: var(--tithe);
-}
-
 .tithe-months {
   list-style: none;
   margin: 0;

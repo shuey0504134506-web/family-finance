@@ -20,10 +20,6 @@
   white-space: nowrap;
 }
 
-.center-screen {
-  align-items: center;
-}
-
 .center-card {
   width: 100%;
   max-width: 440px;
@@ -447,18 +443,6 @@ html[dir='ltr'] .month-nav {
   gap: 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
-}
-
-.custom-methods {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.custom-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .row-bar {

@@ -20,20 +20,6 @@ export function monthsOfYear(year: number): string[] {
 const inMonths = <T extends Tx>(items: readonly T[], months: ReadonlySet<string>) =>
   items.filter((t) => months.has(t.yearMonth));
 
-/**
- * סיכום חודש אחד. למשק הבית נוספת ההעברה מהעסק, וכל חודש מחושב בנפרד
- * (חשוב כשהגדרת ההעברה היא "רק רווח": חודש הפסדי לא מקזז חודש רווחי).
- */
-export function monthTotals(
-  scope: Scope,
-  household: readonly Tx[],
-  business: readonly Tx[],
-  yearMonth: string,
-  mode: BusinessTransferMode,
-): PeriodTotals {
-  return periodTotals(scope, household, business, [yearMonth], mode);
-}
-
 export function periodTotals(
   scope: Scope,
   household: readonly Tx[],

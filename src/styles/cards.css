@@ -399,11 +399,6 @@ html[dir='ltr'] .acc-item.is-open .acc-chevron {
   place-items: center;
 }
 
-.att-add {
-  width: auto;
-  align-self: flex-start;
-}
-
 .att-actions {
   display: flex;
   gap: 10px;

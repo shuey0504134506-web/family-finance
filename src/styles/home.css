@@ -43,55 +43,6 @@
   letter-spacing: -1px;
 }
 
-.balance-hint {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.85rem;
-  color: #8fa2ba;
-}
-
-.balance-details {
-  margin: 0;
-  padding: 4px 18px 16px;
-  border-top: 1px solid rgba(20, 30, 50, 0.12);
-  border-top-color: rgba(255, 255, 255, 0.14);
-}
-
-.balance-details > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 8px 0;
-}
-
-.balance-details dt {
-  color: var(--text-muted);
-}
-
-.balance-details dd {
-  margin: 0;
-  font-weight: 700;
-  color: #fff;
-}
-
-.balance-subrow {
-  padding-inline-start: 14px;
-  font-size: 0.9rem;
-}
-
-.balance-total {
-  margin-top: 4px;
-  border-top: 2px solid rgba(20, 30, 50, 0.2);
-  font-size: 1.1rem;
-  border-top-width: 1px;
-  border-top-color: rgba(255, 255, 255, 0.2);
-}
-
-.balance-total dt {
-  color: var(--text);
-  font-weight: 700;
-}
-
 .details > div {
   display: flex;
   justify-content: space-between;
@@ -133,17 +84,6 @@
   font-weight: 700;
 }
 
-.quick-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 16px;
-}
-
-.quick-links .btn:only-child {
-  grid-column: 1 / -1;
-}
-
 /* קישורים מהירים */
 .quick-link {
   display: flex;
@@ -178,23 +118,11 @@
   overflow-wrap: anywhere;
 }
 
-.quick-links .quick-link:only-child {
-  grid-column: 1 / -1;
-}
-
-.balance-details dd {
-  font-weight: 600;
-}
-
 .balance-text,
 .tone-plus .balance-text,
 .tone-minus .balance-text {
   color: #c9d5e4;
   font-weight: 500;
-}
-
-.balance-details dt {
-  color: #b9c6d8;
 }
 
 .balance-frame .tone-income {
@@ -203,10 +131,6 @@
 
 .balance-frame .tone-expense {
   color: #f2b1a6;
-}
-
-.balance-total dt {
-  color: #fff;
 }
 
 @media (max-width: 380px), (max-height: 700px) {
@@ -243,11 +167,6 @@
 }
 
 /* הוספת קטגוריה: רווח בין השדה, השגיאה והכפתור */
-.add-category-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
 .mc-name {
   font-weight: 600;
@@ -308,12 +227,6 @@
 }
 
 /* תקציב ומעשרות: שורות במקום כרטיסים */
-.home-clean .quick-links {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 20px;
-}
 
 .home-clean .quick-link-title .icon {
   display: none;
@@ -346,17 +259,6 @@
 .home-clean .tone-minus .balance-text,
 .home-clean .tone-minus .balance-amount {
   color: var(--expense);
-}
-
-.home-clean .balance-hint {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 0.8125rem;
-}
-
-.home-clean .balance-details dt {
-  color: var(--text-muted);
 }
 
 /* הגדרות עסק: מרווח רגיל בין שם העסק לכפתור המחיקה */

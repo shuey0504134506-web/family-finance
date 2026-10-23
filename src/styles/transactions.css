@@ -330,11 +330,6 @@
   padding: 6px 0;
 }
 
-.home-clean .balance-details {
-  border-top-color: var(--border);
-  color: var(--text);
-}
-
 .scope-title .scope-logo {
   width: 36px;
   height: 36px;

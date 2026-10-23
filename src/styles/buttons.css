@@ -139,21 +139,11 @@
   box-shadow: none;
 }
 
-.swatch {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  vertical-align: middle;
-}
-
-.swatch-income,
 .bar-income {
   background: var(--income);
   fill: var(--income);
 }
 
-.swatch-expense,
 .bar-expense {
   background: var(--expense);
   fill: var(--expense);
@@ -175,10 +165,6 @@
   background: var(--income);
 }
 
-.danger-zone {
-  border: 1.5px solid var(--expense);
-}
-
 .icon {
   color: #000;
   vertical-align: -0.2em;
@@ -188,10 +174,6 @@
 .btn-add {
   margin: 12px 0;
   gap: 8px;
-}
-
-.link-danger {
-  color: var(--expense);
 }
 
 .btn-small {

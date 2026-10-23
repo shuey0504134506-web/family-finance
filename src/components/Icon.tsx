@@ -11,11 +11,9 @@ export type IconName =
   | 'expense'
   | 'tithe'
   | 'budget'
-  | 'chart'
   | 'plus'
   | 'mail'
   | 'check'
-  | 'sparkle'
   | 'sync'
   | 'calendar'
   | 'search'
@@ -62,13 +60,6 @@ const PATHS: Record<IconName, ReactNode> = {
       <circle cx="12" cy="12" r="1" />
     </>
   ),
-  chart: (
-    <>
-      <path d="M6 20v-9" />
-      <path d="M12 20V4" />
-      <path d="M18 20v-6" />
-    </>
-  ),
   plus: (
     <>
       <path d="M12 5v14" />
@@ -85,12 +76,6 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M8 12.5l3 3 5-6" />
-    </>
-  ),
-  sparkle: (
-    <>
-      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
-      <path d="M19 17l.6 1.6L21 19l-1.4.4L19 21l-.6-1.6L17 19l1.4-.4z" />
     </>
   ),
   sync: (

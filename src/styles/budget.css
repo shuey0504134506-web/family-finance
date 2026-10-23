@@ -1,7 +1,6 @@
 /* תקציב וקטגוריות */
 
-.budget-list,
-.category-list {
+.budget-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -78,24 +77,6 @@
 }
 
 /* שורת קטגוריה: השם ממורכז למעלה, ומתחתיו שלושת הכפתורים ממורכזים */
-.category-row {
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-}
-
-.category-row.is-inactive {
-  opacity: 0.7;
-}
-
-.category-actions {
-  display: flex;
-  gap: 4px;
-}
 
 .share-bar > div {
   height: 100%;
@@ -105,16 +86,4 @@
 .category-delete-text {
   margin: 0;
   flex-basis: 100%;
-}
-
-.category-row .category-name {
-  display: block;
-  text-align: center;
-  font-weight: 600;
-}
-
-.category-row .category-actions {
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
 }
