@@ -1,3 +1,4 @@
+import { suppressLock } from '../services/lockSuppress';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { isNewerVersion, latestRelease, RELEASES_API, type ReleaseInfo } from '../domain/releases';
 
@@ -66,6 +67,8 @@ export async function findUpdate(): Promise<UpdateInfo | null> {
  * באפליקציה ישנה שאין בה את התוסף: נפתח קישור ההורדה בדפדפן.
  */
 export async function applyUpdate(info: UpdateInfo, onProgress?: (percent: number) => void): Promise<ApplyResult> {
+  // מסך ההתקנה והגדרות המערכת מוציאים את האפליקציה לרקע: זה לא סיבה לנעול
+  suppressLock(10 * 60_000);
   if (info.kind === 'windows') {
     await window.desktopUpdate?.install(info.url);
     return 'started';

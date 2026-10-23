@@ -62,3 +62,50 @@ export const rememberLockState = (uid: string, locked: boolean): void => {
 };
 export const rememberedLockState = (uid: string): boolean | null =>
   lockSession && lockSession.uid === uid ? lockSession.locked : null;
+
+/** קישור שפותח אפליקציה או חלון אחר: טלפון, מייל, הודעה, מפות, או כל כתובת מחוץ לאפליקציה. */
+export function isExternalLink(a: Pick<HTMLAnchorElement, 'getAttribute' | 'target'>, origin = ''): boolean {
+  const href = (a.getAttribute('href') ?? '').trim().toLowerCase();
+  if (!href || href.startsWith('#')) return a.target === '_blank';
+  if (/^(tel|mailto|sms|whatsapp|geo|market|intent|content|file):/.test(href)) return true;
+  if (a.target === '_blank') return true;
+  return /^https?:\/\//.test(href) && !!origin && !href.startsWith(origin.toLowerCase());
+}
+
+let guardsInstalled = false;
+
+/**
+ * שכבת הגנה מרכזית: כל פעולה שמוציאה את המשתמש לרגע מהאפליקציה (בחירת קובץ, מצלמה, גלריה, שיתוף,
+ * חלון חדש, קישור לטלפון או למייל) משתיקה את הנעילה האוטומטית, בלי שכל מסך יצטרך לזכור לעשות זאת.
+ * מסך חדש שמוסיף שדה קובץ או קישור כזה מכוסה אוטומטית. נקרא פעם אחת בעליית האפליקציה.
+ */
+export function installLockGuards(): void {
+  if (guardsInstalled || typeof document === 'undefined') return;
+  guardsInstalled = true;
+  document.addEventListener(
+    'click',
+    (e) => {
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      if (t instanceof HTMLInputElement && t.type === 'file') return suppressLock();
+      const label = t.closest('label');
+      if (label?.querySelector('input[type=file]') || (label?.htmlFor && document.getElementById(label.htmlFor)?.getAttribute('type') === 'file')) return suppressLock();
+      const a = t.closest('a');
+      if (a && isExternalLink(a, window.location.origin)) suppressLock();
+    },
+    true,
+  );
+  const w = window as Window & { open: typeof window.open };
+  const open = w.open.bind(w);
+  w.open = (...args: Parameters<typeof window.open>) => {
+    suppressLock();
+    return open(...args);
+  };
+  if (typeof navigator.share === 'function') {
+    const share = navigator.share.bind(navigator);
+    navigator.share = (data?: ShareData) => {
+      suppressLock();
+      return share(data);
+    };
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { suppressLock } from '../../services/lockSuppress';
 import { Link } from 'react-router-dom';
 import { Amount } from '../../components/Amount';
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -258,7 +259,7 @@ export function ImportScreen() {
             </p>
             <p className="muted small">נתמכים: קובצי xlsx, xls ו-csv, וגם קבצי "אקסל" שהבנק שומר כטבלת HTML. קובצי PDF לא נתמכים. הקובץ נקרא רק במכשיר שלך ואינו נשלח לשום מקום.</p>
             <input ref={fileInput} type="file" hidden accept=".xlsx,.xls,.csv,.txt,.htm,.html,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
-            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => fileInput.current?.click()}>
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => { suppressLock(); fileInput.current?.click(); }}>
               {busy ? 'קורא…' : 'בחירת קובץ'}
             </button>
             {error ? <div className="field-error" role="alert">{error}</div> : null}

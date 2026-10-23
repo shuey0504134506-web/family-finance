@@ -5,6 +5,7 @@ import { applyDocumentLang } from './i18n/lang';
 import { Capacitor } from '@capacitor/core';
 import { installAndroidBackHandler } from './native/androidBack';
 import { captureInstallPrompt } from './native/installPrompt';
+import { installLockGuards } from './services/lockSuppress';
 import '@fontsource/heebo/hebrew-300.css';
 import '@fontsource/heebo/hebrew-400.css';
 import '@fontsource/heebo/hebrew-500.css';
@@ -20,6 +21,7 @@ import './styles/index.css';
 applyDocumentLang();
 installAndroidBackHandler();
 captureInstallPrompt();
+installLockGuards();
 
 // באתר (לא באפליקציית האנדרואיד, שבה הקבצים כבר בתוך ה-APK): service worker לפתיחה בלי אינטרנט.
 if (import.meta.env.PROD && !Capacitor.isNativePlatform() && 'serviceWorker' in navigator) {

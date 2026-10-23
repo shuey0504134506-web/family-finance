@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { suppressLock } from '../../services/lockSuppress';
 import { Modal } from '../../components/Modal';
 import { MAX_ATTACHMENTS } from '../../domain/attachment';
 import { fileToAttachment } from '../../services/attachmentImage';
@@ -87,10 +88,10 @@ export function AttachmentsField({
             <div className="muted small">הגעת למקסימום ({MAX_ATTACHMENTS} תמונות)</div>
           ) : (
             <div className="att-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => camera.current?.click()}>
+              <button type="button" className="btn btn-secondary" onClick={() => { suppressLock(); camera.current?.click(); }}>
                 צילום עכשיו
               </button>
-              <button type="button" className="btn btn-secondary" onClick={() => input.current?.click()}>
+              <button type="button" className="btn btn-secondary" onClick={() => { suppressLock(); input.current?.click(); }}>
                 בחירה מהמכשיר
               </button>
             </div>
