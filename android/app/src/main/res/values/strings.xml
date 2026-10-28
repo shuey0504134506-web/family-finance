@@ -4,4 +4,8 @@
     <string name="title_activity_main">ניהול כספים</string>
     <string name="package_name">com.familyfinance.app</string>
     <string name="custom_url_scheme">com.familyfinance.app</string>
+    <string name="widget_label">הוספה מהירה</string>
+    <string name="widget_add_income">הוספת הכנסה</string>
+    <string name="widget_add_expense">הוספת הוצאה</string>
+    <string name="widget_description">כפתורי הוספת הכנסה והוצאה ישר ממסך הבית</string>
 </resources>

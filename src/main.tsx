@@ -4,6 +4,7 @@ import App from './App';
 import { applyDocumentLang } from './i18n/lang';
 import { Capacitor } from '@capacitor/core';
 import { installAndroidBackHandler } from './native/androidBack';
+import { installQuickActions } from './native/quickActions';
 import { captureInstallPrompt } from './native/installPrompt';
 import { installLockGuards } from './services/lockSuppress';
 import '@fontsource/heebo/hebrew-300.css';
@@ -20,6 +21,7 @@ import './styles/index.css';
 
 applyDocumentLang();
 installAndroidBackHandler();
+installQuickActions();
 captureInstallPrompt();
 installLockGuards();
 

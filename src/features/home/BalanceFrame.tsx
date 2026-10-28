@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CountUpAmount } from '../../components/CountUp';
+import { Amount } from '../../components/Amount';
 import type { MonthStatus, YearMonth } from '../../domain/dates';
 import { balanceHeadline } from './homeText';
 
@@ -35,7 +35,7 @@ export function BalanceFrame(props: Props) {
           {headline.amountAgorot !== null && (
             <>
               {' '}
-              <CountUpAmount agorot={headline.amountAgorot} className="balance-amount" />
+              <Amount agorot={headline.amountAgorot} className="balance-amount" />
             </>
           )}
         </span>

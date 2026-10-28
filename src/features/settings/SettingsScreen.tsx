@@ -6,7 +6,8 @@ import { loadPendingCount, subscribeApprovalRequired } from '../../services/admi
 import { useReadyAuth } from '../auth/AuthContext';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
-import { AccordionItem } from './Accordion';
+import { SectionItem, useOpenSection } from './SectionPages';
+import { AboutSection } from './AboutSection';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { FormDefaultsSection } from './FormDefaultsSection';
@@ -15,10 +16,9 @@ import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
 import { PurposeSection } from './PurposeSection';
 import { PasswordForm } from './SecuritySection';
-import { useRevealOpen } from '../../hooks/useRevealOpen';
 
 /**
- * מסך הגדרות: רשימת כותרות מתקפלות.
+ * מסך הגדרות: רשימת אפשרויות, ולכל אפשרות מסך משלה.
  * פרטי חשבון, ייעוד האפליקציה, ניהול האפליקציה, אבטחה, ובסוף מחיקת חשבון.
  */
 export function SettingsScreen() {
@@ -45,50 +45,52 @@ export function SettingsScreen() {
         setNewAccounts(0);
       });
   }, [isAdmin]);
-  const [openId, setOpenId] = useState<string | null>(null);
-  useRevealOpen(openId);
-  const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
+  const [openSection] = useOpenSection();
 
   return (
     <div className="app-shell">
       <ScreenHeader title="הגדרות" />
       <main className="content">
         <div className="acc-list">
-          <AccordionItem id="account" title="פרטי חשבון" open={openId === 'account'} onToggle={toggle}>
+          <SectionItem id="account" title="פרטי חשבון">
             <AccountSection />
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="mode" title="ייעוד האפליקציה" open={openId === 'mode'} onToggle={toggle}>
+          <SectionItem id="mode" title="ייעוד האפליקציה">
             <PurposeSection />
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="defaults" title="ברירות מחדל להוספה" open={openId === 'defaults'} onToggle={toggle}>
+          <SectionItem id="defaults" title="ברירות מחדל להוספה">
             <FormDefaultsSection />
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="lang" title="שפה ומטבע" open={openId === 'lang'} onToggle={toggle}>
+          <SectionItem id="lang" title="שפה ומטבע">
             <LanguageCurrencySection />
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="manage" title="ניהול האפליקציה" open={openId === 'manage'} onToggle={toggle}>
+          <SectionItem id="manage" title="ניהול האפליקציה">
             <ManageSection />
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="security" title="אבטחה" open={openId === 'security'} onToggle={toggle}>
+          <SectionItem id="security" title="אבטחה">
             <div className="stack">
               <h3 className="subhead">נעילת האפליקציה</h3>
               <LockSection />
               <hr className="divider" />
               <PasswordForm />
             </div>
-          </AccordionItem>
+          </SectionItem>
 
-          <AccordionItem id="delete" title="מחיקת חשבון" open={openId === 'delete'} onToggle={toggle}>
+          <SectionItem id="about" title="אודות">
+            <AboutSection />
+          </SectionItem>
+
+          <SectionItem id="delete" title="מחיקת חשבון">
             <DeleteAccountSection />
-          </AccordionItem>
+          </SectionItem>
         </div>
 
-        {isAdminEmail(user.email) ? (
+        {isAdminEmail(user.email) && openSection === null ? (
           <Link to="/admin" className="btn btn-secondary btn-borderless">
             {['ניהול מתקדם (מנהל)', pending > 0 && approvalRequired === true ? `${pending} ממתינים לאישור` : '', unanswered > 0 ? `${unanswered} הודעות ללא מענה` : '',
               newAccounts > 0 ? `${newAccounts} חשבונות חדשים` : '']
@@ -97,12 +99,16 @@ export function SettingsScreen() {
           </Link>
         ) : null}
 
+        {openSection === null ? (
+        <>
         <p className="auth-footer-link">
           <Link to="/privacy">{privacyLabel}</Link> · <Link to="/accessibility">הצהרת נגישות</Link>
         </p>
         <p className="muted center-text">
           {APP_NAME} · גרסה {APP_VERSION}
         </p>
+        </>
+        ) : null}
       </main>
     </div>
   );

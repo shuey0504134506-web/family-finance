@@ -294,27 +294,21 @@
   border-top: 1px solid var(--border);
 }
 
-/* כפתורי הוספה שקופים: מסגרת וטקסט בצבע, בלי מילוי */
+/* כפתורי הוספה: מילוי מלא, ירוק להכנסה ואדום להוצאה */
 .btn-income,
-.btn-expense,
-.btn-add.btn-income,
-.btn-add.btn-expense {
-  background: transparent;
-  border-width: 1.5px;
-  border-style: solid;
+.btn-add.btn-income {
+  background: var(--income);
+  border: 1.5px solid var(--income);
+  color: #fff;
   box-shadow: none;
 }
 
-.btn-income,
-.btn-add.btn-income {
-  border-color: var(--income);
-  color: var(--income);
-}
-
 .btn-expense,
 .btn-add.btn-expense {
-  border-color: var(--expense);
-  color: var(--expense);
+  background: var(--expense);
+  border: 1.5px solid var(--expense);
+  color: #fff;
+  box-shadow: none;
 }
 
 /* לוגו האפליקציה במסך הפתיחה: האייקון עצמו ממלא את הריבוע */

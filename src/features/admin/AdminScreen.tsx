@@ -37,10 +37,9 @@ import {
   type AccountFilter,
   type AccountSort,
 } from './adminTools';
-import { AccordionItem } from '../settings/Accordion';
+import { SectionItem, useOpenSection } from '../settings/SectionPages';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
-import { useRevealOpen } from '../../hooks/useRevealOpen';
 
 const USAGE_LABEL: Record<UsageLevel, string> = {
   high: 'שימוש גבוה',
@@ -344,8 +343,7 @@ function AdminContent() {
   const [payingUid, setPayingUid] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  useRevealOpen(openId);
+  const [openId] = useOpenSection();
   const [openDay, setOpenDay] = useState<string | null>(null);
   // פרטי בעל החשבון: פתוחים כברירת מחדל בחשבון שממתין להחלטה, וניתנים להצגה והסתרה בכפתור
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
@@ -359,7 +357,6 @@ function AdminContent() {
   const [messageSearch, setMessageSearch] = useState('');
   const messages = useAdminMessages();
   const unanswered = messages.list?.filter((m) => !m.reply).length ?? 0;
-  const toggle = (id: string) => setOpenId((current) => (current === id ? null : id));
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [approvalRequired, setApprovalRequiredState] = useState<boolean | null>(null);
@@ -460,6 +457,10 @@ function AdminContent() {
     setLogError(false);
     loadAdminLog().then(setLog).catch(() => setLogError(true));
   };
+  useEffect(() => {
+    if (openId === 'log' && log === null) loadLogNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId]);
 
   const emailOf = new Map((data?.users ?? []).map((u) => [u.uid, u.email] as const));
   const aq = accountSearch.trim().toLowerCase();
@@ -487,7 +488,7 @@ function AdminContent() {
         ) : data ? (
           <>
             <div className="acc-list">
-              <AccordionItem id="summary" title="סיכום כללי" open={openId === 'summary'} onToggle={toggle}>
+              <SectionItem id="summary" title="סיכום כללי">
                 <div className="stack">
               <dl className="detail-list">
                 <div><dt>חשבונות</dt><dd>{data.totals.accounts}</dd></div>
@@ -530,9 +531,9 @@ function AdminContent() {
               </button>
 
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="approval" title="אישור חשבונות חדשים" open={openId === 'approval'} onToggle={toggle}>
+              <SectionItem id="approval" title="אישור חשבונות חדשים">
                 <div className="stack">
                   <p>
                     {approvalRequired === null
@@ -553,9 +554,9 @@ function AdminContent() {
                     {approvalRequired ? 'כיבוי דרישת האישור' : 'הפעלת דרישת אישור'}
                   </button>
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="activity" title="כניסות לאפליקציה (14 ימים)" open={openId === 'activity'} onToggle={toggle}>
+              <SectionItem id="activity" title="כניסות לאפליקציה (14 ימים)">
                 <div className="stack">
               <ul className="share-list" aria-label="פתיחות לפי יום">
                 {data.daily.map((d) => {
@@ -597,9 +598,9 @@ function AdminContent() {
                 })}
               </ul>
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="messages" title={`הודעות ממשתמשים${unanswered > 0 ? ` (${unanswered} ללא מענה)` : ""}`} open={openId === 'messages'} onToggle={toggle}>
+              <SectionItem id="messages" title={`הודעות ממשתמשים${unanswered > 0 ? ` (${unanswered} ללא מענה)` : ''}`}>
                 <div className="stack">
                 {noticeFor === 'all' ? (
                   <NoticeForm
@@ -619,9 +620,9 @@ function AdminContent() {
                   <SearchBox value={messageSearch} onChange={setMessageSearch} label="חיפוש בהודעות" />
                   <Messages list={messages.list} loadError={messages.error} search={messageSearch} emailOf={emailOf} />
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="clients" title="פלטפורמות וגרסאות" open={openId === 'clients'} onToggle={toggle}>
+              <SectionItem id="clients" title="פלטפורמות וגרסאות">
                 <div className="stack">
                   {data.platforms ? (
                     <>
@@ -647,9 +648,9 @@ function AdminContent() {
                     <p className="muted small">הנתונים יופיעו אחרי פריסה מחדש של פונקציות השרת.</p>
                   )}
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="signups" title="הרשמות לפי שבוע" open={openId === 'signups'} onToggle={toggle}>
+              <SectionItem id="signups" title="הרשמות לפי שבוע">
                 <div className="stack">
                   {data.signups ? (
                     <ul className="share-list" aria-label="הרשמות לפי שבוע">
@@ -672,17 +673,9 @@ function AdminContent() {
                     <p className="muted small">הנתונים יופיעו אחרי פריסה מחדש של פונקציות השרת.</p>
                   )}
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem
-                id="log"
-                title="יומן פעולות מנהל"
-                open={openId === 'log'}
-                onToggle={(id) => {
-                  toggle(id);
-                  if (openId !== 'log' && log === null) loadLogNow();
-                }}
-              >
+              <SectionItem id="log" title="יומן פעולות מנהל">
                 <div className="stack">
                   {logError ? <p className="form-error" role="alert">לא הצלחנו לטעון את היומן.</p> : null}
                   {log && log.length === 0 ? <p className="muted">עוד לא נרשמו פעולות.</p> : null}
@@ -696,9 +689,9 @@ function AdminContent() {
                   </ul>
                   <button type="button" className="btn btn-secondary" onClick={loadLogNow}>רענון היומן</button>
                 </div>
-              </AccordionItem>
+              </SectionItem>
 
-              <AccordionItem id="accounts" title={`חשבונות (${data.users.length})`} open={openId === 'accounts'} onToggle={toggle}>
+              <SectionItem id="accounts" title={`חשבונות (${data.users.length})`}>
                 <div className="stack">
                   <SearchBox value={accountSearch} onChange={setAccountSearch} label="חיפוש חשבון לפי אימייל או סטטוס" />
                   <div className="form-actions" role="group" aria-label="סינון">
@@ -895,7 +888,7 @@ function AdminContent() {
               ))}
             </ul>
                 </div>
-              </AccordionItem>
+              </SectionItem>
             </div>
           </>
         ) : null}

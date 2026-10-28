@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { applyDocumentLang } from '../../src/i18n/lang';
 import { installLockGuards } from '../../src/services/lockSuppress';
+import { installQuickActions } from '../../src/native/quickActions';
 import { DesktopApp } from './ui/DesktopApp';
 import '@fontsource/heebo/hebrew-300.css';
 import '@fontsource/heebo/hebrew-400.css';
@@ -18,6 +19,7 @@ import './styles/desktop.css';
 
 applyDocumentLang();
 installLockGuards();
+installQuickActions();
 // מבקשים מהמערכת לא לפנות את הנתונים כשחסר מקום: זה חשבון שאין לו עותק בענן
 void navigator.storage?.persist?.();
 createRoot(document.getElementById('root')!).render(

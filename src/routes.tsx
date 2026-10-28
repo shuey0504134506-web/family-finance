@@ -37,6 +37,7 @@ import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { SpaceRoute } from './features/spaces/SpaceRoute';
+import { QuickAddRedirect } from './features/spaces/QuickAddRedirect';
 import { SpacesProvider, useSpaces } from './features/spaces/SpacesContext';
 import { readDeviceUser } from './services/deviceUser';
 import { LandingScreen } from './features/landing/LandingScreen';
@@ -139,6 +140,7 @@ export function AppRoutes() {
 
       <Route element={<RequireAccount />}>
         <Route index element={<HomeRedirect />} />
+        <Route path="/quick/:type" element={<QuickAddRedirect />} />
         <Route element={<SpaceRoute />}>
           <Route path="/:scope" element={<HomeScreen />} />
           <Route path="/:scope/list/:type" element={<TransactionListScreen />} />

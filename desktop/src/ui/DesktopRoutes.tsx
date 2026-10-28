@@ -25,6 +25,7 @@ import { DesktopPrivacy } from './DesktopPrivacy';
 import { SearchScreen } from '../../../src/features/search/SearchScreen';
 import { AutoBackupHost } from '../../../src/features/settings/AutoBackupHost';
 import { SettingsProvider } from '../../../src/features/settings/SettingsContext';
+import { QuickAddRedirect } from '../../../src/features/spaces/QuickAddRedirect';
 import { SettingsScreen } from '../../../src/features/settings/SettingsScreen';
 import { SpaceRoute } from '../../../src/features/spaces/SpaceRoute';
 import { SpacesProvider, useSpaces } from '../../../src/features/spaces/SpacesContext';
@@ -104,6 +105,7 @@ export function DesktopRoutes({ phone = false }: { phone?: boolean } = {}) {
       <Route path="/accessibility" element={<AccessibilityScreen />} />
       <Route element={<RequireAccount phone={phone} />}>
         <Route index element={<HomeRedirect />} />
+        <Route path="/quick/:type" element={<QuickAddRedirect />} />
         <Route element={<SpaceRoute />}>
           <Route path="/:scope" element={<HomeScreen />} />
           <Route path="/:scope/list/:type" element={<TransactionListScreen />} />
