@@ -15,6 +15,7 @@ import { loginWithEmail, logout, registerAccount } from '../../services/authServ
 import { syncProfileEmail } from '../../services/accountService';
 import { rememberPasswordForLock } from '../../services/lockPassword';
 import { saveDeviceUser } from '../../services/deviceUser';
+import { clearOptimistic, optimisticUser, readOptimistic, saveOptimistic } from '../../services/optimisticUser';
 import {
   createUserRecords,
   subscribeUserProfile,
@@ -54,10 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } | null>(null);
   const [registering, setRegistering] = useState(false);
   const [justRegistered, setJustRegistered] = useState(false);
+  // מי היה מחובר בפעם הקודמת: מאפשר לפתוח את האפליקציה מיד גם כש-Firebase Auth עוד לא סיים לאמת (פתיחה קרה בלי אינטרנט)
+  const [saved] = useState(readOptimistic);
 
-  useEffect(() => onAuthStateChanged(auth, (user) => setAuthUser(user)), []);
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, (user) => {
+        if (!user) clearOptimistic();
+        setAuthUser(user);
+      }),
+    [],
+  );
 
-  const uid = authUser?.uid ?? null;
+  const uid = authUser?.uid ?? (authUser === undefined ? saved?.uid ?? null : null);
   useEffect(() => {
     if (!uid) {
       setProfileSnapshot(null);
@@ -72,7 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [uid]);
 
   const state: AuthState = useMemo(() => {
-    if (authUser === undefined) return { status: 'loading' };
+    if (authUser === undefined) {
+      if (!saved || registering) return { status: 'loading' };
+      const fresh = profileSnapshot?.uid === saved.uid && profileSnapshot.snapshot.kind === 'found' ? profileSnapshot.snapshot.profile : saved.profile;
+      return { status: 'ready', user: optimisticUser(saved), profile: fresh };
+    }
     // בזמן הרשמה נשארים במצב "לא מחובר" כדי שטופס ההרשמה יישאר מוצג
     // עד שכל רשומות החשבון נשמרו.
     if (authUser === null || registering) return { status: 'signedOut' };
@@ -83,17 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (snapshot.kind === 'missing') return { status: 'needsSetup', user: authUser };
     return { status: 'checking', user: authUser };
-  }, [authUser, profileSnapshot, registering]);
+  }, [authUser, profileSnapshot, registering, saved]);
 
   // זוכרים במכשיר מי המשתמש, כדי שבכניסה הבאה יוצג שמו ויידרש רק סיסמה.
   useEffect(() => {
     if (state.status === 'ready') {
+      if (authUser) saveOptimistic(authUser, state.profile);
       saveDeviceUser({
         email: state.user.email ?? state.profile.email,
         firstName: state.profile.firstName,
       });
     }
-  }, [state]);
+  }, [state, authUser]);
 
   // אחרי שינוי מייל מאומת, הכתובת ב-Authentication משתנה. מעדכנים גם את הפרופיל.
   useEffect(() => {
@@ -129,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = useCallback(async () => {
     setJustRegistered(false);
     clearNewAccount();
+    clearOptimistic();
     await logout();
   }, []);
 

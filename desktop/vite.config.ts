@@ -45,6 +45,7 @@ export default defineConfig({
   publicDir: here('../public'),
   resolve: {
     alias: [
+      { find: /^(\.\.?\/)+services\/optimisticUser$/, replacement: here('src/shims/optimisticUser.ts') },
       { find: 'ff-i18n', replacement: here('../src/i18n') },
       { find: /^firebase\/firestore$/, replacement: here('src/shims/firestore.ts') },
       { find: /^firebase\/auth$/, replacement: here('src/shims/auth.ts') },

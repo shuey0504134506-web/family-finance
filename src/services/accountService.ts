@@ -36,7 +36,7 @@ function requireOnline(): void {
 async function reauthenticate(user: User, password: string): Promise<void> {
   if (!user.email) throw appError('auth/invalid-credential');
   if (!password) throw appError('auth/missing-password');
-  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  await reauthenticateWithCredential(auth.currentUser ?? user, EmailAuthProvider.credential(user.email, password));
 }
 
 /** אימות סיסמת החשבון מול השרת (לפתיחת נעילת האפליקציה). */
@@ -88,7 +88,7 @@ export function syncProfileEmail(uid: string, email: string): Promise<void> {
 export async function changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
   requireOnline();
   await reauthenticate(user, currentPassword);
-  await updatePassword(user, newPassword);
+  await updatePassword(auth.currentUser ?? user, newPassword);
 }
 
 /**
@@ -98,7 +98,7 @@ export async function changePassword(user: User, currentPassword: string, newPas
 export async function requestEmailChange(user: User, currentPassword: string, newEmail: string): Promise<void> {
   requireOnline();
   await reauthenticate(user, currentPassword);
-  await verifyBeforeUpdateEmail(user, newEmail.trim());
+  await verifyBeforeUpdateEmail(auth.currentUser ?? user, newEmail.trim());
 }
 
 function isPermissionDenied(e: unknown): boolean {
