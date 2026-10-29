@@ -84,7 +84,7 @@ export function SpacesProvider({
   useEffect(() => subscribeBusinesses(uid, setDocs, () => setDocsState((current) => current ?? [])), [uid, setDocs]);
   // רשת ביטחון: בלי מטמון ובלי חיבור ייתכן שההאזנה לא תחזיר דבר, ואסור להישאר על "טוען" לנצח.
   useEffect(() => {
-    const timer = setTimeout(() => setDocsState((current) => current ?? []), 1500);
+    const timer = setTimeout(() => setDocsState((current) => current ?? []), 600);
     return () => clearTimeout(timer);
   }, [uid]);
   useEffect(() => subscribeHouseholdName(uid, setHouseholdDocName, () => setHouseholdDocName(null)), [uid]);
