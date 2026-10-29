@@ -3,13 +3,13 @@ import {
   doc,
   deleteDoc,
   getDocs,
-  onSnapshot,
   query,
   setDoc,
   where,
   writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { dueDatesUpTo, firstDueDate, nextDueAfter, transactionFromOrder } from '../domain/standingOrder';
 import { monthDateRange, yearMonthOfDate, type IsoDate } from '../domain/dates';

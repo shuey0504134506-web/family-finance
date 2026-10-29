@@ -1,4 +1,5 @@
-import { addDoc, collection, onSnapshot, query, where, type Unsubscribe } from 'firebase/firestore';
+import { addDoc, collection, query, where, type Unsubscribe } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 
 /**

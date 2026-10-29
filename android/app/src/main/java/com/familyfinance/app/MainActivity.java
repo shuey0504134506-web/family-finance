@@ -9,6 +9,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // עדכון האפליקציה מתוך האפליקציה (הורדה והתקנה בלי דפדפן)
         registerPlugin(AppUpdaterPlugin.class);
+        // שמירת גיבויים וייצוא ישר לתיקיית ההורדות
+        registerPlugin(FileSaverPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../components/Modal';
-import { applyUpdate, findUpdate, type UpdateInfo } from './appUpdate';
+import { applyUpdate, canInstallUpdates, findUpdate, updatePending, type UpdateInfo } from './appUpdate';
 
 const SKIP_KEY = 'ff.update.skipped';
 
@@ -35,6 +35,25 @@ export function useUpdateRunner(info: UpdateInfo | null) {
       setState('failed');
     }
   };
+  // אחרי מסך ההרשאה: כשהמשתמש חוזר לאפליקציה (או שהיא נפתחת מחדש) וההרשאה אושרה, ההורדה וההתקנה ממשיכות לבד
+  const runRef = useRef(run);
+  runRef.current = run;
+  useEffect(() => {
+    if (!info || info.kind !== 'android') return undefined;
+    let alive = true;
+    const resume = async () => {
+      if (alive && updatePending() && (await canInstallUpdates())) void runRef.current();
+    };
+    void resume();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void resume();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      alive = false;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [info]);
   return { state, percent, run };
 }
 
@@ -45,7 +64,7 @@ export function UpdateStatus({ state, percent }: { state: 'idle' | 'busy' | 'fai
       {state === 'busy' ? <p role="status">{percent === null ? 'מוריד את העדכון…' : `מוריד את העדכון… ${percent}%`}</p> : null}
       {state === 'permission' ? (
         <p role="status">
-          בפעם הראשונה צריך לאשר לאפליקציה להתקין עדכונים: במסך שנפתח מדליקים את המתג וחוזרים לכאן, ואז לוחצים שוב "עדכון עכשיו".
+          בפעם הראשונה צריך לאשר לאפליקציה להתקין עדכונים: במסך שנפתח מדליקים את המתג וחוזרים לכאן. ההורדה וההתקנה יתחילו לבד.
         </p>
       ) : null}
       {state === 'failed' ? (

@@ -1,7 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { suppressLock } from '../services/lockSuppress';
+import { saveToDownloads } from './fileSaver';
 
-export type SaveOutcome = 'shared' | 'saved-documents' | 'downloaded' | 'cancelled';
+export type SaveOutcome = 'shared' | 'saved-documents' | 'saved-downloads' | 'downloaded' | 'cancelled';
 
 /** שם קובץ בטוח (ASCII) לשיתוף: אפליקציות יעד מסוימות מתקשות עם שמות בעברית. */
 export function safeFileName(name: string): string {
@@ -16,7 +17,8 @@ const isCancel = (error: unknown): boolean => {
 
 /**
  * שומר קובץ שהמשתמש ביקש להוריד (גיבוי או ייצוא לאקסל), בדרך שעובדת בכל מכשיר:
- * - באפליקציית אנדרואיד/iOS: כותב קובץ זמני ופותח את חלון השיתוף של המערכת ("שמירה בקבצים",
+ * - באנדרואיד: נשמר ישר לתיקיית ההורדות (Download/ניהול כספים), בלי חלון שיתוף.
+ * - אם זה לא אפשרי (iOS או גרסה ישנה): כותב קובץ זמני ופותח את חלון השיתוף של המערכת ("שמירה בקבצים",
  *   Drive, מייל, וואטסאפ). הורדת קובץ מתוך WebView לא עובדת, ולכן אין הורדה רגילה.
  * - בדפדפן בטלפון (למשל Safari באייפון): חלון השיתוף של הדפדפן, שבו אפשר "שמירה בקבצים".
  * - בדפדפן במחשב: הורדה רגילה.
@@ -27,6 +29,8 @@ export async function saveFile(filename: string, content: string, mime: string):
   const name = safeFileName(filename);
 
   if (Capacitor.isNativePlatform()) {
+    // באנדרואיד הקובץ נשמר ישר לתיקיית ההורדות, בלי חלון שיתוף
+    if (await saveToDownloads(name, content, mime)) return 'saved-downloads';
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
     const written = await Filesystem.writeFile({
       path: name,

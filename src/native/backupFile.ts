@@ -1,14 +1,16 @@
 import { Capacitor } from '@capacitor/core';
 import { suppressLock } from '../services/lockSuppress';
+import { saveToDownloads } from './fileSaver';
 
 /**
  * שומר קובץ גיבוי במכשיר.
- * באפליקציית אנדרואיד: כותב לתיקיית המסמכים (Documents) בשם קבוע, ולכן כל גיבוי חדש
+ * באפליקציית אנדרואיד: נשמר ישר לתיקיית ההורדות (Download/ניהול כספים) בשם קבוע, ולכן כל גיבוי חדש
  * מחליף את הקודם. בדפדפן: הורדת קובץ רגילה, והדפדפן הוא שמחליט על השם אם כבר קיים קובץ כזה.
  * מחזיר איפה נשמר, להצגה למשתמש.
  */
-export async function saveBackupFile(filename: string, content: string): Promise<'documents' | 'download'> {
+export async function saveBackupFile(filename: string, content: string): Promise<'downloads' | 'documents' | 'download'> {
   if (Capacitor.isNativePlatform()) {
+    if (await saveToDownloads(filename, content, 'application/json')) return 'downloads';
     const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
     // חלון הרשאה של המערכת מוציא את האפליקציה לרקע לרגע; זו לא עזיבה.
     suppressLock();

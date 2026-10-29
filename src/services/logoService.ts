@@ -1,4 +1,5 @@
-import { deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { deleteDoc, doc, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { isLogoData } from '../domain/logo';
 

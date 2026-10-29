@@ -1,4 +1,12 @@
-import { collection, deleteDoc, doc, onSnapshot, setDoc, writeBatch, type Unsubscribe } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  setDoc,
+  writeBatch,
+  type Unsubscribe,
+} from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import type { ShoppingItem, Task } from '../domain/tasks';
 

@@ -34,6 +34,23 @@ interface SpacesValue {
   setPrefs: (next: DisplayPrefs) => void;
 }
 
+const cachedKey = (uid: string) => `ff.businesses.${uid}`;
+function readCachedBusinesses(uid: string): Business[] | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(cachedKey(uid)) ?? 'null') as unknown;
+    return Array.isArray(raw) ? (raw as Business[]) : null;
+  } catch {
+    return null;
+  }
+}
+function writeCachedBusinesses(uid: string, list: Business[]): void {
+  try {
+    localStorage.setItem(cachedKey(uid), JSON.stringify(list));
+  } catch {
+    // אחסון חסום: ממשיכים בלי זיכרון
+  }
+}
+
 const SpacesContext = createContext<SpacesValue | null>(null);
 
 /**
@@ -51,14 +68,23 @@ export function SpacesProvider({
   profile: UserProfile;
   children: ReactNode;
 }) {
-  const [docs, setDocs] = useState<Business[] | null>(null);
+  // העסקים נשמרים גם במכשיר, כדי שהמסך הראשי ייפתח מיד בכל מצב חיבור, בלי לחכות להאזנה
+  const [docs, setDocsState] = useState<Business[] | null>(() => readCachedBusinesses(uid));
+  // רק רשימה שהגיעה בפועל (מהמטמון של Firestore או מהשרת) נשמרת; ברירת המחדל הריקה לא.
+  const setDocs = useCallback(
+    (list: Business[]) => {
+      writeCachedBusinesses(uid, list);
+      setDocsState(list);
+    },
+    [uid],
+  );
   const [householdDocName, setHouseholdDocName] = useState<string | null>(null);
   const [stored, setStored] = useState<DisplayPrefs | null>(() => readDisplayPrefs(uid));
 
-  useEffect(() => subscribeBusinesses(uid, setDocs, () => setDocs((current) => current ?? [])), [uid]);
+  useEffect(() => subscribeBusinesses(uid, setDocs, () => setDocsState((current) => current ?? [])), [uid, setDocs]);
   // רשת ביטחון: בלי מטמון ובלי חיבור ייתכן שההאזנה לא תחזיר דבר, ואסור להישאר על "טוען" לנצח.
   useEffect(() => {
-    const timer = setTimeout(() => setDocs((current) => current ?? []), 3000);
+    const timer = setTimeout(() => setDocsState((current) => current ?? []), 1500);
     return () => clearTimeout(timer);
   }, [uid]);
   useEffect(() => subscribeHouseholdName(uid, setHouseholdDocName, () => setHouseholdDocName(null)), [uid]);

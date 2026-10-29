@@ -5,13 +5,13 @@ import {
   getDoc,
   getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
   setDoc,
   where,
   type Unsubscribe,
 } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { deleteAttachments } from './attachmentService';
 import { monthDateRange, yearMonthOfDate, type YearMonth } from '../domain/dates';

@@ -23,6 +23,8 @@ declare global {
 interface AppUpdaterPlugin {
   download(options: { url: string }): Promise<void>;
   install(): Promise<{ needsPermission: boolean }>;
+  canInstall(): Promise<{ granted: boolean }>;
+  requestInstallPermission(): Promise<void>;
   addListener(event: 'progress', fn: (e: { percent: number }) => void): Promise<{ remove: () => Promise<void> }>;
 }
 /** התוסף המקורי באנדרואיד (AppUpdaterPlugin.java). בגרסאות ישנות שאין בהן אותו, הקריאה נכשלת ונופלים להורדה בדפדפן. */
@@ -66,6 +68,40 @@ export async function findUpdate(): Promise<UpdateInfo | null> {
  * אם זו הפעם הראשונה, נפתח מסך הגדרות לאישור התקנת עדכונים ('needsPermission'), ואחרי האישור לוחצים שוב.
  * באפליקציה ישנה שאין בה את התוסף: נפתח קישור ההורדה בדפדפן.
  */
+const PENDING_KEY = 'ff.update.pending';
+
+/** עדכון שהמשתמש התחיל ועצר באמצע בגלל מסך ההרשאה (אנדרואיד לפעמים סוגר את האפליקציה כשמאשרים הרשאה). */
+export function updatePending(): boolean {
+  try {
+    return localStorage.getItem(PENDING_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function setPending(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(PENDING_KEY, '1');
+    else localStorage.removeItem(PENDING_KEY);
+  } catch {
+    // אחסון חסום: ממשיכים
+  }
+}
+
+/** האם מותר לאפליקציה להתקין עדכונים. בגרסה ישנה בלי התוסף נניח שכן (ההתקנה עצמה תבקש). */
+export async function canInstallUpdates(): Promise<boolean> {
+  try {
+    return (await AppUpdater.canInstall()).granted;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Windows: התוכנה מורידה את ההתקנה, פותחת אותה ונסגרת.
+ * אנדרואיד: קודם מוודאים הרשאת התקנה (בפעם הראשונה נפתח מסך אישור של המערכת, ואחרי האישור ההורדה וההתקנה
+ * ממשיכות לבד, גם אם המערכת סגרה את האפליקציה בזמן האישור). רק אז מורידים את ה-APK ופותחים את מסך ההתקנה.
+ * באפליקציה ישנה שאין בה את התוסף: נפתח קישור ההורדה בדפדפן.
+ */
 export async function applyUpdate(info: UpdateInfo, onProgress?: (percent: number) => void): Promise<ApplyResult> {
   // מסך ההתקנה והגדרות המערכת מוציאים את האפליקציה לרקע: זה לא סיבה לנעול
   suppressLock(10 * 60_000);
@@ -73,6 +109,12 @@ export async function applyUpdate(info: UpdateInfo, onProgress?: (percent: numbe
     await window.desktopUpdate?.install(info.url);
     return 'started';
   }
+  if (!(await canInstallUpdates())) {
+    setPending(true);
+    await AppUpdater.requestInstallPermission().catch(() => undefined);
+    return 'needsPermission';
+  }
+  setPending(false);
   let handle: { remove: () => Promise<void> } | null = null;
   try {
     if (onProgress) handle = await AppUpdater.addListener('progress', (e) => onProgress(e.percent));

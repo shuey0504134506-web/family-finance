@@ -1,4 +1,13 @@
-import { collection, doc, getDocsFromServer, onSnapshot, setDoc, updateDoc, writeBatch, type Unsubscribe } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDocsFromServer,
+  setDoc,
+  updateDoc,
+  writeBatch,
+  type Unsubscribe,
+} from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { buildBusinessCategories } from '../data/defaultCategories';
 import { DEFAULT_BUSINESS_ID, businessIdOf, type Business } from '../domain/spaces';

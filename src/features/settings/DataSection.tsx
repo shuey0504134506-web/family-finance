@@ -35,6 +35,7 @@ export function DataSection() {
             await saveFile(`finance-transactions-${stamp}.csv`, `\uFEFF${transactionsToCsv(transactions)}`, 'text/csv;charset=utf-8');
       if (outcome === 'cancelled') setMessage('');
       else if (outcome === 'shared') setMessage(`הקובץ מוכן (${transactions.length} פעולות). בחלון שנפתח אפשר לבחור "שמירה בקבצים", Drive, מייל או וואטסאפ.`);
+      else if (outcome === 'saved-downloads') setMessage(`הקובץ נשמר בתיקיית ההורדות בטלפון, בתיקייה "ניהול כספים" (${transactions.length} פעולות).`);
       else if (outcome === 'saved-documents') setMessage(`הקובץ נשמר בתיקיית המסמכים (Documents) של המכשיר (${transactions.length} פעולות).`);
       else setMessage(`הקובץ הורד למכשיר (${transactions.length} פעולות).`);
     } catch {

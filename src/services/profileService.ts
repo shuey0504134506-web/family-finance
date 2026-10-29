@@ -1,6 +1,7 @@
 import { DEFAULT_ANNUAL_MODE, isAnnualMode } from '../domain/annual';
 import { DEFAULT_CURRENCY, isCurrencyCode } from '../domain/currency';
-import { doc, onSnapshot, writeBatch, type Unsubscribe } from 'firebase/firestore';
+import { doc, writeBatch, type Unsubscribe } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { ensureApprovalRequest } from './approvalService';
 import { buildBusinessCategories, buildDefaultCategories } from '../data/defaultCategories';

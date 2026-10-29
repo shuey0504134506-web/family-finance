@@ -1,4 +1,5 @@
-import { collection, deleteDoc, doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { collection, deleteDoc, doc, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import type { Debt } from '../domain/debt';
 

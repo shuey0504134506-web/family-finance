@@ -1,4 +1,5 @@
-import { doc, onSnapshot, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { onSnapshot } from '../firebase/cacheFirst';
 import { db } from '../firebase/config';
 import { MAX_CUSTOM_METHODS, MAX_PAYMENT_LABEL } from '../domain/payment';
 import type { TransactionType } from '../domain/types';

@@ -74,6 +74,8 @@ export const getDoc = async (r: Ref) => docSnap(r.path);
 export const getDocFromServer = getDoc;
 export const getDocs = async (q: Ref | Query) => runQuery(q);
 export const getDocsFromServer = getDocs;
+export const getDocFromCache = getDoc;
+export const getDocsFromCache = getDocs;
 
 export const setDoc = async (r: Ref, data: Data, options?: { merge?: boolean }) => {
   store.set(r.path, options?.merge ? { ...(store.get(r.path) ?? {}), ...clone(data) } : clone(data));

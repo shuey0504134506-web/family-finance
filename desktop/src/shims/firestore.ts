@@ -88,6 +88,8 @@ export const getDoc = async (ref: DocumentReference) => snapDoc(ref);
 export const getDocFromServer = getDoc;
 export const getDocs = async (r: Ref) => snapQuery(r);
 export const getDocsFromServer = getDocs;
+export const getDocFromCache = getDoc;
+export const getDocsFromCache = getDocs;
 
 export interface SnapshotOptions { includeMetadataChanges?: boolean }
 export function onSnapshot(r: DocumentReference, next: (s: DocumentSnapshot) => void, error?: (e: Error) => void): Unsubscribe;

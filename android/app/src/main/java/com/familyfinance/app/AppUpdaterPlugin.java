@@ -107,6 +107,27 @@ public class AppUpdaterPlugin extends Plugin {
         }).start();
     }
 
+    /** האם מותר לאפליקציה להתקין עדכונים (באנדרואיד 8 ומעלה: "התקנה ממקורות לא ידועים" לאפליקציה הזו). */
+    @PluginMethod
+    public void canInstall(PluginCall call) {
+        Context ctx = getContext();
+        JSObject result = new JSObject();
+        result.put("granted", Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ctx.getPackageManager().canRequestPackageInstalls());
+        call.resolve(result);
+    }
+
+    /** פותחת את מסך ההרשאה של המערכת. אחרי האישור המשתמש חוזר, וההתקנה ממשיכה. */
+    @PluginMethod
+    public void requestInstallPermission(PluginCall call) {
+        Context ctx = getContext();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + ctx.getPackageName()));
+            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(settings);
+        }
+        call.resolve();
+    }
+
     @PluginMethod
     public void install(PluginCall call) {
         Context ctx = getContext();
