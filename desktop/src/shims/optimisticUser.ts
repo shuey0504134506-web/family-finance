@@ -13,8 +13,8 @@ export interface OptimisticSnapshot {
   profile: UserProfile;
 }
 export const readOptimistic = (): OptimisticSnapshot | null => null;
-export const saveOptimistic = (_user: User, _profile: UserProfile): void => undefined;
+export const saveOptimistic = (): void => undefined;
 export const clearOptimistic = (): void => undefined;
-export const optimisticUser = (_s: OptimisticSnapshot): User => {
+export const optimisticUser = (): User => {
   throw new Error('optimistic user is disabled on desktop');
 };
