@@ -1,0 +1,69 @@
+/* מסך הבית: התאמה למסך קטן, שם המרחב והברכה, ושמות קטגוריה. נטען אחרון כדי לגבור על שאר הקבצים. */
+
+/* דחיסה מאוזנת: --sq בין 0 (רגיל) ל-1 (הכי דחוס). נקבע ב-useCompactToFit לפי גובה המסך, ורק כמה שצריך
+   כדי שכפתורי ההוספה יופיעו בלי גלילה. */
+.home-clean .content {
+  gap: calc(16px - 10px * var(--sq, 0));
+}
+
+.home-clean .tiles {
+  gap: calc(20px - 10px * var(--sq, 0));
+}
+
+.home-clean .scope-title,
+.home-clean.has-hero .scope-title {
+  padding: calc(6px - 5px * var(--sq, 0)) 0;
+}
+
+.home-clean .balance-button {
+  padding: calc(12px - 8px * var(--sq, 0)) 0 calc(4px - 3px * var(--sq, 0));
+}
+
+.home-clean .balance-amount {
+  font-size: calc(3.25rem - 0.6rem * var(--sq, 0));
+}
+
+.home-clean .home-greeting .greet-icon {
+  width: calc(34px - 8px * var(--sq, 0));
+  height: calc(34px - 8px * var(--sq, 0));
+}
+
+/* ברכה במרכז */
+.home-clean .home-greeting {
+  justify-content: center;
+  text-align: center;
+}
+
+/* שם העסק או משק הבית: גדול ומודגש יותר */
+.home-clean .scope-title,
+.home-clean.has-hero .scope-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* לאן הלך הכסף: שם קטגוריה לא נשבר באמצע מילה. רק שם של שתי מילים או יותר יכול לרדת לשורה שנייה. */
+.spend-legend .spend-name {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+  min-width: min-content;
+}
+
+.spend-legend .num,
+.spend-legend li > :last-child {
+  white-space: nowrap;
+}
+
+/* בטלפון צר העוגה מצטמצמת כדי להשאיר מקום לשמות */
+.spend-donut {
+  width: clamp(104px, 34vw, 150px);
+  height: clamp(104px, 34vw, 150px);
+}
+
+@media (min-width: 900px) {
+  .spend-donut {
+    width: 150px;
+    height: 150px;
+  }
+}

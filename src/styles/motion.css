@@ -3,7 +3,6 @@
 
 @keyframes mo-rise { from { opacity: 0; transform: translateY(14px); } }
 @keyframes mo-row { from { opacity: 0; transform: translateX(12px); } }
-@keyframes mo-bar { from { transform: scaleX(0); } }
 @keyframes mo-drift { from { transform: translateX(-4%); } to { transform: translateX(6%); } }
 @keyframes mo-spin { to { transform: rotate(360deg); } }
 
@@ -25,25 +24,21 @@ body::after {
 }
 
 /* כניסה מדורגת של הכרטיסים בכל מסך */
-.app-shell .content > *:not(.modal-backdrop):not([role='dialog']) { animation: mo-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
-.app-shell .content > :nth-child(2) { animation-delay: 0.05s; }
-.app-shell .content > :nth-child(3) { animation-delay: 0.1s; }
-.app-shell .content > :nth-child(4) { animation-delay: 0.15s; }
-.app-shell .content > :nth-child(5) { animation-delay: 0.2s; }
-.app-shell .content > :nth-child(6) { animation-delay: 0.25s; }
-.app-shell .content > :nth-child(n + 7) { animation-delay: 0.3s; }
+.app-shell:not(.home-clean) .content > *:not(.modal-backdrop):not([role='dialog']) { animation: mo-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.app-shell:not(.home-clean) .content > :nth-child(2) { animation-delay: 0.05s; }
+.app-shell:not(.home-clean) .content > :nth-child(3) { animation-delay: 0.1s; }
+.app-shell:not(.home-clean) .content > :nth-child(4) { animation-delay: 0.15s; }
+.app-shell:not(.home-clean) .content > :nth-child(5) { animation-delay: 0.2s; }
+.app-shell:not(.home-clean) .content > :nth-child(6) { animation-delay: 0.25s; }
+.app-shell:not(.home-clean) .content > :nth-child(n + 7) { animation-delay: 0.3s; }
 
-/* שורות ברשימות: נכנסות אחת אחרי השנייה */
-.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row { animation: mo-row 0.45s ease-out backwards; }
-:is(.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row):nth-child(2) { animation-delay: 0.04s; }
-:is(.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row):nth-child(3) { animation-delay: 0.08s; }
-:is(.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row):nth-child(4) { animation-delay: 0.12s; }
-:is(.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row):nth-child(5) { animation-delay: 0.16s; }
-:is(.tx-row, .task-row, .check-row, .recent-row, .reminder-item, .cat-expense-row):nth-child(n + 6) { animation-delay: 0.2s; }
-
-/* פסי ההכנסות וההוצאות נמתחים */
-.row-bar > i { transform-origin: right center; animation: mo-bar 1.1s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
-html[dir='ltr'] .row-bar > i { transform-origin: left center; }
+/* שורות ברשימות: נכנסות אחת אחרי השנייה (במסך הבית אין הנפשות כניסה: הכול מופיע מיד) */
+.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row { animation: mo-row 0.45s ease-out backwards; }
+:is(.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row):nth-child(2) { animation-delay: 0.04s; }
+:is(.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row):nth-child(3) { animation-delay: 0.08s; }
+:is(.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row):nth-child(4) { animation-delay: 0.12s; }
+:is(.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row):nth-child(5) { animation-delay: 0.16s; }
+:is(.tx-row, .task-row, .check-row, .reminder-item, .cat-expense-row):nth-child(n + 6) { animation-delay: 0.2s; }
 
 /* לחיצה מרגישה, והרמה בריחוף (רק במכשיר עם עכבר) */
 .btn, .tile-button, .icon-btn { transition: transform 0.15s ease, box-shadow 0.2s ease; }

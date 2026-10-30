@@ -5,6 +5,7 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore';
+import { installFastAuthStart } from './fastAuthStart';
 
 /**
  * אתחול Firebase. כל הערכים מגיעים ממשתני Environment (קובץ .env מקומי,
@@ -38,6 +39,8 @@ export const missingFirebaseVars: string[] = [
 
 // כשההגדרה חסרה משתמשים בערכי מקום, כדי שהייבוא לא יקרוס. האפליקציה
 // לא מרכיבה שום רכיב שמשתמש ב-Firebase לפני שבדקה את firebaseReady.
+installFastAuthStart();
+
 export const app = initializeApp({
   apiKey: values.apiKey ?? 'not-configured',
   authDomain: values.authDomain ?? 'not-configured.firebaseapp.com',

@@ -25,6 +25,7 @@ import { useSettings } from '../settings/SettingsContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
+import { useCompactToFit } from './useCompactToFit';
 import { SpendingCard } from './SpendingCard';
 import { BalanceFrame } from './BalanceFrame';
 import { SavingsMeter } from './SavingsMeter';
@@ -180,6 +181,7 @@ export function HomeScreen() {
     : household.loading || (countedIds.length > 0 && business.loading);
   const totals = isBusiness ? businessTotals : householdSummary;
   const title = nameOf(space);
+  useCompactToFit(`${space.key}|${loading}|${active.error ? 1 : 0}|${month.status}|${previousHeadline ? 1 : 0}|${savingsGoal ?? ''}`);
   const logo = useBusinessLogo(user.uid, isBusiness ? space.businessId : '');
   const manyBusinesses = countedIds.length > 1;
   const businessIncomeLabel = manyBusinesses ? 'הכנסה מהעסקים' : 'הכנסה מהעסק';

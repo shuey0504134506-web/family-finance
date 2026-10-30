@@ -90,8 +90,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // בזמן הרשמה נשארים במצב "לא מחובר" כדי שטופס ההרשמה יישאר מוצג
     // עד שכל רשומות החשבון נשמרו.
     if (authUser === null || registering) return { status: 'signedOut' };
-    if (!profileSnapshot || profileSnapshot.uid !== authUser.uid) return { status: 'loading' };
+    if (!profileSnapshot || profileSnapshot.uid !== authUser.uid) {
+      // Firestore עוד לא ענה (למשל בפתיחה קרה בלי אינטרנט): ממשיכים עם הפרופיל השמור במקום לחזור למסך טעינה
+      if (saved && saved.uid === authUser.uid) return { status: 'ready', user: authUser, profile: saved.profile };
+      return { status: 'loading' };
+    }
     const { snapshot } = profileSnapshot;
+    // אין תשובה מהשרת ואין בגלל זה פרופיל במטמון: אם יש פרופיל שמור לאותו חשבון, ממשיכים איתו
+    if (snapshot.kind === 'unknown' && saved && saved.uid === authUser.uid) {
+      return { status: 'ready', user: authUser, profile: saved.profile };
+    }
     if (snapshot.kind === 'found') {
       return { status: 'ready', user: authUser, profile: snapshot.profile };
     }
