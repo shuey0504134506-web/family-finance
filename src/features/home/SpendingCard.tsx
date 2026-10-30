@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Amount } from '../../components/Amount';
+import { formatShekels } from '../../domain/money';
 import { hebrewMonthName, type YearMonth } from '../../domain/dates';
 import { businessIdOf } from '../../domain/spaces';
 import type { Scope, TransactionRecord } from '../../domain/types';
@@ -110,11 +111,11 @@ export function SpendingCard({ scope, businessId, selected, monthItems, prevItem
                   />
                 ))}
               </svg>
-              <div className="spend-center">
-                <span>סך הוצאות</span>
+              <div className="spend-center" style={{ ['--len' as string]: formatShekels(total).length }}>
+                <span className="spend-center-label">סך הוצאות</span>
                 <Amount agorot={total} className="spend-total" />
                 {change !== null && change !== 0 && (
-                  <span className={change < 0 ? 'tone-income' : 'tone-expense'}>
+                  <span className={`spend-change ${change < 0 ? 'tone-income' : 'tone-expense'}`}>
                     {`${change < 0 ? '▼' : '▲'} ${Math.abs(change)}% מקודם`}
                   </span>
                 )}

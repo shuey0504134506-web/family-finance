@@ -67,3 +67,51 @@
     height: 150px;
   }
 }
+
+/* לאן הלך הכסף: הסכום וההשוואה נכנסים בתוך חלל העוגה בכל גודל מסך, והקטגוריות מיושרות לשמאל */
+.spend-donut {
+  container-type: size;
+}
+
+.spend-center {
+  padding: 0;
+  gap: 0;
+  inset: 18cqw;
+  --fit: calc(100cqw * 0.64);
+}
+
+.spend-center .spend-total {
+  font-size: min(13cqw, calc(var(--fit) / (var(--len, 8) * 0.62)));
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.spend-center .spend-center-label {
+  font-size: max(7px, 7.5cqw);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.spend-center .spend-change {
+  font-size: max(7px, 7cqw);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.spend-legend {
+  direction: ltr;
+  text-align: left;
+}
+
+.spend-legend li {
+  justify-content: flex-start;
+}
+
+.spend-legend .spend-name {
+  direction: rtl;
+  text-align: left;
+}
+
+.spend-legend .num {
+  margin-inline-start: auto;
+}
