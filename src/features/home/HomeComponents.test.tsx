@@ -59,6 +59,39 @@ describe('BalanceFrame', () => {
     expect(visibleText(html)).toContain('חודש ספטמבר נגמר בפלוס 2,800 ₪');
   });
 
+  it('חודש בלי שום פעולה מציג את הטקסט בתוך מסגרת, ובכתב שחור', () => {
+    const html = renderToStaticMarkup(
+      <BalanceFrame
+        incomeAgorot={0}
+        expenseAgorot={0}
+        balanceAgorot={0}
+        status="past"
+        yearMonth="2026-07"
+        currentYearMonth="2026-10"
+        savings={<span>יעד-חיסכון</span>}
+      />,
+    );
+    expect(visibleText(html)).toContain('חודש יולי נגמר על אפס');
+    expect(html).toContain('notice-card');
+    expect(html).toContain('יעד-חיסכון');
+  });
+
+  it('הכנסות שוות להוצאות (לא ריק) נשאר במסגרת היתרה', () => {
+    const html = renderToStaticMarkup(
+      <BalanceFrame
+        incomeAgorot={500_000}
+        expenseAgorot={500_000}
+        balanceAgorot={0}
+        status="current"
+        yearMonth="2026-10"
+        currentYearMonth="2026-10"
+      />,
+    );
+    expect(visibleText(html)).toContain('החודש אנחנו על אפס');
+    expect(html).toContain('tone-zero');
+    expect(html).not.toContain('notice-card');
+  });
+
   it('אין כפתור פירוט, ושורת היעד מוצגת כשנשלחה', () => {
     const html = renderToStaticMarkup(
       <BalanceFrame

@@ -27,6 +27,18 @@ export function BalanceFrame(props: Props) {
     currentYearMonth: props.currentYearMonth,
   });
 
+  // חודש בלי שום פעולה: הטקסט בתוך מסגרת, כמו "חודש ... עדיין לא התחיל", בכתב שחור וברור
+  if (headline.tone === 'zero' && props.incomeAgorot === 0 && props.expenseAgorot === 0) {
+    return (
+      <>
+        <div className="card notice-card balance-empty" role="status">
+          {headline.text}
+        </div>
+        {props.savings}
+      </>
+    );
+  }
+
   return (
     <section className={`balance-frame tone-${headline.tone}`}>
       <div className="balance-button">

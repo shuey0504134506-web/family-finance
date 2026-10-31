@@ -428,3 +428,20 @@
 @media (max-width: 380px) {
   .savings-meter { padding: 8px 12px; gap: 8px; font-size: 0.85rem; }
 }
+
+/* כתב ברור: יתרה על אפס ושורת "בחודש הקודם בשלב זה" בשחור */
+.home-clean .tone-zero .balance-text {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.home-clean .previous-stage-text {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notice-card.balance-empty {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
