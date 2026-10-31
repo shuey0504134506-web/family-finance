@@ -1319,4 +1319,5 @@ export const EN: Record<string, string> = {
   "נעילה בקוד, בתבנית או בסיסמה, וגיבוי ושחזור של הנתונים.": "Lock with a PIN, pattern or password, plus backup and restore.",
   "זמינה באתר, באפליקציה לאנדרואיד ובתוכנה למחשב.": "Available on the web, as an Android app and as a desktop program.",
   "גרסת האתר מתעדכנת אוטומטית": "The site updates automatically",
+  "מחיקת כל המשימות שבוצעו": "Delete all completed tasks",
 };

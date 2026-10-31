@@ -45,6 +45,7 @@ function TasksBody({ space, uid }: { space: Space; uid: string }) {
   const [errors, setErrors] = useState<ReturnType<typeof validateTaskDraft>>({});
   const [editing, setEditing] = useState<Task | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const mine = sortTasks(tasks.filter((t) => inSpace(t, space)));
   const open = mine.filter((t) => !t.done);
@@ -60,6 +61,15 @@ function TasksBody({ space, uid }: { space: Space; uid: string }) {
     if (Object.keys(found).length > 0) return;
     void persist(buildTask(draft, { id: newId(), scope: space.scope, businessId: space.businessId, now: Date.now() }));
     setDraft(EMPTY_DRAFT);
+  };
+
+  const remove = (task: Task) =>
+    deleteTask(uid, task.id).catch(() => reportFailure('לא הצלחנו לסנכרן את מחיקת המשימה.'));
+
+  const clearDone = () => {
+    done.forEach((task) => void remove(task));
+    setConfirmClear(false);
+    setShowDone(false);
   };
 
   const toggle = (task: Task) => void persist({ ...task, done: !task.done, updatedAt: Date.now() });
@@ -123,9 +133,28 @@ function TasksBody({ space, uid }: { space: Space; uid: string }) {
                     <button type="button" className="btn btn-secondary btn-small" onClick={() => toggle(task)}>
                       החזרה
                     </button>
+                    <button type="button" className="btn btn-danger-outline btn-small" onClick={() => void remove(task)} aria-label={`מחיקת המשימה ${task.title}`}>
+                      מחיקה
+                    </button>
                   </li>
                 ))}
               </ul>
+            )}
+            {showDone && (
+              confirmClear ? (
+                <div className="form-actions" role="group" aria-label="אישור מחיקה">
+                  <button type="button" className="btn btn-danger btn-small" onClick={clearDone}>
+                    מחיקת {done.length} משימות שבוצעו
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-small" onClick={() => setConfirmClear(false)}>
+                    ביטול
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="link-btn" onClick={() => setConfirmClear(true)}>
+                  מחיקת כל המשימות שבוצעו
+                </button>
+              )
             )}
           </>
         )}
