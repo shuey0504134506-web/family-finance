@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { browserLocalPersistence, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -50,7 +50,12 @@ export const app = initializeApp({
   appId: values.appId ?? 'not-configured',
 });
 
-export const auth = getAuth(app);
+/**
+ * אימות בלי popup/redirect: getAuth מוסיף resolver שבאנדרואיד (ובמובייל בכלל) טוען בכל פתיחה את
+ * apis.google.com ו-iframe מ-Google ומחכה להם עד 30 שניות. בלי אינטרנט זה חצי דקה של "טוען".
+ * האפליקציה משתמשת רק בכניסה עם מייל וסיסמה, ולכן ה-resolver מיותר.
+ */
+export const auth = initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] });
 
 /**
  * Firestore עם מטמון מקומי מתמיד (IndexedDB), שעובד גם בכמה לשוניות.
