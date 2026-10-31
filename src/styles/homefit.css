@@ -115,3 +115,18 @@
 .spend-legend .num {
   margin-inline-start: auto;
 }
+
+/* כפתורי פעולה: אותו גודל ואותו מראה בכל שורה (שמירה / עריכה / מחיקה), בלי צל ובלי הפרשי גובה */
+.btn-primary { box-shadow: none; }
+.form-actions .btn,
+.delete-confirm .btn,
+.dialog-actions .btn {
+  min-height: 52px;
+  margin-top: 0;
+  box-sizing: border-box;
+}
+.form-actions .btn-danger-outline,
+.delete-confirm .btn-danger-outline,
+.dialog-actions .btn-danger-outline {
+  margin-top: 0;
+}

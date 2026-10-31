@@ -6,7 +6,7 @@ import { loadPendingCount, subscribeApprovalRequired } from '../../services/admi
 import { useReadyAuth } from '../auth/AuthContext';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { APP_NAME, APP_VERSION } from '../../config/appInfo';
-import { SectionItem, useOpenSection } from './SectionPages';
+import { SectionItem, useOpenSection, useSectionHeader } from './SectionPages';
 import { AboutSection } from './AboutSection';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
@@ -46,10 +46,11 @@ export function SettingsScreen() {
       });
   }, [isAdmin]);
   const [openSection] = useOpenSection();
+  const header = useSectionHeader('הגדרות');
 
   return (
     <div className="app-shell">
-      <ScreenHeader title="הגדרות" />
+      <ScreenHeader {...header} />
       <main className="content">
         <div className="acc-list">
           <SectionItem id="account" title="פרטי חשבון">

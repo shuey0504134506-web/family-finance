@@ -6,11 +6,13 @@ import { ChevronRight, SearchIcon } from './icons';
  * חזרה = חזרה לאחור בהיסטוריה, כמו כפתור Back של אנדרואיד. אם אין לאן
  * לחזור (פתיחה ישירה של המסך), חוזרים למסך הבית.
  */
-export function ScreenHeader({ title, backTo, search }: { title: string; backTo?: string; search?: boolean }) {
+export function ScreenHeader({ title, backTo, search, onBack }: { title: string; backTo?: string; search?: boolean; onBack?: () => void }) {
   const navigate = useNavigate();
 
   const goBack = () => {
-    if (backTo) {
+    if (onBack) {
+      onBack();
+    } else if (backTo) {
       navigate(backTo, { replace: true });
     } else if (window.history.length > 1) {
       navigate(-1);

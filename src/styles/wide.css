@@ -41,7 +41,7 @@
 /* ---------- תוכן רחב ---------- */
 .desktop-content { min-width: 0; }
 .desktop-content .app-shell { min-height: 100vh; }
-.desktop-content .content { max-width: 1240px; padding: 28px 40px 48px; }
+.desktop-content .content { max-width: none; padding: 28px 40px 48px; }
 .desktop-content .scope-tabs,
 .desktop-content .app-header button[aria-label="תפריט"] { display: none; }
 
@@ -54,9 +54,9 @@
 .desktop-content .home-clean .content > .recent-card { grid-column: auto; }
 .desktop-content .home-clean .content > .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-/* טפסים ורשימות לא נמתחים לרוחב מלא של המסך */
+/* כל המסכים ממלאים את רוחב המסך (בלי עמודה צרה במרכז) */
 .desktop-content .content > form,
-.desktop-content .content > .card.form-card { max-width: 720px; }
+.desktop-content .content > .card.form-card { max-width: none; }
 
 .desktop-content .sync-failure { bottom: 20px; inset-inline: auto 24px; max-width: 420px; }
 

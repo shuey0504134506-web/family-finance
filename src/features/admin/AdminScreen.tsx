@@ -37,7 +37,7 @@ import {
   type AccountFilter,
   type AccountSort,
 } from './adminTools';
-import { SectionItem, useOpenSection } from '../settings/SectionPages';
+import { SectionItem, useOpenSection, useSectionHeader } from '../settings/SectionPages';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
 
@@ -344,6 +344,7 @@ function AdminContent() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [noticeFor, setNoticeFor] = useState<string | null>(null);
   const [openId] = useOpenSection();
+  const header = useSectionHeader('ניהול מתקדם');
   const [openDay, setOpenDay] = useState<string | null>(null);
   // פרטי בעל החשבון: פתוחים כברירת מחדל בחשבון שממתין להחלטה, וניתנים להצגה והסתרה בכפתור
   const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
@@ -472,7 +473,7 @@ function AdminContent() {
 
   return (
     <div className="app-shell">
-      <ScreenHeader title="ניהול מתקדם" />
+      <ScreenHeader {...header} />
       <main className="content" aria-busy={loading}>
         {loading && !data ? (
           <div className="card notice-card" role="status">

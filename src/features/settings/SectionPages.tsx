@@ -1,5 +1,5 @@
-import { useCallback, useEffect, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from '../../components/icons';
 
 const PARAM = 's';
@@ -17,12 +17,47 @@ export function useOpenSection(): [string | null, (id: string | null) => void] {
           else next.delete(PARAM);
           return next;
         },
-        { replace: false },
+        { replace: false, state: id ? { fromList: true } : undefined },
       );
     },
     [setParams],
   );
   return [open, setOpen];
+}
+
+/** כותרת המסך הפתוח כרגע (נרשמת מ-SectionItem), כדי שכותרת העמוד תציג את שם ההגדרה. */
+let currentTitle: string | null = null;
+const titleListeners = new Set<() => void>();
+function setCurrentTitle(next: string | null): void {
+  if (currentTitle === next) return;
+  currentTitle = next;
+  titleListeners.forEach((l) => l());
+}
+const subscribeTitle = (l: () => void) => {
+  titleListeners.add(l);
+  return () => titleListeners.delete(l);
+};
+
+/**
+ * כותרת וחזרה למסך עם רשימת הגדרות: בתוך הגדרה הכותרת היא שמה, והחזרה פותחת את הרשימה (ולא את מסך הבית).
+ * ברשימה עצמה: הכותרת הרגילה והחזרה הרגילה.
+ */
+export function useSectionHeader(listTitle: string): { title: string; onBack?: () => void } {
+  const [open, setOpen] = useOpenSection();
+  const title = useSyncExternalStore(subscribeTitle, () => currentTitle, () => null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  if (open === null) return { title: listTitle };
+  return {
+    title: title ?? listTitle,
+    onBack: () => {
+      // נפתח מהרשימה: צעד אחורה. נפתח מקישור ישיר: מחליפים את הכתובת ברשימה.
+      if ((location.state as { fromList?: boolean } | null)?.fromList) navigate(-1);
+      else {
+        setOpen(null);
+      }
+    },
+  };
 }
 
 /**
@@ -42,8 +77,11 @@ export function SectionItem({
 }) {
   const [open, setOpen] = useOpenSection();
   useEffect(() => {
-    if (open === id) window.scrollTo(0, 0);
-  }, [open, id]);
+    if (open !== id) return;
+    window.scrollTo(0, 0);
+    setCurrentTitle(title);
+    return () => setCurrentTitle(null);
+  }, [open, id, title]);
   if (open === null) {
     return (
       <div className={`acc-item${danger ? ' is-danger' : ''}`}>

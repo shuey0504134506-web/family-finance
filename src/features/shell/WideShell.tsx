@@ -39,6 +39,8 @@ export function WideShell({
     const onClick = (e: MouseEvent) => {
       const btn = (e.target as Element | null)?.closest('.screen-header-row > .icon-btn:first-child');
       if (!btn) return;
+      // בתוך הגדרה (הגדרות/ניהול): החזרה פותחת את רשימת ההגדרות, ולא את מסך הבית.
+      if (/[?&]s=/.test(window.location.hash)) return;
       e.preventDefault();
       e.stopPropagation();
       navigate(`/${key}`);
