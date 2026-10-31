@@ -54,6 +54,15 @@ export const DEFAULT_DEBT_CATEGORIES = [
   'אחר',
 ] as const;
 
+/**
+ * חוב במצרכים או בחפצים (למשל "שאלתי מהשכנים 2 ליטר חלב"): נשמר כחוב רגיל בקטגוריה קבועה, כדי שכללי Firestore
+ * והגיבוי ימשיכו לעבוד כמו שהם. אין בו סכום אמיתי: הסכום הוא אגורה אחת סמלית, והתיאור נשמר בהערה.
+ * "הוחזר" הוא תשלום סמלי של האגורה הזאת, והחוב לא נספר בסיכומי הכסף.
+ */
+export const GOODS_CATEGORY = 'מצרכים / חפצים';
+export const GOODS_AGOROT = 1;
+export const isGoodsDebt = (d: Pick<Debt, 'category'>): boolean => d.category === GOODS_CATEGORY;
+
 export const paidAgorot = (d: Pick<Debt, 'payments'>): number => d.payments.reduce((sum, p) => sum + p.amountAgorot, 0);
 export const balanceAgorot = (d: Pick<Debt, 'amountAgorot' | 'payments'>): number => d.amountAgorot - paidAgorot(d);
 export const isSettled = (d: Pick<Debt, 'amountAgorot' | 'payments'>): boolean => balanceAgorot(d) <= 0;
@@ -70,6 +79,7 @@ export interface DebtTotals {
 export function debtTotals(debts: readonly Debt[]): DebtTotals[] {
   const map = new Map<CurrencyCode, DebtTotals>();
   for (const d of debts) {
+    if (isGoodsDebt(d)) continue;
     const balance = balanceAgorot(d);
     if (balance <= 0) continue;
     const code = currencyOf(d);
@@ -94,7 +104,7 @@ export function debtCategories(
   keep?: string,
 ): string[] {
   const list: string[] = [...DEFAULT_DEBT_CATEGORIES];
-  for (const d of debts) if (d.category && !list.includes(d.category)) list.push(d.category);
+  for (const d of debts) if (d.category && d.category !== GOODS_CATEGORY && !list.includes(d.category)) list.push(d.category);
   return list.filter((c) => c === keep || !hidden.includes(c));
 }
 
@@ -116,16 +126,26 @@ export function validateDebt(input: {
   dueDate: string;
   note: string;
   paymentLabel?: string;
+  /** חוב במצרכים או בחפצים: בלי סכום וקטגוריה, והתיאור חובה */
+  goods?: boolean;
 }): DebtDraftErrors {
   const errors: DebtDraftErrors = {};
   const name = input.name.trim();
   if (!name) errors.name = 'יש להזין שם.';
   else if (name.length > MAX_DEBT_NAME) errors.name = `השם ארוך מדי (עד ${MAX_DEBT_NAME} תווים).`;
+  if (input.goods) {
+    if (!input.note.trim()) errors.note = 'יש לכתוב מה נלקח או הושאל.';
+    else if (input.note.length > MAX_DEBT_NOTE) errors.note = `התיאור ארוך מדי (עד ${MAX_DEBT_NOTE} תווים).`;
+    if (!isValidIsoDate(input.date)) errors.date = 'יש לבחור תאריך תקין.';
+    if (input.dueDate && !isValidIsoDate(input.dueDate)) errors.dueDate = 'תאריך היעד אינו תקין.';
+    return errors;
+  }
   if (input.amountAgorot === null || input.amountAgorot <= 0) errors.amount = 'יש להזין סכום תקין.';
   else if (input.amountAgorot > MAX_TRANSACTION_AGOROT) errors.amount = 'הסכום גדול מדי.';
   const category = input.category.trim();
   if (!category) errors.category = 'יש לבחור קטגוריה.';
   else if (category.length > MAX_DEBT_CATEGORY) errors.category = `השם ארוך מדי (עד ${MAX_DEBT_CATEGORY} תווים).`;
+  else if (category === GOODS_CATEGORY) errors.category = 'הקטגוריה הזאת שמורה לחובות במצרכים.';
   if (!isValidIsoDate(input.date)) errors.date = 'יש לבחור תאריך תקין.';
   if (input.dueDate && !isValidIsoDate(input.dueDate)) errors.dueDate = 'תאריך היעד אינו תקין.';
   if (input.note.length > MAX_DEBT_NOTE) errors.note = `ההערה ארוכה מדי (עד ${MAX_DEBT_NOTE} תווים).`;

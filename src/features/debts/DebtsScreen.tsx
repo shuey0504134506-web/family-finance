@@ -10,6 +10,9 @@ import {
   balanceAgorot,
   debtCategories,
   debtTotals,
+  GOODS_AGOROT,
+  GOODS_CATEGORY,
+  isGoodsDebt,
   isSettled,
   MAX_DEBT_CATEGORY,
   paidAgorot,
@@ -48,6 +51,9 @@ export function DebtsScreen() {
   const [failure, setFailure] = useState('');
 
   const totals = useMemo(() => debtTotals(debts), [debts]);
+  const openGoods = useMemo(() => debts.filter((d) => isGoodsDebt(d) && !isSettled(d)), [debts]);
+  const goodsOwe = openGoods.filter((d) => d.direction === 'owe').length;
+  const goodsOwed = openGoods.length - goodsOwe;
   const visible = debts.filter((d) => (filter === 'open' ? !isSettled(d) : isSettled(d)));
 
   const persist = (debt: Debt) => {
@@ -62,7 +68,7 @@ export function DebtsScreen() {
   return (
     <div className={`app-shell scope-${space.scope}`}>
       <ScreenHeader title={`חובות · ${nameOf(space)}`} />
-      <main className="content" aria-busy={loading}>
+      <main className="content lists-page" aria-busy={loading}>
         {error && (
           <div className="card error-card" role="alert">
             לא הצלחנו לטעון את החובות. יש לבדוק את החיבור ולנסות שוב.
@@ -91,7 +97,7 @@ export function DebtsScreen() {
           <>
             <section className="card" aria-label="סיכום חובות">
               <h2 className="card-title">סיכום יתרות פתוחות</h2>
-              {totals.length === 0 ? (
+              {totals.length === 0 && openGoods.length === 0 ? (
                 <p className="muted">אין חובות פתוחים.</p>
               ) : (
                 totals.map((t) => (
@@ -117,6 +123,18 @@ export function DebtsScreen() {
                   </dl>
                 ))
               )}
+              {openGoods.length > 0 && (
+                <dl className="detail-list">
+                  <div>
+                    <dt>מצרכים וחפצים שאני חייב להחזיר</dt>
+                    <dd>{goodsOwe}</dd>
+                  </div>
+                  <div>
+                    <dt>מצרכים וחפצים שחייבים לי</dt>
+                    <dd>{goodsOwed}</dd>
+                  </div>
+                </dl>
+              )}
               <p className="muted small">החובות ותשלומיהם אינם נספרים בהכנסות, בהוצאות, בתקציב ובמעשרות.</p>
             </section>
 
@@ -128,7 +146,7 @@ export function DebtsScreen() {
               {(
                 [
                   ['open', 'פתוחים'],
-                  ['settled', 'שולמו'],
+                  ['settled', 'שולמו / הוחזרו'],
                 ] as const
               ).map(([value, label]) => (
                 <button key={value} type="button" className={filter === value ? 'is-active' : ''} aria-pressed={filter === value} onClick={() => setFilter(value)}>
@@ -142,7 +160,7 @@ export function DebtsScreen() {
                 טוען…
               </div>
             ) : visible.length === 0 ? (
-              <p className="muted">{filter === 'open' ? 'אין חובות פתוחים.' : 'אין חובות ששולמו במלואם.'}</p>
+              <p className="muted">{filter === 'open' ? 'אין חובות פתוחים.' : 'אין חובות ששולמו או הוחזרו.'}</p>
             ) : (
               <ul className="debt-list">
                 {visible.map((d) => (
@@ -189,6 +207,55 @@ function DebtCard({
 
   const removePayment = (id: string) =>
     onChange({ ...debt, payments: debt.payments.filter((p) => p.id !== id), updatedAt: Date.now() });
+
+  if (isGoodsDebt(debt)) {
+    const returned = isSettled(debt);
+    const toggleReturned = () =>
+      onChange({
+        ...debt,
+        payments: returned ? [] : [{ id: newId(), amountAgorot: GOODS_AGOROT, date: todayIso() }],
+        updatedAt: Date.now(),
+      });
+    return (
+      <li className="card debt-card">
+        <div className="row-between">
+          <strong>{debt.name}</strong>
+          <span className={`chip ${debt.direction === 'owe' ? 'tone-expense' : 'tone-income'}`}>
+            {debt.direction === 'owe' ? 'אני חייב' : 'חייבים לי'}
+          </span>
+        </div>
+        <p>{debt.note}</p>
+        <div className="muted small">
+          {GOODS_CATEGORY} · {formatDisplayDate(debt.date)}
+          {debt.dueDate ? ` · יעד ${formatDisplayDate(debt.dueDate)}` : ''}
+          {returned && debt.payments[0] ? ` · הוחזר ${formatDisplayDate(debt.payments[0].date)}` : ''}
+        </div>
+        {confirming ? (
+          <div className="delete-confirm" role="alert">
+            <span>למחוק את החוב?</span>
+            <button type="button" className="btn btn-danger" onClick={onDelete}>
+              כן, למחוק
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setConfirming(false)}>
+              ביטול
+            </button>
+          </div>
+        ) : (
+          <div className="form-actions">
+            <button type="button" className={returned ? 'btn btn-secondary' : 'btn btn-primary'} onClick={toggleReturned}>
+              {returned ? 'ביטול ההחזרה' : 'סימון כהוחזר'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={onEdit}>
+              עריכה
+            </button>
+            <button type="button" className="btn btn-danger-outline" onClick={() => setConfirming(true)}>
+              מחיקה
+            </button>
+          </div>
+        )}
+      </li>
+    );
+  }
 
   return (
     <li className="card debt-card">
@@ -312,11 +379,12 @@ function DebtForm({
   const { user } = useReadyAuth();
   const custom = useCustomMethods(user.uid);
   const [id] = useState(() => initial?.id ?? newId());
+  const [goods, setGoods] = useState(initial ? isGoodsDebt(initial) : false);
   const [direction, setDirection] = useState<DebtDirection>(initial?.direction ?? 'owe');
   const [name, setName] = useState(initial?.name ?? '');
-  const [amountText, setAmountText] = useState(initial ? String(initial.amountAgorot / 100) : '');
+  const [amountText, setAmountText] = useState(initial && !isGoodsDebt(initial) ? String(initial.amountAgorot / 100) : '');
   const [currency, setCurrency] = useState<CurrencyCode>(initial ? currencyOf(initial) : getCurrency());
-  const [category, setCategory] = useState(initial?.category ?? '');
+  const [category, setCategory] = useState(initial && !isGoodsDebt(initial) ? initial.category : '');
   const [newCategory, setNewCategory] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState('');
@@ -372,18 +440,40 @@ function DebtForm({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    const amount = parseShekelsToAgorot(amountText);
+    const amount = goods ? GOODS_AGOROT : parseShekelsToAgorot(amountText);
     const found = validateDebt({
       name,
       amountAgorot: amount,
-      category: chosenCategory,
+      category: goods ? GOODS_CATEGORY : chosenCategory,
       date,
       dueDate,
       note,
       paymentLabel: choice.label,
+      goods,
     });
     setErrors(found);
     if (Object.keys(found).length > 0 || amount === null) return;
+    if (goods) {
+      const now = Date.now();
+      onSave({
+        id,
+        scope,
+        ...(spaceBusinessId && scope === 'business' && spaceBusinessId !== DEFAULT_BUSINESS_ID ? { businessId: spaceBusinessId } : {}),
+        direction,
+        name: name.trim(),
+        amountAgorot: GOODS_AGOROT,
+        category: GOODS_CATEGORY,
+        paymentMethod: 'cash',
+        date,
+        ...(dueDate ? { dueDate } : {}),
+        note: note.trim(),
+        // עריכה של חוב שכבר הוחזר משאירה אותו מוחזר
+        payments: initial && isGoodsDebt(initial) ? initial.payments : [],
+        createdAt: initial?.createdAt ?? now,
+        updatedAt: now,
+      });
+      return;
+    }
     // קטגוריה שהוסרה והוזנה שוב בשמה: חוזרת לרשימה
     if (hiddenCategories.includes(chosenCategory)) {
       saveHiddenDebtCategories(user.uid, hiddenCategories.filter((h) => h !== chosenCategory)).catch(failCategory);
@@ -415,6 +505,19 @@ function DebtForm({
     <form className="card stack" onSubmit={submit} noValidate>
       <h2 className="card-title">{initial ? 'עריכת חוב' : 'חוב חדש'}</h2>
 
+      <div className="segmented" role="group" aria-label="מה החוב">
+        {(
+          [
+            [false, 'כסף'],
+            [true, 'מצרכים / חפצים'],
+          ] as const
+        ).map(([value, label]) => (
+          <button key={label} type="button" className={goods === value ? 'is-active' : ''} aria-pressed={goods === value} onClick={() => setGoods(value)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="segmented" role="group" aria-label="סוג החוב">
         {(
           [
@@ -429,6 +532,8 @@ function DebtForm({
       </div>
 
       <Field label={direction === 'owe' ? 'למי אני חייב' : 'מי חייב לי'} value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
+      {!goods && (
+      <>
       <Field label={`סכום (${CURRENCY_SYMBOLS[currency]})`} inputMode="decimal" value={amountText} onChange={(e) => setAmountText(e.target.value)} error={errors.amount} />
 
       <div className="field">
@@ -580,12 +685,14 @@ function DebtForm({
           </button>
         )}
       </div>
+      </>
+      )}
 
       <Field label="תאריך" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
       <Field label="תאריך יעד לפירעון (לא חובה)" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} error={errors.dueDate} />
 
       <div className="field">
-        <label htmlFor="debt-note">הערה</label>
+        <label htmlFor="debt-note">{goods ? 'מה נלקח או הושאל (למשל: 2 ליטר חלב, סולם)' : 'הערה'}</label>
         <textarea id="debt-note" className="input textarea" value={note} onChange={(e) => setNote(e.target.value)} />
         {errors.note && <div className="field-error">{errors.note}</div>}
       </div>

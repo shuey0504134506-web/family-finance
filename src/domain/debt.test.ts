@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { setCurrency } from './currency';
-import { balanceAgorot, debtCategories, debtTotals, isSettled, validateDebt, validatePayment, type Debt } from './debt';
+import { balanceAgorot, debtCategories, debtTotals, GOODS_AGOROT, GOODS_CATEGORY, isSettled, validateDebt, validatePayment, type Debt } from './debt';
 
 const debt = (o: Partial<Debt> = {}): Debt => ({
   id: 'd', scope: 'household', direction: 'owe', name: 'בנק', amountAgorot: 100000, category: 'הלוואה בנקאית',
@@ -59,5 +59,26 @@ describe('חובות', () => {
     expect(validatePayment(d, 10000, '2026-10-06')).toBeNull();
     expect(validatePayment(d, 10001, '2026-10-06')).not.toBeNull();
     expect(validatePayment(d, 0, '2026-10-06')).not.toBeNull();
+  });
+});
+
+describe('חובות במצרכים', () => {
+  const goods = {
+    id: 'g1', scope: 'household' as const, direction: 'owe' as const, name: 'שכנים', amountAgorot: GOODS_AGOROT,
+    category: GOODS_CATEGORY, paymentMethod: 'cash' as const, date: '2026-10-01', note: '2 ליטר חלב', payments: [], createdAt: 1, updatedAt: 1,
+  };
+  it('לא נספר בסיכומי הכסף, אבל נחשב פתוח עד שהוחזר', () => {
+    expect(debtTotals([goods])).toEqual([]);
+    expect(isSettled(goods)).toBe(false);
+    expect(isSettled({ ...goods, payments: [{ id: 'p', amountAgorot: GOODS_AGOROT, date: '2026-10-02' }] })).toBe(true);
+  });
+  it('הקטגוריה לא מוצעת בחובות כסף, ואי אפשר ליצור אותה ידנית', () => {
+    expect(debtCategories([goods])).not.toContain(GOODS_CATEGORY);
+    expect(validateDebt({ name: 'א', amountAgorot: 100, category: GOODS_CATEGORY, date: '2026-10-01', dueDate: '', note: '' }).category).toBeTruthy();
+  });
+  it('בלי תיאור אי אפשר לשמור, ובלי סכום וקטגוריה כן', () => {
+    const base = { name: 'שכנים', amountAgorot: GOODS_AGOROT, category: GOODS_CATEGORY, date: '2026-10-01', dueDate: '', goods: true };
+    expect(validateDebt({ ...base, note: '' }).note).toBeTruthy();
+    expect(validateDebt({ ...base, note: 'חלב' })).toEqual({});
   });
 });
