@@ -32,6 +32,9 @@ let ready = false;
 let backend: AuthBackend | null = null;
 
 export const getAuth = (..._args: unknown[]): Auth => auth;
+export const initializeAuth = (..._args: unknown[]): Auth => auth;
+export const indexedDBLocalPersistence = {};
+export const browserLocalPersistence = {};
 export const setAuthBackend = (b: AuthBackend): void => { backend = b; };
 
 /** נקרא על ידי ה-session בכניסה, ביציאה ובסיום האתחול. */
