@@ -67,7 +67,7 @@ function TasksBody({ space, uid }: { space: Space; uid: string }) {
   return (
     <div className="app-shell">
       <ScreenHeader title={`רשימת משימות · ${nameOf(space)}`} />
-      <main className="content" aria-busy={loading}>
+      <main className="content lists-page" aria-busy={loading}>
         <ScopeSwitch space={space} page="tasks" />
 
         <form className="card settings-form" onSubmit={onAdd} noValidate>

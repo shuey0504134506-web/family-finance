@@ -48,7 +48,7 @@ function ShoppingBody({ space, uid }: { space: Space; uid: string }) {
   return (
     <div className="app-shell">
       <ScreenHeader title={`רשימת קניות · ${nameOf(space)}`} />
-      <main className="content" aria-busy={loading}>
+      <main className="content lists-page" aria-busy={loading}>
         <ScopeSwitch space={space} page="shopping" />
 
         <form className="card settings-form" onSubmit={onAdd} noValidate>

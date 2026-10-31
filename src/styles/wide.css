@@ -110,3 +110,33 @@
    רחוק מסרגל תפריט הצד שבימין, בלי תלות בשפת הדפדפן (סרגל הגלילה של הדף עצמו עוקב אחרי שפת הדפדפן). */
 html:has(body.wide-bg) { height: 100%; }
 body.wide-bg { height: 100%; overflow-x: hidden; }
+
+/* רשימת משימות וקניות במסך רחב: טופס הוספה בצד, והרשימה ממלאת את שאר המסך (במקום עמודה צרה עם שטח ריק) */
+.desktop-content .content.lists-page {
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px 28px;
+}
+.desktop-content .content.lists-page > * { grid-column: 2; }
+.desktop-content .content.lists-page > .segmented-spaces { grid-column: 1 / -1; }
+.desktop-content .content.lists-page > form {
+  grid-column: 1;
+  grid-row: 1 / span 12;
+  max-width: none;
+  position: sticky;
+  top: 16px;
+}
+.desktop-content .content.lists-page > .notice-card {
+  min-height: calc(100vh - 150px);
+  display: grid;
+  place-items: center;
+}
+.desktop-content .content.lists-page .task-row { padding: 12px 18px; }
+@media (max-width: 1100px) {
+  .desktop-content .content.lists-page { grid-template-columns: minmax(0, 1fr); }
+  .desktop-content .content.lists-page > *,
+  .desktop-content .content.lists-page > form { grid-column: 1 / -1; grid-row: auto; position: static; }
+}
+.desktop-content .content.lists-page:has(> .segmented-spaces) > form { grid-row: 2 / span 12; }
