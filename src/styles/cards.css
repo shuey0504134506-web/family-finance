@@ -172,14 +172,6 @@
   gap: 10px;
 }
 
-.tone-bad {
-  color: var(--expense);
-}
-
-.tone-good {
-  color: var(--income);
-}
-
 .tile-button {
   font: inherit;
   text-align: start;

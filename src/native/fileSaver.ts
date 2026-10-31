@@ -6,8 +6,6 @@ interface FileSaverPlugin {
 /** התוסף המקורי באנדרואיד (FileSaverPlugin.java). בגרסאות ישנות שאין בהן אותו הקריאה נכשלת ונופלים לדרך הקודמת. */
 const FileSaver = registerPlugin<FileSaverPlugin>('FileSaver');
 
-export const DOWNLOADS_FOLDER_LABEL = 'Download/ניהול כספים';
-
 /** שומר ישר לתיקיית ההורדות של הטלפון. מחזיר את המיקום, או null אם אי אפשר (דפדפן, גרסה ישנה, כשל). */
 export async function saveToDownloads(name: string, data: string, mime: string, base64 = false): Promise<string | null> {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return null;

@@ -84,40 +84,6 @@
   font-weight: 700;
 }
 
-/* קישורים מהירים */
-.quick-link {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  min-height: 88px;
-  background: var(--surface);
-  font: inherit;
-  text-align: start;
-  color: var(--text);
-  border: 0;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px 18px;
-}
-
-.quick-link:active {
-  transform: scale(0.985);
-}
-
-.quick-link-title {
-  font-size: 1.0625rem;
-  font-weight: 600;
-}
-
-.quick-link-sub {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
 .balance-text,
 .tone-plus .balance-text,
 .tone-minus .balance-text {
@@ -141,11 +107,6 @@
 
   .balance-amount {
     font-size: 2.1rem;
-  }
-
-  .quick-link {
-    min-height: 72px;
-    padding: 10px 12px;
   }
 }
 
@@ -224,25 +185,6 @@
 
 .home-clean .tile .row-bar {
   grid-column: 1 / -1;
-}
-
-/* תקציב ומעשרות: שורות במקום כרטיסים */
-
-.home-clean .quick-link-title .icon {
-  display: none;
-}
-
-.home-clean .quick-link-sub {
-  text-align: end;
-  justify-self: end;
-}
-
-.home-clean .quick-link .row-bar {
-  grid-column: 1 / -1;
-}
-
-.home-clean .quick-link[aria-label] {
-  display: grid;
 }
 
 .home-clean .balance-text,

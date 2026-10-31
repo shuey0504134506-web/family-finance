@@ -246,12 +246,6 @@
   text-decoration: underline;
 }
 
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .offline-banner {
   padding: 8px 16px;
   padding-top: calc(8px + var(--safe-top));
@@ -300,11 +294,6 @@
 
 .content > .field {
   margin: 0;
-}
-
-.content > .back-link {
-  align-self: flex-start;
-  margin-bottom: -8px;
 }
 
 /* כותרת עליונה: כל הכפתורים חייבים להיכנס גם במסכים צרים (320-360px) */
@@ -459,10 +448,6 @@ html[dir='ltr'] .month-nav {
   height: 100%;
   border-radius: 2px;
   background: var(--budget);
-}
-
-.row-bar-bad > i {
-  background: var(--expense);
 }
 
 /* סיכום 14 ימים (מנהל): שורת יום לחיצה עם פירוט החשבונות */

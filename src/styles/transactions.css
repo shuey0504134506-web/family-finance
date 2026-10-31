@@ -127,20 +127,6 @@
   font-weight: 600;
 }
 
-/* "לחץ לעריכה": באותה שורה של הסכום, מימינו, כדי שלא יגדיל את המסגרת */
-.tx-side {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.tx-side .tx-hint {
-  display: inline;
-  margin: 0;
-  font-size: 0.68rem;
-}
 
 @media (max-width: 380px), (max-height: 700px) {
   .tx-row {
@@ -309,19 +295,6 @@
   border-radius: 0;
 }
 
-/* אזורי לחיצה גדולים יותר (לפחות ~40px) בלי לשנות את המראה */
-.home-clean .quick-link {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
-  row-gap: 8px;
-  min-height: 0;
-  background: none;
-  border: 0;
-  border-radius: 0;
-  padding: 10px 0;
-  margin: -10px 0;
-}
 
 .home-clean .scope-title,
 .home-clean.has-hero .scope-title {

@@ -23,11 +23,6 @@
   font-size: calc(3.25rem - 0.6rem * var(--sq, 0));
 }
 
-.home-clean .home-greeting .greet-icon {
-  width: calc(34px - 8px * var(--sq, 0));
-  height: calc(34px - 8px * var(--sq, 0));
-}
-
 /* ברכה במרכז */
 .home-clean .home-greeting {
   justify-content: center;

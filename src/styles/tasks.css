@@ -66,7 +66,6 @@ button.task-main {
 
 .card,
 .tile,
-.quick-link,
 .acc-list,
 .feature-list {
   border: 1px solid var(--border);
@@ -159,16 +158,6 @@ button.task-main {
 .day-email {
   overflow-wrap: anywhere;
   min-width: 0;
-}
-
-.lang-switch button {
-  min-height: 44px;
-  padding: 0 18px;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
 }
 
 .recent-name {

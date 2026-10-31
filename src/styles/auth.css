@@ -144,15 +144,6 @@
 
 /* מסך כניסה (מהכניסה השנייה ואילך): אותו רקע הרים, שדה סיסמה כמו כפתור, וגלולות משניות שקופות מעט */
 
-.tx-hint {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  opacity: 0.8;
-}
-
 /* הגדרות: כפתורים אחידים (גובה, עיגול, גופן, בלי צללים) */
 .acc-list .btn {
   min-height: 52px;
@@ -211,12 +202,6 @@
 @media (max-width: 380px), (max-height: 700px) {
   .acc-list .btn {
     min-height: 46px;
-  }
-}
-
-@media (max-width: 340px), (max-height: 600px) {
-  .tx-hint {
-    display: none;
   }
 }
 
@@ -428,25 +413,6 @@
   font-size: 0.92rem;
 }
 
-/* בורר שפה במסכי הכניסה והרישום */
-.lang-switch {
-  display: flex;
-  justify-content: center;
-  gap: 0;
-  margin: 0 auto 12px;
-  width: fit-content;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--surface, #fff);
-}
-
-.lang-switch button.is-active {
-  background: var(--navy, #0f2a47);
-  color: #fff;
-  font-weight: 700;
-}
-
 .previous-stage {
   text-align: center;
   margin-block: -4px 14px;
@@ -527,8 +493,6 @@
 .home-clean .tiles {
   margin: 0;
 }
-
-/* מסך כניסה: בלי מסגרת לבנה. שטח המילוי שקוף והשדה עצמו נשאר מוגדר */
 
 /* מסך לרוחב: תמונת הנוף הרחבה, כדי שלא תימרח תמונת הטלפון על מסך מחשב */
 @media (min-aspect-ratio: 1/1) {

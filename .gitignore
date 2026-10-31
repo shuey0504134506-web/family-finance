@@ -10,3 +10,5 @@ firestore-debug.log
 *.log
 .DS_Store
 dist-phone
+__pycache__
+*.pyc

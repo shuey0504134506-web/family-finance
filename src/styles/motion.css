@@ -4,7 +4,6 @@
 @keyframes mo-rise { from { opacity: 0; transform: translateY(14px); } }
 @keyframes mo-row { from { opacity: 0; transform: translateX(12px); } }
 @keyframes mo-drift { from { transform: translateX(-4%); } to { transform: translateX(6%); } }
-@keyframes mo-spin { to { transform: rotate(360deg); } }
 
 /* ענני שמיים שנעים לאט מעל נוף הרקע */
 body::after {
@@ -50,8 +49,6 @@ body::after {
 
 /* ברכה לפי שעה */
 .home-greeting { display: flex; align-items: center; gap: 10px; color: var(--navy, #102a45); font-weight: 800; font-size: 1.2rem; }
-.greet-rays { transform-origin: 24px 24px; animation: mo-spin 40s linear infinite; }
-.greet-moon { animation: mo-rise 0.8s backwards; }
 
 /* עיגול צבעוני בפעולות אחרונות */
 .recent-row { align-items: center; }

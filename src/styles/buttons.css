@@ -139,16 +139,6 @@
   box-shadow: none;
 }
 
-.bar-income {
-  background: var(--income);
-  fill: var(--income);
-}
-
-.bar-expense {
-  background: var(--expense);
-  fill: var(--expense);
-}
-
 .share-bar {
   height: 8px;
   margin-top: 4px;
