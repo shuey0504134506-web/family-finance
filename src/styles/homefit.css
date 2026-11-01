@@ -125,3 +125,43 @@
 .dialog-actions .btn-danger-outline {
   margin-top: 0;
 }
+
+/* דחיסה שנייה: נכנסת רק כשהדחיסה הראשונה (--sq) לא הספיקה, למשל בחודש חדש ריק עם יעד חיסכון ושורת "החודש הקודם"
+   במסך קטן מאוד. data-fit נקבע ב-useCompactToFit (1 עד 3). בלי data-fit אף אחד מהכללים האלה לא פעיל, והמראה זהה לגמרי. */
+.home-clean[data-fit] .tiles { margin-block: 12px 4px; }
+.home-clean[data-fit] .notice-card.balance-empty { padding: 8px 12px; font-size: 1.1rem; }
+.home-clean[data-fit] .savings-meter { min-height: 36px; padding-block: 4px; }
+.home-clean[data-fit] .previous-stage { margin-block: -4px 6px; gap: 0; }
+.home-clean[data-fit] .previous-stage-text { font-size: 0.9rem; }
+.home-clean[data-fit] .previous-stage-amount { font-size: 1.1rem; }
+.home-clean[data-fit] .home-greeting { font-size: 1.05rem; }
+.home-clean[data-fit] .scope-title { font-size: 1.15rem; }
+.home-clean[data-fit] .balance-text { font-size: 1.1rem; }
+
+.home-clean[data-fit='2'] .content,
+.home-clean[data-fit='3'] .content { gap: 4px; }
+.home-clean[data-fit='2'] .tiles,
+.home-clean[data-fit='3'] .tiles { margin-block: 6px 2px; gap: 6px; }
+.home-clean[data-fit='2'] .notice-card.balance-empty,
+.home-clean[data-fit='3'] .notice-card.balance-empty { padding: 5px 12px; font-size: 1rem; }
+.home-clean[data-fit='2'] .savings-meter,
+.home-clean[data-fit='3'] .savings-meter { min-height: 30px; padding-block: 2px; }
+.home-clean[data-fit='2'] .previous-stage,
+.home-clean[data-fit='3'] .previous-stage { margin-block: -6px 2px; }
+.home-clean[data-fit='2'] .previous-stage-text,
+.home-clean[data-fit='3'] .previous-stage-text { font-size: 0.85rem; }
+.home-clean[data-fit='2'] .previous-stage-amount,
+.home-clean[data-fit='3'] .previous-stage-amount { font-size: 1rem; }
+.home-clean[data-fit='2'] .home-greeting,
+.home-clean[data-fit='3'] .home-greeting { font-size: 1rem; }
+.home-clean[data-fit='2'] .scope-title,
+.home-clean[data-fit='3'] .scope-title { font-size: 1.1rem; }
+
+.home-clean[data-fit='3'] .content { gap: 2px; }
+.home-clean[data-fit='3'] .tiles { gap: 4px; }
+.home-clean[data-fit='3'] .notice-card.balance-empty { padding: 3px 10px; font-size: 0.95rem; }
+.home-clean[data-fit='3'] .savings-meter { min-height: 26px; }
+.home-clean[data-fit='3'] .previous-stage-text { font-size: 0.8rem; }
+.home-clean[data-fit='3'] .previous-stage-amount { font-size: 0.95rem; }
+.home-clean[data-fit='3'] .home-greeting { font-size: 0.95rem; }
+.home-clean[data-fit='3'] .scope-title { font-size: 1.05rem; padding: 0; }

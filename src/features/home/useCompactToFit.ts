@@ -6,7 +6,8 @@ const BOTTOM_MARGIN = 14;
 /**
  * מסך בית בטלפון קטן: אם כפתורי ההוספה יורדים מתחת לקצה המסך, מצמצמים את הרווחים בין השורות
  * (משתנה CSS ‎--sq‏ בין 0 ל-1) רק כמה שצריך כדי שהכפתורים יופיעו בלי גלילה, ולכל טלפון לפי גובהו.
- * אם גם הדחיסה המלאה לא מספיקה (מסך קטן מדי), לא דוחסים בכלל וממשיכים לגלול כרגיל.
+ * אם גם הדחיסה המלאה לא מספיקה (חודש חדש ריק עם יעד חיסכון ושורת "החודש הקודם" במסך קטן מאוד), נכנסת דחיסה שנייה
+ * (‎data-fit‏ בין 1 ל-3) שמקטינה גם גופנים ושוליים פנימיים. רק אם גם היא לא מספיקה, נשארים בדחיסה המקסימלית וממשיכים לגלול.
  * במסך רחב (מחשב) אין דחיסה. ‎`key`‏ משתנה כשהתוכן משתנה (טעינה, שורת "החודש הקודם", יעד חיסכון).
  */
 export function useCompactToFit(key: string): void {
@@ -15,9 +16,13 @@ export function useCompactToFit(key: string): void {
       const shell = document.querySelector<HTMLElement>('.home-clean');
       const add = shell?.querySelector<HTMLElement>('.add-actions');
       if (!shell || !add) return;
-      const set = (v: number) => shell.style.setProperty('--sq', v.toFixed(3));
-      const bottomAt = (v: number) => {
-        set(v);
+      const set = (v: number, fit = 0) => {
+        shell.style.setProperty('--sq', v.toFixed(3));
+        if (fit > 0) shell.dataset.fit = String(fit);
+        else delete shell.dataset.fit;
+      };
+      const bottomAt = (v: number, fit = 0) => {
+        set(v, fit);
         return add.getBoundingClientRect().bottom + window.scrollY;
       };
       const wide = window.matchMedia('(min-width: 900px), (min-aspect-ratio: 1/1)').matches;
@@ -27,12 +32,17 @@ export function useCompactToFit(key: string): void {
       if (b0 <= limit) return;
       const saved = b0 - bottomAt(1);
       const over = b0 - limit;
-      if (saved <= 0 || over > saved) return set(0); // מסך קטן מדי: נשארת גלילה
-      // הרווחים אינם ליניאריים לגמרי (שורות שנשברות), לכן מתקדמים בצעדים עד שמתאים
-      for (let v = Math.min(1, over / saved); v <= 1.0001; v += 0.04) {
-        if (bottomAt(Math.min(1, v)) <= limit) return;
+      if (saved > 0 && over <= saved) {
+        // הרווחים אינם ליניאריים לגמרי (שורות שנשברות), לכן מתקדמים בצעדים עד שמתאים
+        for (let v = Math.min(1, over / saved); v <= 1.0001; v += 0.04) {
+          if (bottomAt(Math.min(1, v)) <= limit) return;
+        }
       }
-      set(1);
+      // הדחיסה הראשונה לא מספיקה: דחיסה שנייה בצעדים, ואם גם היא לא מספיקה נשארים בדחיסה המקסימלית
+      for (let fit = 1; fit <= 3; fit++) {
+        if (bottomAt(1, fit) <= limit) return;
+      }
+      set(1, 3);
     };
     run();
     window.addEventListener('resize', run);

@@ -181,7 +181,9 @@ export function HomeScreen() {
     : household.loading || (countedIds.length > 0 && business.loading);
   const totals = isBusiness ? businessTotals : householdSummary;
   const title = nameOf(space);
-  useCompactToFit(`${space.key}|${loading}|${active.error ? 1 : 0}|${month.status}|${previousHeadline ? 1 : 0}|${savingsGoal ?? ''}`);
+  useCompactToFit(
+    `${space.key}|${loading}|${active.error ? 1 : 0}|${month.status}|${month.selected}|${previousHeadline ? 1 : 0}|${savingsGoal ?? ''}|${totals.incomeAgorot === 0 && totals.expenseAgorot === 0 ? 1 : 0}|${totals.balanceAgorot}`,
+  );
   const logo = useBusinessLogo(user.uid, isBusiness ? space.businessId : '');
   const manyBusinesses = countedIds.length > 1;
   const businessIncomeLabel = manyBusinesses ? 'הכנסה מהעסקים' : 'הכנסה מהעסק';
