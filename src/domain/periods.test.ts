@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { categoryBreakdown, monthsOfYear, periodTotals } from './periods';
+import { categoryBreakdown, merchantBreakdown, monthsOfYear, paymentBreakdown, periodTotals } from './periods';
 
 const tx = (yearMonth: string, type: 'income' | 'expense', amountAgorot: number, categoryId = 'c') => ({
   yearMonth,
@@ -67,5 +67,38 @@ describe('monthsOfYear', () => {
     expect(months).toHaveLength(12);
     expect(months[0]).toBe('2026-01');
     expect(months[11]).toBe('2026-12');
+  });
+});
+
+describe('פירוט הוצאות לפי צורת תשלום ובית עסק', () => {
+  const e = (yearMonth: string, amountAgorot: number, counterparty: string, paymentMethod: 'cash' | 'credit' | 'other', paymentLabel?: string, type: 'income' | 'expense' = 'expense') => ({
+    ...tx(yearMonth, type, amountAgorot),
+    counterparty,
+    paymentMethod,
+    ...(paymentLabel ? { paymentLabel } : {}),
+  });
+  const items = [
+    e('2026-05', 30_000, 'שופרסל', 'credit'),
+    e('2026-05', 10_000, 'שופרסל ', 'cash'),
+    e('2026-05', 60_000, 'סלקום', 'other', 'ביט'),
+    e('2026-05', 99_000, 'משכורת', 'cash', undefined, 'income'),
+    e('2026-06', 5_000, 'אחר', 'cash'),
+  ];
+  it('לפי צורת תשלום: הוצאות החודש בלבד, מהגדול לקטן, כולל אמצעים אישיים', () => {
+    const r = paymentBreakdown(items, ['2026-05']);
+    expect(r.map((x) => [x.label, x.amountAgorot, x.percent])).toEqual([
+      ['ביט', 60_000, 60],
+      ['אשראי', 30_000, 30],
+      ['מזומן', 10_000, 10],
+    ]);
+  });
+  it('לפי בית עסק: מאחד שמות זהים, ומקבץ את העודף ל"אחרים"', () => {
+    const r = merchantBreakdown(items, ['2026-05']);
+    expect(r.map((x) => [x.label, x.amountAgorot])).toEqual([['סלקום', 60_000], ['שופרסל', 40_000]]);
+    const limited = merchantBreakdown(items, ['2026-05'], 1);
+    expect(limited.map((x) => [x.label, x.amountAgorot])).toEqual([['סלקום', 60_000], ['אחרים', 40_000]]);
+  });
+  it('בלי הוצאות בתקופה: רשימה ריקה', () => {
+    expect(paymentBreakdown(items, ['2026-01'])).toEqual([]);
   });
 });

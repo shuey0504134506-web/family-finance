@@ -6,7 +6,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { MonthSwitcher } from '../../components/MonthSwitcher';
 import { previousAnnualPeriod, type AnnualPeriod } from '../../domain/annual';
 import { addMonths, formatMonthYear } from '../../domain/dates';
-import { categoryBreakdown, periodTotals } from '../../domain/periods';
+import { categoryBreakdown, merchantBreakdown, paymentBreakdown, periodTotals, type LabelShare } from '../../domain/periods';
 import { businessIdOf } from '../../domain/spaces';
 import { useAnnualPeriod } from '../../hooks/useAnnualPeriod';
 import { useCategories } from '../../hooks/useCategories';
@@ -79,6 +79,8 @@ export function SummaryScreen() {
     () => categoryBreakdown(scopeItems, currentMonths, 'expense'),
     [scopeItems, currentMonths],
   );
+  const paymentShares = useMemo(() => paymentBreakdown(scopeItems, currentMonths), [scopeItems, currentMonths]);
+  const merchantShares = useMemo(() => merchantBreakdown(scopeItems, currentMonths), [scopeItems, currentMonths]);
   const incomeShares = useMemo(
     () => categoryBreakdown(scopeItems, currentMonths, 'income'),
     [scopeItems, currentMonths],
@@ -184,6 +186,8 @@ export function SummaryScreen() {
             />
 
             <Breakdown title="הוצאות לפי קטגוריה" shares={expenseShares} nameOf={categoryName} tone="expense" />
+            <LabelBreakdown title="הוצאות לפי צורת תשלום" shares={paymentShares} />
+            <LabelBreakdown title="הוצאות לפי בתי עסק" shares={merchantShares} />
             <Breakdown title="הכנסות לפי קטגוריה" shares={incomeShares} nameOf={categoryName} tone="income" />
 
             <PeriodComparison
@@ -228,6 +232,31 @@ function Breakdown({
               </span>
             </div>
             <div className={`share-bar share-${tone}`} aria-hidden="true">
+              <div style={{ width: `${Math.max(2, s.percent)}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** פירוט הוצאות לפי תווית (צורת תשלום, בית עסק), באותו עיצוב כמו הפירוט לפי קטגוריה. */
+function LabelBreakdown({ title, shares }: { title: string; shares: LabelShare[] }) {
+  if (shares.length === 0) return null;
+  return (
+    <section className="card">
+      <h2 className="card-title">{title}</h2>
+      <ul className="share-list">
+        {shares.map((s) => (
+          <li key={s.id}>
+            <div className="row-between">
+              <span>{s.label}</span>
+              <span>
+                <Amount agorot={s.amountAgorot} /> · {s.percent}%
+              </span>
+            </div>
+            <div className="share-bar share-expense" aria-hidden="true">
               <div style={{ width: `${Math.max(2, s.percent)}%` }} />
             </div>
           </li>

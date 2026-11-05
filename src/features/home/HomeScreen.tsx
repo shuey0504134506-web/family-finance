@@ -14,6 +14,7 @@ import { addMonths, formatDisplayDate, todayIso } from '../../domain/dates';
 import { currencyOf } from '../../domain/currency';
 import { businessIdOf } from '../../domain/spaces';
 import { useBusinessLogo } from '../../hooks/useBusinessLogo';
+import { useHomeBackground } from '../../services/homeBackground';
 import {
   householdTotals,
   totalsOf,
@@ -126,6 +127,7 @@ export function HomeScreen() {
   );
   const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
+  useHomeBackground(user.uid);
   const wide = useIsWide();
   // שלוש הפעולות האחרונות של המרחב (במסך רחב יותר, והכרטיס חותך לפי הגובה שנכנס) והחודש שמוצגים, במטבע המקורי
   const recent = useMemo(() => {
@@ -160,7 +162,7 @@ export function HomeScreen() {
   }, [allBusiness, allHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
   const sinceStartHeadline = sinceStart === null ? null : sinceStartText(sinceStart.balanceAgorot);
 
-  const { budgets } = useBudgets(user.uid);
+  const { budgets, loading: budgetsLoading } = useBudgets(user.uid);
   const savingsGoal = effectiveSavingsGoal(budgets, scope, space.businessId, month.selected);
 
   const next = neighborSpace(spaces, space.key, 1);
@@ -176,9 +178,17 @@ export function HomeScreen() {
   );
 
   const active = isBusiness ? business : household;
-  const loading = isBusiness
+  const monthLoading = isBusiness
     ? business.loading
     : household.loading || (countedIds.length > 0 && business.loading);
+  // המסך נפתח בבת אחת: מחכים גם לחודש הקודם, להיסטוריה (מתחילת התיעוד) ולתקציבים, ולא מציגים חלק מהמסך לפני השאר.
+  // כשאחד מהם נכשל לא מחכים לו (השורה שלו פשוט לא תוצג, כמו קודם).
+  const extrasLoading =
+    (compare && ((prevBusiness.loading && !prevBusiness.error) || (prevHousehold.loading && !prevHousehold.error))) ||
+    (allBusiness.loading && !allBusiness.error) ||
+    (allHousehold.loading && !allHousehold.error) ||
+    budgetsLoading;
+  const loading = monthLoading || (month.status !== 'future' && extrasLoading);
   const totals = isBusiness ? businessTotals : householdSummary;
   const title = nameOf(space);
   useCompactToFit(

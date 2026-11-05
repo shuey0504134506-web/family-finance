@@ -11,6 +11,7 @@ import {
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../../firebase/config';
 import type { UserProfile } from '../../domain/types';
+import { assertRequiredProfile } from './validation';
 import { loginWithEmail, logout, registerAccount } from '../../services/authService';
 import { syncProfileEmail } from '../../services/accountService';
 import { rememberPasswordForLock } from '../../services/lockPassword';
@@ -159,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeSetup = useCallback(
     async (input: Omit<NewAccountInput, 'email'>) => {
       if (state.status !== 'needsSetup') return;
+      assertRequiredProfile(input);
       await createUserRecords(state.user.uid, { ...input, email: state.user.email ?? '' });
     },
     [state],

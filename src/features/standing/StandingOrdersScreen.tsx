@@ -6,7 +6,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { currencyOf } from '../../domain/currency';
 import { addMonths, formatDisplayDate, todayIso, yearMonthOfDate } from '../../domain/dates';
 import { parseShekelsToAgorot, MAX_TRANSACTION_AGOROT } from '../../domain/money';
-import { detectRecurring, firstDueDate, type RecurringSuggestion } from '../../domain/standingOrder';
+import { detectRecurring, firstDueDate, isDismissed, type Dismissals, type RecurringSuggestion } from '../../domain/standingOrder';
 import { businessIdOf, inSpace } from '../../domain/spaces';
 import type { StandingOrder, Transaction } from '../../domain/types';
 import { useStandingOrders } from '../../hooks/useStandingOrders';
@@ -27,12 +27,22 @@ import { useSyncNotice } from '../sync/SyncNotice';
 
 const dismissedKey = (uid: string) => `ff.standing.dismissed.v1.${uid}`;
 
-function readDismissed(uid: string): string[] {
+/** דחיות שמורות במכשיר: מפתח -> חודש הדחייה. רשימה ישנה (מפתחות בלבד) נחשבת כנדחתה החודש. */
+function readDismissed(uid: string, today: string): Dismissals {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(dismissedKey(uid)) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+    const parsed: unknown = JSON.parse(localStorage.getItem(dismissedKey(uid)) ?? '{}');
+    if (Array.isArray(parsed)) {
+      const month = yearMonthOfDate(today);
+      const migrated = Object.fromEntries(parsed.filter((x): x is string => typeof x === 'string').map((k) => [k, month]));
+      localStorage.setItem(dismissedKey(uid), JSON.stringify(migrated));
+      return migrated;
+    }
+    if (parsed && typeof parsed === 'object') {
+      return Object.fromEntries(Object.entries(parsed).filter((e): e is [string, string] => typeof e[1] === 'string'));
+    }
+    return {};
   } catch {
-    return [];
+    return {};
   }
 }
 
@@ -71,7 +81,8 @@ export function StandingOrdersScreen() {
           </div>
         )}
 
-        <Suggestions uid={user.uid} orders={orders} space={space} />
+        {/* ההצעות נטענות רק אחרי שההוראות הקיימות הוצגו, כדי שהמסך ייפתח מיד */}
+        {!loading && !error && <Suggestions uid={user.uid} orders={orders} space={space} />}
       </main>
     </div>
   );
@@ -177,21 +188,27 @@ function addMonthsDate(today: string): string {
 function Suggestions({ uid, orders, space }: { uid: string; orders: StandingOrder[]; space: ReturnType<typeof useSpace> }) {
   const { reportFailure } = useSyncNotice();
   const [txs, setTxs] = useState<Transaction[]>([]);
-  const [dismissed, setDismissed] = useState<string[]>(() => readDismissed(uid));
   const today = todayIso();
+  const [dismissed, setDismissed] = useState<Dismissals>(() => readDismissed(uid, today));
 
   useEffect(
     () => subscribeTransactionsSince(uid, space.scope, `${addMonths(yearMonthOfDate(today), -6)}-01`, setTxs, () => setTxs([])),
     [uid, space.scope, today],
   );
 
-  const suggestions = useMemo(() => {
-    const mine = txs.filter((t) => space.scope === 'household' || businessIdOf(t) === space.businessId);
-    return detectRecurring(mine, orders, today).filter((s) => !dismissed.includes(s.key));
-  }, [txs, orders, today, dismissed, space.scope, space.businessId]);
+  // הזיהוי יקר יחסית, ולכן רץ אחרי שהמסך צויר ומשולבות בו כמה עדכוני נתונים רצופים (מטמון ואז שרת)
+  const [detected, setDetected] = useState<RecurringSuggestion[]>([]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const mine = txs.filter((t) => space.scope === 'household' || businessIdOf(t) === space.businessId);
+      setDetected(detectRecurring(mine, orders, today));
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [txs, orders, today, space.scope, space.businessId]);
+  const suggestions = useMemo(() => detected.filter((s) => !isDismissed(dismissed, s)), [detected, dismissed]);
 
   const dismiss = (key: string) => {
-    const next = [...dismissed, key];
+    const next = { ...dismissed, [key]: yearMonthOfDate(today) };
     setDismissed(next);
     try {
       localStorage.setItem(dismissedKey(uid), JSON.stringify(next));

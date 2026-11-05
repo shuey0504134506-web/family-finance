@@ -134,18 +134,22 @@ export function similarName(a: string, b: string): boolean {
   return fuzzyMatchAll(a, b) && fuzzyMatchAll(b, a);
 }
 
-function similarAmount(a: number, b: number): boolean {
-  return Math.abs(a - b) <= Math.max(a, b) * AMOUNT_TOLERANCE;
+function similarAmount(a: number, b: number, tolerance: number): boolean {
+  return Math.abs(a - b) <= Math.max(a, b) * tolerance;
 }
 
-/** האם הפעולה דומה לעוגן: אותו סוג ומטבע, שם דומה, סכום קרוב ותאריך קרוב בחודש. */
-export function isSimilar(anchor: Similar, other: Similar): boolean {
+/**
+ * האם הפעולה דומה לעוגן: אותו סוג ומטבע, שם דומה, סכום קרוב ותאריך קרוב בחודש.
+ * הבדיקות הזולות (סוג, מטבע, סכום, יום) קודם, וההשוואה המקורבת של השם אחרונה: התוצאה זהה, והחישוב מהיר בהרבה.
+ * `amountTolerance` = 0 דורש סכום זהה (הצעות להוראת קבע).
+ */
+export function isSimilar(anchor: Similar, other: Similar, amountTolerance: number = AMOUNT_TOLERANCE): boolean {
   return (
     anchor.type === other.type &&
     (anchor.currency ?? LEGACY_CURRENCY) === (other.currency ?? LEGACY_CURRENCY) &&
-    similarName(anchor.counterparty, other.counterparty) &&
-    similarAmount(anchor.amountAgorot, other.amountAgorot) &&
-    dayDistance(Number(anchor.date.slice(8, 10)), Number(other.date.slice(8, 10))) <= DAY_TOLERANCE
+    similarAmount(anchor.amountAgorot, other.amountAgorot, amountTolerance) &&
+    dayDistance(Number(anchor.date.slice(8, 10)), Number(other.date.slice(8, 10))) <= DAY_TOLERANCE &&
+    similarName(anchor.counterparty, other.counterparty)
   );
 }
 
@@ -181,6 +185,8 @@ export interface RecurringSuggestion {
   transactions: Transaction[];
   amountAgorot: number;
   dayOfMonth: number;
+  /** החודש של הפעולה הראשונה בסדרה (YYYY-MM): הצעה שנדחתה חוזרת רק אם כל הסדרה חדשה יותר מהדחייה */
+  firstMonth: string;
 }
 
 /** כמה חודשים רצופים צריכים להופיע כדי להציע הוראת קבע. */
@@ -211,7 +217,8 @@ export function detectRecurring(
     for (const other of sorted) {
       if (other.id === seed.id || used.has(other.id) || months.has(other.yearMonth)) continue;
       if ((seed.businessId ?? '') !== (other.businessId ?? '')) continue;
-      if (isSimilar(seed, other)) {
+      // בהצעה להוראת קבע הסכום חייב להיות זהה; השם והתאריך יכולים להיות קרובים בלבד
+      if (isSimilar(seed, other, 0)) {
         group.push(other);
         months.add(other.yearMonth);
       }
@@ -233,7 +240,20 @@ export function detectRecurring(
       transactions: members,
       amountAgorot: latest.amountAgorot,
       dayOfMonth: days[Math.floor(days.length / 2)],
+      firstMonth: members[0].yearMonth,
     });
   }
   return found.sort((a, b) => (a.name < b.name ? -1 : 1));
+}
+
+/** דחיות הצעות: מפתח ההצעה -> החודש (YYYY-MM) שבו נדחתה. */
+export type Dismissals = Readonly<Record<string, string>>;
+
+/**
+ * הצעה שנדחתה נעלמת לגמרי, וחוזרת רק אם הדפוס חזר על עצמו אחרי הדחייה:
+ * כל הפעולות בסדרה החדשה (שלושה חודשים רצופים לפחות) הן מחודש מאוחר יותר מחודש הדחייה.
+ */
+export function isDismissed(dismissals: Dismissals, suggestion: Pick<RecurringSuggestion, 'key' | 'firstMonth'>): boolean {
+  const at = dismissals[suggestion.key];
+  return at !== undefined && suggestion.firstMonth <= at;
 }

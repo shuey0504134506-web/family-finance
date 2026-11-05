@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   detectRecurring,
+  isDismissed,
   dueDateIn,
   dueDatesUpTo,
   findSimilarAfter,
@@ -98,5 +99,25 @@ describe('זיהוי פעולות שחוזרות', () => {
   it('לא מציע מה שכבר הוראת קבע או קיים בשמה', () => {
     expect(detectRecurring(series.map((t) => ({ ...t, standingOrderId: 'o' })), [], '2026-10-18')).toEqual([]);
     expect(detectRecurring(series, [{ name: 'חברת חשמל', type: 'expense', active: true }], '2026-10-18')).toEqual([]);
+  });
+  it('סכום שונה, אפילו קרוב, לא מוביל להצעה', () => {
+    const close = [series[0], { ...series[1], amountAgorot: series[1].amountAgorot + 100 }, series[2]];
+    expect(detectRecurring(close, [], '2026-10-18')).toEqual([]);
+  });
+  it('שם ותאריך קרובים עדיין מובילים להצעה', () => {
+    const near = [series[0], { ...series[1], date: '2026-09-13' }, series[2]];
+    expect(detectRecurring(near, [], '2026-10-18')).toHaveLength(1);
+  });
+});
+
+describe('isDismissed', () => {
+  const s = { key: 'k', firstMonth: '2026-08' };
+  it('הצעה שנדחתה לא חוזרת כל עוד הסדרה כוללת חודש עד הדחייה', () => {
+    expect(isDismissed({ k: '2026-10' }, s)).toBe(true);
+    expect(isDismissed({ k: '2026-08' }, s)).toBe(true);
+  });
+  it('חוזרת כשהדפוס מתחדש כולו אחרי הדחייה', () => {
+    expect(isDismissed({ k: '2026-07' }, s)).toBe(false);
+    expect(isDismissed({}, s)).toBe(false);
   });
 });

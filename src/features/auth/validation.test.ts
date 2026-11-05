@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isValidEmail, isValidPhone, normalizePhone, validateSignup, type SignupValues } from './validation';
+import { assertRequiredProfile, isValidEmail, isValidPhone, normalizePhone, validateSignup, type SignupValues } from './validation';
 
 const valid: SignupValues = {
   firstName: 'דנה',
@@ -60,5 +60,17 @@ describe('טלפון', () => {
   it('מנרמל לספרות, ושומר + בתחילה', () => {
     expect(normalizePhone(' 050-123 4567 ')).toBe('0501234567');
     expect(normalizePhone('+972 50-123-4567')).toBe('+972501234567');
+  });
+});
+
+describe('assertRequiredProfile', () => {
+  it('מקבל שם, שם משפחה וטלפון תקין', () => {
+    expect(() => assertRequiredProfile({ firstName: 'דנה', lastName: 'כהן', phone: '050-1234567' })).not.toThrow();
+  });
+  it('דוחה חוסר בשם, בשם משפחה או בטלפון', () => {
+    expect(() => assertRequiredProfile({ firstName: ' ', lastName: 'כהן', phone: '0501234567' })).toThrow();
+    expect(() => assertRequiredProfile({ firstName: 'דנה', lastName: '', phone: '0501234567' })).toThrow();
+    expect(() => assertRequiredProfile({ firstName: 'דנה', lastName: 'כהן' })).toThrow();
+    expect(() => assertRequiredProfile({ firstName: 'דנה', lastName: 'כהן', phone: '123' })).toThrow();
   });
 });

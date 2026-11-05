@@ -17,6 +17,66 @@ import { deleteAttachments } from './attachmentService';
 import { monthDateRange, yearMonthOfDate, type YearMonth } from '../domain/dates';
 import type { Scope, Transaction, TransactionRecord } from '../domain/types';
 
+interface SharedEntry {
+  listeners: Set<{ onChange: (records: TransactionRecord[]) => void; onError: (error: Error) => void }>;
+  last: TransactionRecord[] | null;
+  stop: Unsubscribe;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+const sharedSubscriptions = new Map<string, SharedEntry>();
+
+/** כמה זמן ההאזנה נשארת פתוחה אחרי שהמסך האחרון שהשתמש בה נסגר (מעבר בין מסכים לא קורא שוב מהמטמון). */
+const SHARE_GRACE_MS = 60_000;
+
+/**
+ * האזנה משותפת: מסכים שונים (בית, סיכומים, חיפוש) שמבקשים את אותם נתונים מקבלים את אותה האזנה,
+ * ומסך שנפתח שוב אחרי רגע מקבל את הנתונים האחרונים מיד, בלי לקרוא ולפענח שוב את כל ההיסטוריה.
+ * הנתונים עצמם זהים לגמרי לאלה של האזנה נפרדת.
+ */
+function shareSubscription(
+  key: string,
+  start: (onChange: (records: TransactionRecord[]) => void, onError: (error: Error) => void) => Unsubscribe,
+  onChange: (records: TransactionRecord[]) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  const listener = { onChange, onError };
+  let entry = sharedSubscriptions.get(key);
+  if (entry) {
+    if (entry.timer) clearTimeout(entry.timer);
+    entry.timer = null;
+    entry.listeners.add(listener);
+    if (entry.last) onChange(entry.last);
+  } else {
+    const created: SharedEntry = { listeners: new Set([listener]), last: null, stop: () => undefined, timer: null };
+    entry = created;
+    sharedSubscriptions.set(key, created);
+    created.stop = start(
+      (records) => {
+        created.last = records;
+        for (const l of [...created.listeners]) l.onChange(records);
+      },
+      (error) => {
+        // שגיאה סוגרת את ההאזנה המשותפת, וההאזנה הבאה תיפתח מחדש
+        if (sharedSubscriptions.get(key) === created) sharedSubscriptions.delete(key);
+        created.stop();
+        for (const l of [...created.listeners]) l.onError(error);
+      },
+    );
+  }
+  const current = entry;
+  return () => {
+    current.listeners.delete(listener);
+    if (current.listeners.size > 0 || current.timer) return;
+    current.timer = setTimeout(() => {
+      if (current.listeners.size === 0) {
+        if (sharedSubscriptions.get(key) === current) sharedSubscriptions.delete(key);
+        current.stop();
+      }
+    }, SHARE_GRACE_MS);
+  };
+}
+
 /** שם האוסף לפי תחום. עסק ומשק בית נשמרים באוספים נפרדים לגמרי. */
 export function transactionsCollectionName(scope: Scope): string {
   return scope === 'business' ? 'businessTransactions' : 'householdTransactions';
@@ -35,6 +95,21 @@ export function transactionsCollection(uid: string, scope: Scope) {
  * includeMetadataChanges נדרש כדי לקבל גם את המעבר "ממתין לסנכרון" -> "סונכרן".
  */
 export function subscribeMonthTransactions(
+  uid: string,
+  scope: Scope,
+  yearMonth: YearMonth,
+  onChange: (records: TransactionRecord[]) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  return shareSubscription(
+    `${uid}|${scope}|month|${yearMonth}`,
+    (change, fail) => startMonthSubscription(uid, scope, yearMonth, change, fail),
+    onChange,
+    onError,
+  );
+}
+
+function startMonthSubscription(
   uid: string,
   scope: Scope,
   yearMonth: YearMonth,
@@ -97,6 +172,21 @@ export async function getTransaction(
  * שאילתת טווח על שדה אחד, ולכן לא נדרש אינדקס.
  */
 export function subscribeTransactionsUpTo(
+  uid: string,
+  scope: Scope,
+  yearMonth: YearMonth,
+  onChange: (records: TransactionRecord[]) => void,
+  onError: (error: Error) => void,
+): Unsubscribe {
+  return shareSubscription(
+    `${uid}|${scope}|upTo|${yearMonth}`,
+    (change, fail) => startUpToSubscription(uid, scope, yearMonth, change, fail),
+    onChange,
+    onError,
+  );
+}
+
+function startUpToSubscription(
   uid: string,
   scope: Scope,
   yearMonth: YearMonth,

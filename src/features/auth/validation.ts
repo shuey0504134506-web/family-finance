@@ -46,3 +46,9 @@ export function validateSignup(values: SignupValues): Partial<Record<keyof Signu
   }
   return errors;
 }
+
+/** שם פרטי, שם משפחה וטלפון תקין הם חובה בהרשמה. נבדק גם בשכבת השירות, ולא רק בטופס, כדי שלא ייווצר חשבון בלעדיהם. */
+export function assertRequiredProfile(input: { firstName: string; lastName: string; phone?: string }): void {
+  if (!input.firstName.trim() || !input.lastName.trim()) throw new Error('יש למלא את השם הפרטי ושם המשפחה');
+  if (!input.phone?.trim() || !isValidPhone(input.phone)) throw new Error('יש להזין מספר טלפון תקין');
+}

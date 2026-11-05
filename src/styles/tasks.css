@@ -200,3 +200,11 @@ button.task-main {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* משימות שבוצעו: "החזרה" ו"מחיקה" באותו גודל ובאותה שורה (בלי שוליים עליונים שמורידים את "מחיקה") */
+.task-row.is-done .btn-small {
+  margin: 0;
+  min-width: 88px;
+  min-height: 44px;
+  padding: 0 14px;
+}

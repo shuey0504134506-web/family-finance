@@ -89,6 +89,7 @@ export function orderContinuingAfter(order: StandingOrder, lastDate: IsoDate, to
  */
 export async function runDueOrders(uid: string, orders: readonly StandingOrder[], today: IsoDate, now: number): Promise<number> {
   let created = 0;
+  const commits: Promise<void>[] = [];
   for (const order of orders) {
     const dates = dueDatesUpTo(order, today);
     if (dates.length === 0) continue;
@@ -100,9 +101,12 @@ export async function runDueOrders(uid: string, orders: readonly StandingOrder[]
     // אם נותרו חיובים שעוד לא נוצרו (תקרת ההשלמה), הם ייווצרו בהרצה הבאה
     const last = dates[dates.length - 1];
     batch.set(doc(ordersCollection(uid), order.id), { ...order, nextDue: nextDueAfter(order.dayOfMonth, last), updatedAt: now });
-    await batch.commit();
+    // כל הוראה בכתיבה משלה והכתיבות רצות במקביל: בלי חיבור כתיבה אחת לא מחזירה תשובה עד שהחיבור חוזר,
+    // ואם היינו ממתינים לה, ההוראות שאחריה (עד 50 ויותר) היו נתקעות מאחוריה
+    commits.push(batch.commit());
     created += dates.length;
   }
+  await Promise.all(commits);
   return created;
 }
 

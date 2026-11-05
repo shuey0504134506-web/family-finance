@@ -11,6 +11,7 @@ import { AboutSection } from './AboutSection';
 import { AccountSection } from './AccountSection';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { FormDefaultsSection } from './FormDefaultsSection';
+import { HomeBackgroundControl } from './HomeBackgroundControl';
 import { LanguageCurrencySection } from './LanguageCurrencySection';
 import { LockSection } from './LockSection';
 import { ManageSection } from './ManageSection';
@@ -63,6 +64,10 @@ export function SettingsScreen() {
 
           <SectionItem id="defaults" title="ברירות מחדל להוספה">
             <FormDefaultsSection />
+          </SectionItem>
+
+          <SectionItem id="homebg" title="רקע מסך הבית">
+            <HomeBackgroundControl />
           </SectionItem>
 
           <SectionItem id="lang" title="שפה ומטבע">

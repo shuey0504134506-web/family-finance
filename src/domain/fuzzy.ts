@@ -7,8 +7,20 @@ const FINALS: Record<string, string> = { ך: 'כ', ם: 'מ', ן: 'נ', ף: 'פ',
 /** אותיות שנשמעות דומה ונוטות להתחלף בטעות */
 const SIMILAR: Record<string, string> = { ט: 'ת', ק: 'כ', ש: 'ס', ח: 'כ', ע: 'א', ה: 'א' };
 
-/** מסיר ניקוד וגרשיים ומאחד אותיות סופיות. */
+const normalizedCache = new Map<string, string>();
+const NORMALIZED_CACHE_MAX = 4000;
+
+/** מסיר ניקוד וגרשיים ומאחד אותיות סופיות. התוצאה נשמרת בזיכרון: אותם שמות מנורמלים שוב ושוב בזיהוי הוראות קבע. */
 export function normalizeText(text: string): string {
+  const hit = normalizedCache.get(text);
+  if (hit !== undefined) return hit;
+  const result = normalizeUncached(text);
+  if (normalizedCache.size >= NORMALIZED_CACHE_MAX) normalizedCache.clear();
+  normalizedCache.set(text, result);
+  return result;
+}
+
+function normalizeUncached(text: string): string {
   return text
     .toLocaleLowerCase('he')
     .replace(/[֑-ׇ]/g, '')
@@ -20,7 +32,18 @@ export function normalizeText(text: string): string {
 }
 
 /** שלד: בלי יו"ד/וי"ו (כתיב מלא/חסר) ועם אותיות דומות מאוחדות, כדי ש"מעשרות" ו"מעשרוט" יתאימו. */
+const skeletonCache = new Map<string, string>();
+
 export function skeleton(word: string): string {
+  const hit = skeletonCache.get(word);
+  if (hit !== undefined) return hit;
+  const result = skeletonUncached(word);
+  if (skeletonCache.size >= NORMALIZED_CACHE_MAX) skeletonCache.clear();
+  skeletonCache.set(word, result);
+  return result;
+}
+
+function skeletonUncached(word: string): string {
   return normalizeText(word)
     .replace(/[יו]/g, '')
     .replace(/[טקשחעה]/g, (c) => SIMILAR[c] ?? c)
