@@ -533,7 +533,7 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // ---------- סקירת AI ----------
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
-const AI_DEFAULTS = { model: 'gemini-2.5-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const AI_DEFAULTS = { model: 'gemini-3.8-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 9000;
 const AI_MAX_HISTORY = 6;
@@ -621,7 +621,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '256MiB', m
     systemInstruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
     contents: [...past, { role: 'user', parts: [{ text: `נתוני המשתמש (JSON):\n${data}\n\nהשאלה: ${q}` }] }],
     generationConfig: {
-      maxOutputTokens: 800,
+      // מודלים חדשים "חושבים" לפני התשובה והחשיבה נספרת במגבלה, ולכן המגבלה נדיבה; אורך התשובה עצמה מוגבל בהוראת המערכת
+      maxOutputTokens: 2048,
       temperature: 0.3,
       ...(/2\.5-flash/.test(cfg.model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
     },
