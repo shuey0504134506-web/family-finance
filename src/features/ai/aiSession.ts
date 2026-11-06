@@ -2,6 +2,8 @@ import { useSyncExternalStore } from "react";
 import { newId } from "../../services/ids";
 import {
   askAi,
+  chatToEvict,
+  deleteAiChat,
   describeAiError,
   loadAiQuota,
   saveAiChat,
@@ -154,16 +156,22 @@ export function askInSession(
         ...withQuestion,
         { role: "model", text: result.answer },
       ];
+      // כל שיחה נשמרת אוטומטית בהיסטוריה ואפשר להמשיך אותה, גם אם המשתמש כבר עבר למסך אחר
       const existing = ctx.saved.find((c) => c.id === chatId);
-      // שיחה שמורה מתעדכנת גם אם המשתמש כבר עבר למסך אחר
-      if (existing) {
-        const title = (
-          next.find((m) => m.role === "user")?.text ?? "שיחה"
-        ).slice(0, 60);
+      const title = (next.find((m) => m.role === "user")?.text ?? "שיחה").slice(
+        0,
+        60,
+      );
+      let notSaved = false;
+      const evict = existing ? null : chatToEvict(ctx.saved, chatId);
+      if (evict === "full") {
+        notSaved = true;
+      } else {
+        if (evict) deleteAiChat(uid, evict).catch(() => undefined);
         saveAiChat(uid, {
           id: chatId,
           title,
-          pinned: existing.pinned ?? false,
+          pinned: existing?.pinned ?? false,
           messages: next,
           createdAt,
           updatedAt: Date.now(),
@@ -181,6 +189,9 @@ export function askInSession(
           startedAt: null,
           quota: { remaining: result.remaining, limit: result.limit },
           unread: true,
+          error: notSaved
+            ? "כל חמש השיחות השמורות נעוצות, ולכן השיחה הזאת לא נשמרה בהיסטוריה. אפשר לבטל נעיצה של שיחה בהיסטוריה."
+            : "",
         });
       } else if (state && state.uid === uid) {
         set({

@@ -3,14 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { pickQuestions } from "../../domain/aiQuestions";
 import {
-  chatToEvict,
-  deleteAiChat,
   loadAiQuota,
   saveAiChat,
   subscribeAiChats,
   subscribeRecentQuestions,
   type AiChat,
-  type AiMessage,
   type RecentQuestion,
 } from "../../services/aiService";
 import { useReadyAuth } from "../auth/AuthContext";
@@ -21,7 +18,6 @@ import {
   askInSession,
   markSeen,
   openChat,
-  setError,
   setQuota,
   startNewChat,
   takeFailedDraft,
@@ -83,8 +79,7 @@ export function AiReviewScreen() {
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const [suggestions, setSuggestions] = useState(() => pickQuestions(5));
   const session = useAiSession(user.uid);
-  const { chatId, createdAt, messages, busy, startedAt, error, quota } =
-    session;
+  const { chatId, messages, busy, startedAt, error, quota } = session;
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<AiChat[]>([]);
   const [recent, setRecent] = useState<RecentQuestion[]>([]);
@@ -123,22 +118,6 @@ export function AiReviewScreen() {
   const isSaved = saved.some((c) => c.id === chatId);
   const pinned = saved.find((c) => c.id === chatId)?.pinned ?? false;
 
-  const persist = (list: AiMessage[]) => {
-    const title = (list.find((m) => m.role === "user")?.text ?? "שיחה").slice(
-      0,
-      60,
-    );
-    const existing = saved.find((c) => c.id === chatId);
-    saveAiChat(user.uid, {
-      id: chatId,
-      title,
-      pinned: existing?.pinned ?? false,
-      messages: list,
-      createdAt,
-      updatedAt: Date.now(),
-    }).catch(() => reportFailure("לא הצלחנו לשמור את השיחה. יש לנסות שוב."));
-  };
-
   const ask = (raw: string) => {
     const q = raw.trim();
     if (!q || busy || !data.ready || !consent) return;
@@ -162,19 +141,6 @@ export function AiReviewScreen() {
   const newConversation = () => {
     startNewChat(user.uid);
     setSuggestions(pickQuestions(5, Math.random, suggestions));
-  };
-
-  const save = () => {
-    const evict = chatToEvict(saved, chatId);
-    if (evict === "full") {
-      setError(
-        user.uid,
-        "יש כבר חמש שיחות שמורות ונעוצות. כדי לשמור שיחה חדשה צריך למחוק או לבטל נעיצה בהיסטוריה.",
-      );
-      return;
-    }
-    if (evict) deleteAiChat(user.uid, evict).catch(() => undefined);
-    persist(messages);
   };
 
   const togglePin = () => {
@@ -315,15 +281,7 @@ export function AiReviewScreen() {
                   >
                     {pinned ? "ביטול נעיצה" : "נעיצה"}
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-small"
-                    onClick={save}
-                  >
-                    שמירת השיחה
-                  </button>
-                )}
+                ) : null}
               </div>
             )}
             <p className="muted small">
