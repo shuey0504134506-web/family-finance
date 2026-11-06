@@ -112,6 +112,13 @@ async function usageDays(uids) {
         }
       }
       out.set(uids[i + k], { days, updatedAt: snap.exists ? Number(snap.data().updatedAt) || 0 : 0, client });
+      // כללי Firestore מגבילים את days ל-800 מפתחות. סימוני גרסה ישנים (@פלטפורמה@גרסה) נצברים בכל עדכון,
+      // ולכן משאירים רק את העדכני ומנקים את השאר, כדי שספירת הפתיחות לא תיפסק בשקט
+      const stale = Object.keys(raw).filter((key) => key.startsWith('@') && (!client || key !== `@${client.platform}@${client.version}`));
+      if (stale.length > 5 && snap.exists) {
+        const args = stale.flatMap((key) => [new admin.firestore.FieldPath('days', key), admin.firestore.FieldValue.delete()]);
+        snap.ref.update(...args).catch(() => undefined);
+      }
     });
   }
   return out;
@@ -382,6 +389,10 @@ exports.adminDeleteAccount = onCall({ region: REGION, timeoutSeconds: 300 }, asy
   await Promise.all([
     db.collection('approvals').doc(uid).delete(),
     db.collection('usage').doc(uid).delete(),
+    // שאריות שנשמרות מחוץ לתיקיית המשתמש: הערת מנהל, גישת AI ושימוש ב-AI
+    db.collection('adminNotes').doc(uid).delete(),
+    db.collection('aiAccess').doc(uid).delete(),
+    db.collection('aiUsage').doc(uid).delete(),
     ...msgs.docs.map((d) => d.ref.delete()),
   ]);
   await admin.auth().deleteUser(uid);
@@ -495,10 +506,11 @@ exports.adminReplyMessage = onCall({ region: REGION }, async (request) => {
   if (!snap.exists) throw new HttpsError('not-found', 'ההודעה לא נמצאה.');
   const now = Date.now();
   await ref.update({ reply, repliedAt: now });
-  await db.collection('approvals').doc(snap.data().uid).set(
-    { notice: { id: `reply-${id}-${now}`, title: 'תשובה מהמנהל', text: reply, createdAt: now } },
-    { merge: true },
-  );
+  // ההודעה קופצת אצל המשתמש רק אם החשבון עדיין קיים (בלי ליצור רשומת אישור יתומה לחשבון שנמחק)
+  const approvalRef = db.collection('approvals').doc(snap.data().uid);
+  if ((await approvalRef.get()).exists) {
+    await approvalRef.set({ notice: { id: `reply-${id}-${now}`, title: 'תשובה מהמנהל', text: reply, createdAt: now } }, { merge: true });
+  }
   return { ok: true };
 });
 

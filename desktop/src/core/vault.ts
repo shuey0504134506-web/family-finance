@@ -15,7 +15,7 @@ export interface VaultFile {
   data: Box;
 }
 
-export const DEFAULT_ITERATIONS = 310_000;
+export const DEFAULT_ITERATIONS = 600_000;
 
 async function wrap(dataKey: Uint8Array, secret: string, salt: Uint8Array, iterations: number): Promise<Box> {
   return encryptBytes(await deriveKey(secret, salt, iterations), dataKey);

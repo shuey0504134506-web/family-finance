@@ -1516,4 +1516,11 @@ export const EN: Record<string, string> = {
   "לכל פנייה, שאלה או בקשה בנושא פרטיות והגנה על מידע ניתן לפנות אל:": "For any inquiry, question or request about privacy and data protection, contact:",
     "חשיבה מעמיקה": "Deep thinking",
     "לשאלות מורכבות. התשובה איטית יותר.": "For complex questions. The answer is slower.",
+  "אין הוצאות בתקופה הזו.": "No expenses in this period.",
+  "אין הכנסות בתקופה הזו.": "No income in this period.",
+  "הצבעים נבחרו כך שיהיה ניגוד ברור בין הטקסט לרקע. עדיין לא בוצעה בדיקת ניגודיות מקיפה של כל המסכים.": "The colors were chosen to give clear contrast between text and background. A comprehensive contrast check of every screen has not been done yet.",
+  "לכפתורים יש אזורי לחיצה גדולים, ורוב השדות והפקדים תופסים שורה שלמה. קישורי טקסט בתוך משפטים קטנים יותר. הפריסה מתאימה להגדלת גופן במכשיר.": "Buttons have large tap areas, and most fields and controls take a full row. Text links inside sentences are smaller. The layout adapts to larger device font sizes.",
+  "יש סימון ברור של האלמנט הפעיל בניווט במקלדת. בדיקה מלאה של הניווט במקלדת בכל המסכים עדיין לא בוצעה.": "The active element is clearly marked during keyboard navigation. A full keyboard navigation check of every screen has not been done yet.",
+  "הבדיקות שבוצעו הן בדיקות פנימיות, אוטומטיות וידניות, של תוויות לשדות ולכפתורים, כותרות, טקסט חלופי לתמונות, כיוון ימין לשמאל והתאמה לגדלי מסך שונים. לא בוצעה עדיין ביקורת נגישות מקצועית חיצונית ולא נבדק שימוש מלא עם קורא מסך, ולכן ייתכנו רכיבים שאינם נגישים במלואם. אם נתקלתם בקושי, נשמח לדעת ולתקן.": "The checks performed were internal, automated and manual checks of field and button labels, headings, image alternative text, right-to-left direction, and adaptation to different screen sizes. A professional external accessibility audit has not been performed yet and full use with a screen reader has not been verified, so some components may not be fully accessible. If you run into difficulty, we would be glad to know and fix it.",
+  "עודכן לאחרונה: 6 בנובמבר 2026.": "Last updated: November 6, 2026.",
 };

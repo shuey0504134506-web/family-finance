@@ -22,6 +22,9 @@ jobs:
       - name: התקנת חבילות הפונקציות
         run: npm install --prefix functions --omit=dev
 
+      - name: בדיקת תחביר של קוד הפונקציות
+        run: node --check functions/index.js
+
       - name: כתיבת מפתח השירות לקובץ זמני
         env:
           KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

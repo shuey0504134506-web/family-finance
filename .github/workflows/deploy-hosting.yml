@@ -24,6 +24,11 @@ jobs:
       - name: התקנת חבילות
         run: npm ci
 
+      - name: בדיקות (lint ובדיקות יחידה) לפני הפריסה
+        run: |
+          npm run lint
+          npm run test
+
       - name: בניית האפליקציה
         run: npm run build
         env:

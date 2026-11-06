@@ -139,7 +139,7 @@ export function PeriodComparison({
       </div>
 
       {rows.length === 0 ? (
-        <p className="muted">אין {type === 'expense' ? 'הוצאות' : 'הכנסות'} בתקופה הזו.</p>
+        <p className="muted">{type === 'expense' ? 'אין הוצאות בתקופה הזו.' : 'אין הכנסות בתקופה הזו.'}</p>
       ) : (
         <>
           <div className="chart-readout" role="status" aria-live="polite">

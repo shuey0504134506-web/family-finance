@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { FullScreenMessage } from './components/FullScreenMessage';
 import { useAuth } from './features/auth/AuthContext';
@@ -9,42 +10,74 @@ import { ForgotPasswordScreen } from './features/auth/ForgotPasswordScreen';
 import { LoginScreen } from './features/auth/LoginScreen';
 import { SignupScreen } from './features/auth/SignupScreen';
 import { WelcomeScreen } from './features/auth/WelcomeScreen';
-import { AdminScreen } from './features/admin/AdminScreen';
 import { HomeScreen } from './features/home/HomeScreen';
-import { AiHistoryScreen } from './features/ai/AiHistoryScreen';
-import { AiReviewScreen } from './features/ai/AiReviewScreen';
-import { ImportScreen } from './features/import/ImportScreen';
 import { MenuScreen } from './features/menu/MenuScreen';
 import { ListsProvider } from './features/lists/ListsContext';
 import { WideShell } from './features/shell/WideShell';
 import { useIsWide } from './hooks/useIsWide';
-import { StandingOrdersScreen } from './features/standing/StandingOrdersScreen';
 import { StandingOrdersHost } from './features/standing/StandingOrdersHost';
 import { RemindersHost } from './features/lists/RemindersHost';
 import { ShoppingScreen } from './features/lists/ShoppingScreen';
 import { TasksScreen } from './features/lists/TasksScreen';
 import { LockProvider } from './features/lock/LockContext';
 import { LockGate } from './features/lock/LockScreen';
-import { PrivacyScreen } from './features/privacy/PrivacyScreen';
-import { AccessibilityScreen } from './features/privacy/AccessibilityScreen';
 import { AutoBackupHost } from './features/settings/AutoBackupHost';
 import { SettingsProvider } from './features/settings/SettingsContext';
-import { SettingsScreen } from './features/settings/SettingsScreen';
-import { BudgetScreen } from './features/budget/BudgetScreen';
-import { SearchScreen } from './features/search/SearchScreen';
-import { SummaryScreen } from './features/summary/SummaryScreen';
-import { DebtsScreen } from './features/debts/DebtsScreen';
-import { HelpScreen } from './features/help/HelpScreen';
-import { TitheScreen } from './features/tithes/TitheScreen';
 import { TransactionListScreen } from './features/transactions/TransactionListScreen';
 import { TransactionFormScreen } from './features/transactions/TransactionFormScreen';
 import { SpaceRoute } from './features/spaces/SpaceRoute';
 import { QuickAddRedirect } from './features/spaces/QuickAddRedirect';
 import { SpacesProvider, useSpaces } from './features/spaces/SpacesContext';
 import { readDeviceUser } from './services/deviceUser';
-import { LandingScreen } from './features/landing/LandingScreen';
 import { isInstalledApp } from './native/installPrompt';
 import { Capacitor } from '@capacitor/core';
+
+/**
+ * מסכים שאינם חלק מהכניסה הראשונה נטענים לפי הצורך, כדי שהחבילה הראשית תהיה קטנה וההפעלה מהירה.
+ * אם הקובץ של המסך כבר לא קיים בשרת (פורסמה גרסה חדשה בזמן שהאפליקציה פתוחה), טוענים את האפליקציה מחדש פעם אחת.
+ */
+const RELOAD_KEY = 'ff.chunkReload.v1';
+function lazyScreen<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(async () => {
+    try {
+      const module = await load();
+      try {
+        sessionStorage.removeItem(RELOAD_KEY);
+      } catch {
+        /* אחסון חסום */
+      }
+      return { default: module[name] };
+    } catch (error) {
+      let already = true;
+      try {
+        already = sessionStorage.getItem(RELOAD_KEY) === '1';
+        if (!already) sessionStorage.setItem(RELOAD_KEY, '1');
+      } catch {
+        already = true;
+      }
+      if (!already) {
+        window.location.reload();
+        return new Promise<never>(() => undefined);
+      }
+      throw error;
+    }
+  });
+}
+const AdminScreen = lazyScreen(() => import('./features/admin/AdminScreen'), 'AdminScreen');
+const AiHistoryScreen = lazyScreen(() => import('./features/ai/AiHistoryScreen'), 'AiHistoryScreen');
+const AiReviewScreen = lazyScreen(() => import('./features/ai/AiReviewScreen'), 'AiReviewScreen');
+const ImportScreen = lazyScreen(() => import('./features/import/ImportScreen'), 'ImportScreen');
+const StandingOrdersScreen = lazyScreen(() => import('./features/standing/StandingOrdersScreen'), 'StandingOrdersScreen');
+const PrivacyScreen = lazyScreen(() => import('./features/privacy/PrivacyScreen'), 'PrivacyScreen');
+const AccessibilityScreen = lazyScreen(() => import('./features/privacy/AccessibilityScreen'), 'AccessibilityScreen');
+const SettingsScreen = lazyScreen(() => import('./features/settings/SettingsScreen'), 'SettingsScreen');
+const BudgetScreen = lazyScreen(() => import('./features/budget/BudgetScreen'), 'BudgetScreen');
+const SearchScreen = lazyScreen(() => import('./features/search/SearchScreen'), 'SearchScreen');
+const SummaryScreen = lazyScreen(() => import('./features/summary/SummaryScreen'), 'SummaryScreen');
+const DebtsScreen = lazyScreen(() => import('./features/debts/DebtsScreen'), 'DebtsScreen');
+const HelpScreen = lazyScreen(() => import('./features/help/HelpScreen'), 'HelpScreen');
+const TitheScreen = lazyScreen(() => import('./features/tithes/TitheScreen'), 'TitheScreen');
+const LandingScreen = lazyScreen(() => import('./features/landing/LandingScreen'), 'LandingScreen');
 
 function LoadingScreen() {
   return <FullScreenMessage title="טוען…" />;
@@ -127,6 +160,7 @@ function HomeRedirect() {
 export function AppRoutes() {
   return (
     <>
+    <Suspense fallback={null}>
     <Routes>
       <Route element={<PublicOnly />}>
         <Route path="/start" element={<LandingScreen />} />
@@ -168,6 +202,7 @@ export function AppRoutes() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
     </>
   );
 }
