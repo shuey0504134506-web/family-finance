@@ -6,6 +6,7 @@ import { Amount } from '../../components/Amount';
 import { Icon } from '../../components/Icon';
 import { AppHeader } from '../../components/AppHeader';
 import { HomeGreeting } from './HomeGreeting';
+import { AiEntryButton, useShowAiEntry } from '../ai/AiEntryButton';
 import { ScopeTabs } from '../../components/ScopeTabs';
 import { useMonthTransactions } from '../../hooks/useMonthTransactions';
 import { useSwipe } from '../../hooks/useSwipe';
@@ -128,6 +129,7 @@ export function HomeScreen() {
   const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
 
   useHomeBackground(user.uid);
+  const showAi = useShowAiEntry();
   const wide = useIsWide();
   // שלוש הפעולות האחרונות של המרחב (במסך רחב יותר, והכרטיס חותך לפי הגובה שנכנס) והחודש שמוצגים, במטבע המקורי
   const recent = useMemo(() => {
@@ -204,7 +206,7 @@ export function HomeScreen() {
       <AppHeader />
 
       <main className="content" aria-busy={loading}>
-        <HomeGreeting firstName={profile.firstName} />
+        <HomeGreeting firstName={profile.firstName} action={showAi ? <AiEntryButton /> : undefined} />
         <h1 className="scope-title">
           {logo ? <img className="scope-logo" src={logo} alt="" width={36} height={36} /> : <Icon name={isBusiness ? 'business' : 'household'} />} {title}
         </h1>

@@ -180,3 +180,27 @@ export async function loadAdminLog(): Promise<AdminLogEntry[]> {
   const result = await httpsCallable<void, { entries: AdminLogEntry[] }>(functions(), 'adminListLog')();
   return result.data.entries;
 }
+
+export interface AdminAiInfo {
+  hasKey: boolean;
+  /** ארבע הספרות האחרונות של המפתח השמור (המפתח עצמו לא חוזר מהשרת) */
+  keyHint: string;
+  model: string;
+  perUserDaily: number;
+  globalDaily: number;
+  enabled: boolean;
+  usedToday: number;
+  accessUids: string[];
+}
+
+export async function loadAdminAi(): Promise<AdminAiInfo> {
+  return (await httpsCallable<void, AdminAiInfo>(functions(), 'adminGetAi')()).data;
+}
+
+export async function saveAdminAi(patch: { apiKey?: string; model?: string; perUserDaily?: number; globalDaily?: number; enabled?: boolean }): Promise<void> {
+  await httpsCallable(functions(), 'adminSetAi')(patch);
+}
+
+export async function setAiAccess(uid: string, enabled: boolean): Promise<void> {
+  await httpsCallable(functions(), 'adminSetAiAccess')({ uid, enabled });
+}

@@ -38,6 +38,7 @@ import {
   type AccountSort,
 } from './adminTools';
 import { SectionItem, useOpenSection, useSectionHeader } from '../settings/SectionPages';
+import { AiAdminSection } from './AiAdminSection';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
 
@@ -690,6 +691,10 @@ function AdminContent() {
                   </ul>
                   <button type="button" className="btn btn-secondary" onClick={loadLogNow}>רענון היומן</button>
                 </div>
+              </SectionItem>
+
+              <SectionItem id="ai" title="סקירת AI">
+                <AiAdminSection users={data.users} />
               </SectionItem>
 
               <SectionItem id="accounts" title={`חשבונות (${data.users.length})`}>

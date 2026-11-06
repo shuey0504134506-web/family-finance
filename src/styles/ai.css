@@ -1,0 +1,171 @@
+/* סקירת AI: הכפתור במסך הבית והמסכים שלה */
+
+/* כפתור חצי שקוף בקצה שורת הברכה (בצד שמאל), בתוך הזרימה של המסך: כשיורד סרגל "חזרה לחודש הנוכחי" הוא יורד איתה */
+.home-greeting.has-action {
+  position: relative;
+}
+
+.ai-entry {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--navy, #102a45);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 1px 6px rgba(16, 42, 69, 0.08);
+  cursor: pointer;
+}
+
+.ai-entry::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+@media (max-width: 430px) {
+  .home-clean .home-greeting.has-action {
+    padding-inline-end: 84px;
+  }
+}
+
+.ai-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-suggest {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-suggest-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1.5px solid #d8d1c0;
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ai-suggest-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ai-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.ai-form .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-msg {
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.ai-msg-user {
+  align-self: flex-start;
+  background: #e9eef6;
+  color: var(--text);
+}
+
+.ai-msg-model {
+  align-self: flex-end;
+  background: #fbf8f0;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ai-typing {
+  color: var(--text-muted);
+}
+
+.ai-thread-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-history-btn {
+  align-self: stretch;
+}
+
+.ai-rules {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-saved {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-saved-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-saved-main {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ai-saved-title {
+  overflow-wrap: anywhere;
+}

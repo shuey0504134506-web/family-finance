@@ -545,6 +545,33 @@ service cloud.firestore {
         allow delete: if isWriter(uid);
       }
 
+      // ---------- סקירת AI: שיחות שמורות (עד חמש, מוגבל בצד הלקוח) ורשימת השאלות האחרונות ----------
+      match /aiChats/{chatId} {
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
+                              && request.resource.data.keys().hasOnly(['id', 'title', 'pinned', 'messages', 'createdAt', 'updatedAt'])
+                              && request.resource.data.keys().hasAll(['id', 'title', 'pinned', 'messages', 'createdAt', 'updatedAt'])
+                              && request.resource.data.id == chatId
+                              && isShortString(request.resource.data.title, 80)
+                              && request.resource.data.pinned is bool
+                              && request.resource.data.messages is list
+                              && request.resource.data.messages.size() <= 40
+                              && request.resource.data.createdAt is int
+                              && request.resource.data.updatedAt is int;
+        allow delete: if isWriter(uid);
+      }
+
+      match /aiMeta/{docId} {
+        allow read: if isReader(uid);
+        allow create, update: if isWriter(uid)
+                              && docId == 'recent'
+                              && request.resource.data.keys().hasOnly(['items', 'updatedAt'])
+                              && request.resource.data.items is list
+                              && request.resource.data.items.size() <= 20
+                              && request.resource.data.updatedAt is int;
+        allow delete: if isWriter(uid);
+      }
+
       match /tasks/{taskId} {
         allow read: if isReader(uid);
         allow create: if isWriter(uid) && validTask(request.resource.data, taskId);
@@ -562,6 +589,13 @@ service cloud.firestore {
                       && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if isWriter(uid);
       }
+    }
+
+    // גישת AI: aiAccess/{uid} = {enabled: true}. המשתמש קורא את שלו בלבד (כדי לדעת אם להציג את הכפתור), ונכתב בשרת בלבד.
+    // aiConfig (מפתח ה-API והמכסות) ו-aiUsage (מונים יומיים) נשארים חסומים לגמרי: רק פונקציות השרת ניגשות אליהם.
+    match /aiAccess/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
     }
 
     // כל שאר הנתיבים חסומים.

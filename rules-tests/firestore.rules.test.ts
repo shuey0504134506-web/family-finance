@@ -577,3 +577,41 @@ describe('הוראות קבע', () => {
     await assertFails(setDoc(doc(alice(), 'users/alice/householdTransactions/tx3'), transaction({ standingOrderId: 5 }, 'tx3')));
   });
 });
+
+describe('סקירת AI', () => {
+  const alice = () => env.authenticatedContext('alice').firestore();
+  const bob = () => env.authenticatedContext('bob').firestore();
+  const chat = (over: Record<string, unknown> = {}) => ({ id: 'c1', title: 'שאלה', pinned: false, messages: [{ role: 'user', text: 'היי' }], createdAt: 1, updatedAt: 2, ...over });
+
+  it('גישת AI: המשתמש קורא את שלו בלבד ואינו יכול לכתוב', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'aiAccess/alice'), { enabled: true, at: 1 });
+    });
+    await assertSucceeds(getDoc(doc(alice(), 'aiAccess/alice')));
+    await assertFails(getDoc(doc(bob(), 'aiAccess/alice')));
+    await assertFails(setDoc(doc(alice(), 'aiAccess/alice'), { enabled: true, at: 2 }));
+    await assertFails(setDoc(doc(bob(), 'aiAccess/bob'), { enabled: true, at: 2 }));
+  });
+
+  it('הגדרות ומונים של ה-AI חסומים לגמרי ללקוח', async () => {
+    await assertFails(getDoc(doc(alice(), 'aiConfig/main')));
+    await assertFails(setDoc(doc(alice(), 'aiConfig/main'), { apiKey: 'x' }));
+    await assertFails(setDoc(doc(alice(), 'aiUsage/alice'), { day: '2026-11-06', count: 0 }));
+  });
+
+  it('שיחות שמורות: תקינה נשמרת, לא תקינה נדחית, ורק הבעלים ניגש', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/aiChats/c1'), chat()));
+    await assertFails(setDoc(doc(alice(), 'users/alice/aiChats/c1'), chat({ pinned: 'yes' })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/aiChats/c1'), chat({ extra: 1 })));
+    await assertFails(setDoc(doc(alice(), 'users/alice/aiChats/c1'), chat({ messages: Array.from({ length: 41 }, () => ({ role: 'user', text: 'x' })) })));
+    await assertFails(getDoc(doc(bob(), 'users/alice/aiChats/c1')));
+    await assertSucceeds(deleteDoc(doc(alice(), 'users/alice/aiChats/c1')));
+  });
+
+  it('שאלות אחרונות: עד 20 במסמך recent בלבד', async () => {
+    const items = (n: number) => Array.from({ length: n }, (_, i) => ({ q: `q${i}`, at: i }));
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/aiMeta/recent'), { items: items(20), updatedAt: 1 }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/aiMeta/recent'), { items: items(21), updatedAt: 1 }));
+    await assertFails(setDoc(doc(alice(), 'users/alice/aiMeta/other'), { items: items(1), updatedAt: 1 }));
+  });
+});
