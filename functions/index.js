@@ -533,7 +533,7 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // ---------- סקירת AI ----------
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
-const AI_DEFAULTS = { model: 'gemini-3.8-flash', fallbackModel: 'gemini-2.5-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const AI_DEFAULTS = { model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
@@ -648,10 +648,10 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const quota = await takeAiQuota(uid, cfg);
   const wantDeep = deep === true;
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
-  // רמות חשיבה לפי מהירות: ברירת המחדל מהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. אם המודל דוחה רמה (400), יורדים לרמה הבאה
+  // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
   const ladderFor = (model) => {
     if (/2\.5-flash/.test(model)) return [{ thinkingBudget: wantDeep ? -1 : 0 }, null];
-    if (/gemini-3/.test(model)) return wantDeep ? [{ thinkingLevel: 'high' }, { thinkingLevel: 'low' }, null] : [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, null];
+    if (/gemini-3/.test(model)) return wantDeep ? [{ thinkingLevel: 'high' }, { thinkingLevel: 'low' }, null] : [{ thinkingLevel: 'low' }, null];
     return [null];
   };
   const makeBody = (model, thinkingConfig) => ({
@@ -696,34 +696,40 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   let finishReason = '';
   let usedModel = cfg.model;
   try {
-    // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין עמוס עוברים למודל הגיבוי
+    // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין לא זמין עוברים למודל הגיבוי.
+    // כל כשל נשמר, כדי שהשגיאה שמוצגת (והלוג) תהיה של המודל הראשי ולא של הגיבוי שרק ניסה להציל
     const models = [cfg.model, ...(cfg.fallbackModel && cfg.fallbackModel !== cfg.model ? [cfg.fallbackModel] : [])];
+    const failures = [];
     let res = null;
     for (const model of models) {
       usedModel = model;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         res = await openModel(model);
-        if (res.ok || !retryable(res.status) || Date.now() - startedMs > 60000) break;
+        if (res.ok) break;
+        let detail = '';
+        try {
+          detail = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
+        } catch {
+          detail = '';
+        }
+        failures.push({ model, status: res.status, detail });
+        if (!retryable(res.status) || Date.now() - startedMs > 60000) break;
         if (attempt === 0) await sleep(res.status === 429 ? 3000 : 1500);
       }
-      if (res.ok || !retryable(res.status) || Date.now() - startedMs > 60000) break;
+      if (res.ok || Date.now() - startedMs > 80000) break;
     }
     if (!res.ok) {
       await refundAiQuota(uid);
-      let detail = '';
-      try {
-        detail = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
-      } catch {
-        detail = '';
-      }
-      await recordAiError(uid, usedModel, `HTTP ${res.status}: ${detail}`);
+      const first = failures[0] ?? { model: usedModel, status: res.status, detail: '' };
+      await recordAiError(uid, first.model, failures.map((f) => `${f.model} HTTP ${f.status}: ${f.detail.slice(0, 150)}`).join(' || '));
       const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
-      const tech = isAdmin ? ` [${res.status}] ${detail.slice(0, 200)}` : '';
-      if (res.status === 503) throw new HttpsError('unavailable', `המודל עמוס כרגע אצל גוגל. ניסינו גם מודל גיבוי. אפשר לנסות שוב בעוד דקה.${tech}`);
-      if (res.status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
-      if (res.status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
-      if (res.status === 401 || res.status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
-      if (res.status === 400) throw new HttpsError('unavailable', `הבקשה נדחתה על ידי המודל (ייתכן שהנתונים גדולים מדי).${tech}`);
+      const tech = isAdmin ? failures.map((f) => ` [${f.model} ${f.status}] ${f.detail.slice(0, 160)}`).join('') : '';
+      const status = first.status;
+      if (status === 503) throw new HttpsError('unavailable', `המודל עמוס כרגע אצל גוגל. ניסינו גם מודל גיבוי. אפשר לנסות שוב בעוד דקה.${tech}`);
+      if (status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
+      if (status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
+      if (status === 401 || status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
+      if (status === 400) throw new HttpsError('unavailable', `הבקשה נדחתה על ידי המודל (ייתכן שהנתונים גדולים מדי).${tech}`);
       throw new HttpsError('unavailable', `לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.${tech}`);
     }
     // קוראים את התשובה תוך כדי הגעתה ומעבירים אותה ללקוח מיד, כדי שהמשתמש יראה אותה נבנית ולא יחכה לסוף
