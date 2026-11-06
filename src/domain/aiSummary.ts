@@ -83,13 +83,17 @@ const money = (agorot: number): number => Math.round(agorot) / 100;
  * עד תקרת אורך), תקציבים ויעד חיסכון, חובות, הוראות קבע וקטגוריות. ללא תמונות מצורפות.
  */
 export function buildAiData(input: AiDataInput): Record<string, unknown> {
-  const rows = [...input.items]
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
-    .slice(0, AI_MAX_ROWS)
-    .map((t) => [t.date, t.type === 'income' ? 'I' : 'E', money(t.amountAgorot), t.categoryName ?? '', (t.counterparty ?? '').slice(0, 60), paymentLabelOf(t), (t.note ?? '').slice(0, 60)]);
+  // שורה אחת לפעולה בטקסט קצר (פחות טוקנים מ-JSON, ולכן מהיר וזול יותר). הערות מלאות יותר, כדי שיהיה אפשר לחפש בהן.
+  const clean = (value: string, max: number) => value.replace(/[|\r\n]+/g, ' ').trim().slice(0, max);
+  const line = (t: AiDataInput['items'][number]) =>
+    [t.date, t.type === 'income' ? 'I' : 'E', money(t.amountAgorot), clean(t.categoryName ?? '', 40), clean(t.counterparty ?? '', 60), paymentLabelOf(t), clean(t.note ?? '', 120)].join('|');
+  const sorted = [...input.items].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  const rows = sorted.slice(0, AI_MAX_ROWS).map(line);
+  // הפעולות של החודש שנבחר בנפרד ובראש הנתונים: שאלות על "החודש" לא תלויות בחיפוש בכל ההיסטוריה
+  const monthRows = sorted.filter((t) => t.date.startsWith(input.selected)).map(line);
   const base = {
     about:
-      'נתוני משתמש מלאים של האפליקציה. סכומים בשקלים. transactions: כל שורה היא [תאריך, I=הכנסה/E=הוצאה, סכום, קטגוריה, בית עסק או שם, צורת תשלום, הערה], מהחדשה לישנה.',
+      'נתוני משתמש מלאים של האפליקציה. סכומים בשקלים. selectedMonthTransactions ו-transactions הם טקסט, שורה לכל פעולה בפורמט: תאריך|I=הכנסה/E=הוצאה|סכום|קטגוריה|בית עסק או שם|צורת תשלום|הערה (מהחדשה לישנה). selectedMonthTransactions הן כל פעולות החודש שנבחר, ו-transactions כל הפעולות מכל החודשים.',
     space: input.spaceName,
     kind: input.scopeLabel,
     today: input.today,
@@ -107,11 +111,12 @@ export function buildAiData(input: AiDataInput): Record<string, unknown> {
     categories: input.categories,
   };
   // חותכים את הפעולות הישנות ביותר עד שהכול נכנס בתקרת האורך
+  const head = { ...base, selectedMonthTransactions: monthRows.join('\n') };
   let keep = rows.length;
-  let json = JSON.stringify({ ...base, transactionCount: rows.length, transactions: rows });
+  let json = JSON.stringify({ ...head, transactionCount: rows.length, transactions: rows.join('\n') });
   while (json.length > AI_DATA_MAX_CHARS && keep > 0) {
     keep = Math.floor(keep * 0.85);
-    json = JSON.stringify({ ...base, transactionCount: rows.length, transactionsShown: keep, transactions: rows.slice(0, keep) });
+    json = JSON.stringify({ ...head, transactionCount: rows.length, transactionsShown: keep, transactions: rows.slice(0, keep).join('\n') });
   }
   return JSON.parse(json) as Record<string, unknown>;
 }

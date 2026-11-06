@@ -11,8 +11,14 @@ export function AiEntryButton() {
   const allowed = useAiAccess(user.uid);
   if (!AI_SUPPORTED || !allowed) return null;
   return (
-    <button type="button" className="ai-entry" onClick={() => navigate(`/${space.key}/ai`)}>
-      סקירת AI
+    <button type="button" className="ai-entry" aria-label="סקירת AI" onClick={() => navigate(`/${space.key}/ai`)}>
+      <span className="ai-entry-full">סקירת AI</span>
+      <span className="ai-entry-star" aria-hidden="true">
+        ✦
+      </span>
+      <span className="ai-entry-short" aria-hidden="true">
+        AI
+      </span>
     </button>
   );
 }

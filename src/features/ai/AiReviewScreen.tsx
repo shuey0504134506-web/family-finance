@@ -42,6 +42,27 @@ interface NavState {
 }
 
 /** סקירת AI: חמש שאלות מוצעות מהמאגר, שורת שאלה חופשית, השיחה, וכפתור להיסטוריה. */
+/** חיווי "חושב" חי: נקודות מונפשות ושעון שניות, כדי שיהיה ברור שהמודל עובד ולא נתקע. */
+function ThinkingIndicator() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const timer = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return (
+    <div className="ai-msg ai-msg-model ai-typing" role="status">
+      <span>חושב</span>
+      <span className="ai-dots" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+      {seconds >= 3 ? <span className="ai-typing-time">{seconds} שנ'</span> : null}
+    </div>
+  );
+}
+
 export function AiReviewScreen() {
   const { user } = useReadyAuth();
   const space = useSpace();
@@ -238,7 +259,7 @@ export function AiReviewScreen() {
                 {m.text}
               </div>
             ))}
-            {busy && <div className="ai-msg ai-msg-model ai-typing">חושב…</div>}
+            {busy && <ThinkingIndicator />}
             <div ref={threadEnd} />
             {!busy && messages.length > 0 && (
               <div className="ai-thread-actions">
