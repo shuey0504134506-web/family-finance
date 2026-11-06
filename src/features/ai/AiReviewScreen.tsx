@@ -178,7 +178,7 @@ export function AiReviewScreen() {
           <section className="card ai-consent" aria-label="לפני שמתחילים">
             <h2 className="card-title">לפני שמתחילים</h2>
             <p className="small">
-              כדי לענות, האפליקציה שולחת ל-AI של Google סיכום קטן של הנתונים שלך: סכומים כוללים לפי חודש, קטגוריה, בית עסק וצורת תשלום. לא נשלחות פעולות בודדות, הערות או פרטי חשבון.
+              כדי לענות, האפליקציה שולחת ל-AI של Google את הנתונים הכספיים של המרחב הזה: הפעולות (כולל שמות בתי עסק והערות), התקציבים, החובות והוראות הקבע. לא נשלחים תמונות מצורפות, סיסמאות או פרטי חשבון.
             </p>
             <button type="button" className="btn btn-primary" onClick={acceptConsent}>
               הבנתי, אפשר להמשיך

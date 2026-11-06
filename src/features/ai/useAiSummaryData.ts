@@ -1,41 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import { addMonths } from '../../domain/dates';
-import { buildAiSummary, type MonthTotals } from '../../domain/aiSummary';
+import { useMemo } from 'react';
+import { buildAiData, type MonthTotals } from '../../domain/aiSummary';
+import { effectiveSavingsGoal } from '../../domain/budget';
+import { addMonths, todayIso } from '../../domain/dates';
 import { periodTotals } from '../../domain/periods';
-import { businessIdOf } from '../../domain/spaces';
-import type { Transaction, TransactionRecord } from '../../domain/types';
-import { useConvertedTransactions } from '../../hooks/useConvertedTransactions';
-import { subscribeTransactionsSince } from '../../services/standingOrderService';
+import { businessIdOf, inSpace } from '../../domain/spaces';
+import { useBudgets } from '../../hooks/useBudgets';
+import { useCategories } from '../../hooks/useCategories';
+import { useDebts } from '../../hooks/useDebts';
+import { useStandingOrders } from '../../hooks/useStandingOrders';
+import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useMonth } from '../month/MonthContext';
 import { useSettings } from '../settings/SettingsContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 
-const MONTHS = 6;
-const EMPTY: TransactionRecord[] = [];
-
-function useSince(uid: string, scope: 'business' | 'household', startDate: string, enabled: boolean) {
-  const [state, setState] = useState<{ key: string; items: TransactionRecord[]; error: boolean }>({ key: '', items: EMPTY, error: false });
-  const key = `${scope}|${startDate}`;
-  useEffect(() => {
-    if (!enabled) return undefined;
-    return subscribeTransactionsSince(
-      uid,
-      scope,
-      startDate,
-      (items: Transaction[]) => setState({ key, items: items as TransactionRecord[], error: false }),
-      () => setState({ key, items: EMPTY, error: true }),
-    );
-  }, [uid, scope, startDate, enabled, key]);
-  const current = state.key === key;
-  const converted = useConvertedTransactions(current ? state.items : EMPTY);
-  return { items: converted.items, loading: enabled && !current, error: current && state.error };
-}
-
 /**
- * נתוני הסקירה: 6 החודשים שעד החודש הנבחר, של המרחב הנוכחי (במשק הבית כולל נטו העסקים הנספרים, כמו במסך הסיכומים).
- * `build()` מחזיר את הסיכום הקטן שנשלח למודל, ו-ready כשכל הנתונים נטענו.
+ * הנתונים המלאים של המרחב לסקירה (כמו בקובץ הגיבוי, בלי תמונות): כל ההיסטוריה, תקציבים, חובות, הוראות קבע וקטגוריות.
+ * ההיסטוריה משתפת את ההאזנה של מסך הבית ("מתחילת התיעוד"), ולכן אין קריאה נוספת מהשרת.
+ * `build()` מחזיר את הנתונים שנשלחים למודל, ו-ready כשהכול נטען.
  */
 export function useAiSummaryData(): { ready: boolean; error: boolean; build: () => Record<string, unknown> } {
   const { user } = useReadyAuth();
@@ -44,12 +27,14 @@ export function useAiSummaryData(): { ready: boolean; error: boolean; build: () 
   const settings = useSettings();
   const { countedIds, nameOf } = useSpaces();
   const isBusiness = space.scope === 'business';
-  const startYm = addMonths(month.selected, -(MONTHS - 1));
-  const startDate = `${startYm}-01`;
-  const business = useSince(user.uid, 'business', startDate, isBusiness || countedIds.length > 0);
-  const household = useSince(user.uid, 'household', startDate, !isBusiness);
 
-  const months = useMemo(() => Array.from({ length: MONTHS }, (_, i) => addMonths(month.selected, i - (MONTHS - 1))), [month.selected]);
+  const business = useTransactionsUpTo(user.uid, 'business', '9999-12', isBusiness || countedIds.length > 0);
+  const household = useTransactionsUpTo(user.uid, 'household', '9999-12', !isBusiness);
+  const { budgets, loading: budgetsLoading } = useBudgets(user.uid);
+  const { debts, loading: debtsLoading } = useDebts(user.uid);
+  const { orders, loading: ordersLoading } = useStandingOrders(user.uid);
+  const { categories, loading: categoriesLoading } = useCategories(user.uid);
+
   const businessForCalc = useMemo(() => {
     if (isBusiness) return business.items.filter((t) => businessIdOf(t) === space.businessId);
     const counted = new Set(countedIds);
@@ -57,15 +42,50 @@ export function useAiSummaryData(): { ready: boolean; error: boolean; build: () 
   }, [isBusiness, business.items, space.businessId, countedIds]);
   const scopeItems = isBusiness ? businessForCalc : household.items;
 
-  const ready = !business.loading && !household.loading;
-  const error = business.error || household.error;
+  const ready = !business.loading && !household.loading && !budgetsLoading && !debtsLoading && !ordersLoading && !categoriesLoading;
+  const error = Boolean(business.error || household.error);
   const name = nameOf(space);
+
   const build = () => {
+    const present = new Set<string>([month.selected]);
+    for (const t of scopeItems) present.add(t.yearMonth);
+    const ordered = [...present].sort();
+    // כל החודשים מהראשון בתיעוד ועד החודש הנבחר (חודשים עתידיים עם פעולות כלולים)
+    const first = ordered[0];
+    const months: string[] = [];
+    for (let ym = first; ym <= ordered[ordered.length - 1] && months.length < 600; ym = addMonths(ym, 1)) months.push(ym);
     const totals: MonthTotals[] = months.map((ym) => {
       const t = periodTotals(space.scope, household.items, businessForCalc, [ym], settings.businessTransferMode);
       return { yearMonth: ym, incomeAgorot: t.incomeAgorot, expenseAgorot: t.expenseAgorot };
     });
-    return buildAiSummary({ spaceName: name, selected: month.selected, months: totals, items: scopeItems, previousMonth: addMonths(month.selected, -1) });
+    const catName = new Map(categories.map((c) => [c.id, c.name]));
+    return buildAiData({
+      spaceName: name,
+      scopeLabel: isBusiness ? 'עסק' : 'משק בית',
+      today: todayIso(),
+      selected: month.selected,
+      items: scopeItems,
+      months: totals,
+      budgets: budgets
+        .filter((b) => inSpace(b, space) && !String(b.categoryId).startsWith('savings-goal'))
+        .map((b) => ({ category: catName.get(b.categoryId) ?? b.categoryId, ...(b.period ? { period: b.period } : {}), amount: Math.round(b.amountAgorot) / 100 })),
+      savingsGoal: effectiveSavingsGoal(budgets, space.scope, space.businessId, month.selected),
+      debts: debts
+        .filter((d) => inSpace(d, space))
+        .map((d) => ({
+          direction: d.direction === 'owe' ? 'אני חייב' : 'חייבים לי',
+          name: d.name,
+          amount: Math.round(d.amountAgorot) / 100,
+          date: d.date,
+          ...(d.dueDate ? { dueDate: d.dueDate } : {}),
+          paid: Math.round(d.payments.reduce((a, p) => a + p.amountAgorot, 0)) / 100,
+          note: d.note.slice(0, 80),
+        })),
+      standingOrders: orders
+        .filter((o) => inSpace(o, space))
+        .map((o) => ({ name: o.name, type: o.type === 'income' ? 'הכנסה' : 'הוצאה', amount: Math.round(o.amountAgorot) / 100, dayOfMonth: o.dayOfMonth, category: o.categoryName, active: o.active })),
+      categories: categories.filter((c) => c.active && inSpace(c, space)).map((c) => ({ name: c.name, type: c.type === 'income' ? 'הכנסה' : 'הוצאה' })),
+    });
   };
   return { ready, error, build };
 }

@@ -190,6 +190,11 @@ export interface AdminAiInfo {
   globalDaily: number;
   enabled: boolean;
   usedToday: number;
+  /** שאלות וטוקנים בחודש הנוכחי, לכל המשתמשים ביחד (חסר אם הפונקציה בשרת עוד לא עודכנה) */
+  monthQuestions?: number;
+  monthTokens?: number;
+  /** צריכה לפי משתמש: היום, החודש (שאלות וטוקנים) וסך הכול */
+  usage?: Record<string, { today: number; month: number; monthTokens: number; total: number }>;
   accessUids: string[];
 }
 

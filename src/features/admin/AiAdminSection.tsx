@@ -71,6 +71,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
         <div><dt>מפתח Gemini</dt><dd>{info.hasKey ? `מוגדר (…${info.keyHint})` : 'לא הוגדר'}</dd></div>
         <div><dt>מורשים</dt><dd>{info.accessUids.length}</dd></div>
         <div><dt>שאלות שנשאלו היום</dt><dd>{`${info.usedToday} מתוך ${info.globalDaily}`}</dd></div>
+        <div><dt>החודש: שאלות וטוקנים</dt><dd>{`${info.monthQuestions ?? 0} · ${(info.monthTokens ?? 0).toLocaleString('en-US')}`}</dd></div>
       </dl>
 
       <label className="field-label" htmlFor="ai-key">{info.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח Gemini API'}</label>
@@ -90,12 +91,22 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       {!info.enabled && <p className="muted small">ה-AI כבוי כרגע לכולם.</p>}
       {error && <div className="form-error" role="alert">{error}</div>}
 
+      <p className="muted small">
+        הצריכה לפי משתמש נרשמת בכל שאלה (שאלות וטוקנים), כך שאפשר לדעת מי גרם לעלות. אם בעתיד תעבור לתעריף בתשלום, מחירי הטוקנים נקבעים לפי מחירון Google של המודל.
+      </p>
       <h3 className="subhead">מי מורשה</h3>
       <input className="input" aria-label="חיפוש חשבון לפי אימייל" placeholder="חיפוש לפי אימייל" value={search} onChange={(e) => setSearch(e.target.value)} />
       <ul className="ai-saved">
         {shown.map((u) => (
           <li key={u.uid} className="ai-saved-row">
-            <span className="ai-saved-main">{u.email}</span>
+            <span className="ai-saved-main">
+              {u.email}
+              {info.usage?.[u.uid] && (
+                <span className="muted small">
+                  {` · היום ${info.usage[u.uid].today} · החודש ${info.usage[u.uid].month} שאלות, ${info.usage[u.uid].monthTokens.toLocaleString('en-US')} טוקנים · סך הכול ${info.usage[u.uid].total}`}
+                </span>
+              )}
+            </span>
             <button
               type="button"
               className={`btn btn-small ${access.has(u.uid) ? 'btn-primary' : 'btn-secondary'}`}
