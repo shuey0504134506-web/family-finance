@@ -699,7 +699,7 @@ exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   const patch = { updatedAt: Date.now() };
   if (typeof apiKey === 'string' && apiKey.trim()) {
     const key = apiKey.trim();
-    if (!/^[A-Za-z0-9_-]{20,200}$/.test(key)) throw new HttpsError('invalid-argument', 'המפתח אינו נראה תקין.');
+    if (!/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key)) throw new HttpsError('invalid-argument', 'המפתח אינו נראה תקין.');
     patch.apiKey = key;
   }
   if (typeof model === 'string' && model.trim()) {
