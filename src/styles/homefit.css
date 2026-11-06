@@ -2,8 +2,17 @@
 
 /* דחיסה מאוזנת: --sq בין 0 (רגיל) ל-1 (הכי דחוס). נקבע ב-useCompactToFit לפי גובה המסך, ורק כמה שצריך
    כדי שכפתורי ההוספה יופיעו בלי גלילה. */
+.home-clean {
+  --content-gap: calc(16px - 10px * var(--sq, 0));
+}
+
 .home-clean .content {
-  gap: calc(16px - 10px * var(--sq, 0));
+  gap: var(--content-gap);
+}
+
+/* הדחיסה נועדה רק כדי שכפתורי ההוספה יופיעו בלי גלילה: מתחת להם הרווחים תמיד מלאים (16px) */
+.home-clean .add-actions ~ * {
+  margin-top: calc(16px - var(--content-gap));
 }
 
 .home-clean .tiles {
@@ -138,8 +147,8 @@
 .home-clean[data-fit] .scope-title { font-size: 1.15rem; }
 .home-clean[data-fit] .balance-text { font-size: 1.1rem; }
 
-.home-clean[data-fit='2'] .content,
-.home-clean[data-fit='3'] .content { gap: 4px; }
+.home-clean[data-fit='2'],
+.home-clean[data-fit='3'] { --content-gap: 4px; }
 .home-clean[data-fit='2'] .tiles,
 .home-clean[data-fit='3'] .tiles { margin-block: 6px 2px; gap: 6px; }
 .home-clean[data-fit='2'] .notice-card.balance-empty,
@@ -157,7 +166,7 @@
 .home-clean[data-fit='2'] .scope-title,
 .home-clean[data-fit='3'] .scope-title { font-size: 1.1rem; }
 
-.home-clean[data-fit='3'] .content { gap: 2px; }
+.home-clean[data-fit='3'] { --content-gap: 2px; }
 .home-clean[data-fit='3'] .tiles { gap: 4px; }
 .home-clean[data-fit='3'] .notice-card.balance-empty { padding: 3px 10px; font-size: 0.95rem; }
 .home-clean[data-fit='3'] .savings-meter { min-height: 26px; }
