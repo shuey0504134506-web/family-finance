@@ -1,6 +1,7 @@
 import { merchantBreakdown, paymentBreakdown } from "./periods";
 import type { Transaction } from "./types";
 import { paymentLabelOf } from "./payment";
+import { addMonths } from "./dates";
 
 type Item = Pick<
   Transaction,
@@ -99,9 +100,10 @@ export function buildAiSummary(args: {
  * כמה תווים לכל היותר בנתונים שנשלחים למודל. נתונים גדולים מדי גורמים לתשובה של דקה ויותר, ולכן שולחים את הפעולות האחרונות
  * ומהישנות רק את מה שקשור לשאלה, ולצידן סיכום חודשי לפי קטגוריה על כל ההיסטוריה.
  */
-export const AI_DATA_MAX_CHARS = 200_000;
-const AI_RECENT_ROWS = 1500;
-const AI_MATCHED_OLD_ROWS = 600;
+export const AI_DATA_MAX_CHARS = 70_000;
+const AI_MATCHED_OLD_ROWS = 250;
+const AI_TOP_MERCHANTS = 40;
+const AI_LARGEST_ROWS = 25;
 
 const STOP_WORDS = new Set([
   "כמה",
@@ -198,35 +200,60 @@ export function buildAiData(
   const sorted = [...input.items].sort((a, b) =>
     a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
   );
-  const recent = sorted.slice(0, AI_RECENT_ROWS);
+  const prevMonth = addMonths(input.selected, -1);
+  const inFocus = (t: AiDataInput["items"][number]) =>
+    t.date.startsWith(input.selected) || t.date.startsWith(prevMonth);
+  // פעולות מלאות רק לחודש הנבחר ולקודם לו, ומהישנות רק מה שקשור לשאלה: נתונים קטנים = תשובה מהירה
+  const monthRows = sorted
+    .filter((t) => t.date.startsWith(input.selected))
+    .map(line);
+  const prevRows = sorted
+    .filter((t) => t.date.startsWith(prevMonth))
+    .map(line);
   const keywords = questionKeywords(question);
   const matchedOld = keywords.length
     ? sorted
-        .slice(AI_RECENT_ROWS)
         .filter((t) => {
+          if (inFocus(t)) return false;
           const hay =
             `${t.categoryName ?? ""} ${t.counterparty ?? ""} ${t.note ?? ""}`.toLowerCase();
           return keywords.some((k) => hay.includes(k));
         })
         .slice(0, AI_MATCHED_OLD_ROWS)
     : [];
-  const rows = [...recent, ...matchedOld].map(line);
+  const rows = matchedOld.map(line);
   // סיכום חודשי לפי קטגוריה על כל ההיסטוריה, כדי שאפשר יהיה לענות על שאלות רחבות גם בלי כל הפעולות הישנות
   const byMonthCategory = new Map<string, number>();
+  const byMerchant = new Map<string, number>();
+  const byYear = new Map<string, { i: number; e: number }>();
   for (const t of input.items) {
     const key = `${t.date.slice(0, 7)}|${t.type === "income" ? "I" : "E"}|${(t.categoryName ?? "").replace(/[|\r\n]+/g, " ")}`;
     byMonthCategory.set(key, (byMonthCategory.get(key) ?? 0) + t.amountAgorot);
+    const y = byYear.get(t.date.slice(0, 4)) ?? { i: 0, e: 0 };
+    if (t.type === "income") y.i += t.amountAgorot;
+    else y.e += t.amountAgorot;
+    byYear.set(t.date.slice(0, 4), y);
+    const who = (t.counterparty ?? "").replace(/[|\r\n]+/g, " ").trim();
+    if (t.type === "expense" && who) {
+      const mk = `${who}|${t.categoryName ?? ""}`;
+      byMerchant.set(mk, (byMerchant.get(mk) ?? 0) + t.amountAgorot);
+    }
   }
   const categoryTotals = [...byMonthCategory.entries()]
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .map(([key, agorot]) => `${key}|${money(agorot)}`);
-  // הפעולות של החודש שנבחר בנפרד ובראש הנתונים: שאלות על "החודש" לא תלויות בחיפוש בכל ההיסטוריה
-  const monthRows = sorted
-    .filter((t) => t.date.startsWith(input.selected))
+  const topMerchants = [...byMerchant.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, AI_TOP_MERCHANTS)
+    .map(([key, agorot]) => `${key}|${money(agorot)}`);
+  const largestExpenses = sorted
+    .filter((t) => t.type === "expense")
+    .sort((a, b) => b.amountAgorot - a.amountAgorot)
+    .slice(0, AI_LARGEST_ROWS)
     .map(line);
   const base = {
     about:
-      "נתוני משתמש מלאים של האפליקציה. סכומים בשקלים. selectedMonthTransactions ו-transactions הם טקסט, שורה לכל פעולה בפורמט: תאריך|I=הכנסה/E=הוצאה|סכום|קטגוריה|בית עסק או שם|צורת תשלום|הערה (מהחדשה לישנה). selectedMonthTransactions הן כל פעולות החודש שנבחר. transactions הן הפעולות האחרונות, ומהישנות יותר רק אלה שקשורות לשאלה. monthlyCategoryTotals מסכם את כל ההיסטוריה: חודש|I/E|קטגוריה|סכום.",
+      "נתוני משתמש, מסוכמים מראש. סכומים בשקלים. שורות פעולה הן טקסט בפורמט: תאריך|I=הכנסה/E=הוצאה|סכום|קטגוריה|בית עסק או שם|צורת תשלום|הערה. selectedMonthTransactions: כל פעולות החודש שנבחר. previousMonthTransactions: כל פעולות החודש הקודם. relatedOlderTransactions: פעולות ישנות יותר שקשורות לשאלה (לפי מילות המפתח שלה). monthlyCategoryTotals: חודש|I/E|קטגוריה|סכום, על כל ההיסטוריה. yearlyTotals: סיכום שנתי. topMerchantsAllTime: בית עסק|קטגוריה|סכום מצטבר להוצאות. largestExpensesAllTime: ההוצאות הגדולות ביותר. monthlyTotals: הכנסות והוצאות לכל חודש.",
     space: input.spaceName,
     kind: input.scopeLabel,
     today: input.today,
@@ -237,6 +264,9 @@ export function buildAiData(
       expenses: money(m.expenseAgorot),
       balance: Math.round(m.incomeAgorot - m.expenseAgorot) / 100,
     })),
+    yearlyTotals: [...byYear.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([year, v]) => ({ year, income: money(v.i), expenses: money(v.e) })),
     monthlySavingsGoal:
       input.savingsGoal === null ? null : money(input.savingsGoal),
     budgets: input.budgets,
@@ -244,26 +274,27 @@ export function buildAiData(
     standingOrders: input.standingOrders,
     categories: input.categories,
   };
-  // חותכים את הפעולות הישנות ביותר עד שהכול נכנס בתקרת האורך
+  // אם עדיין גדול מדי, חותכים קודם את הפעולות הישנות שהותאמו לשאלה, ואחר כך את סיכום הקטגוריות הישן
   const head = {
     ...base,
     selectedMonthTransactions: monthRows.join("\n"),
-    monthlyCategoryTotals: categoryTotals.join("\n"),
+    previousMonthTransactions: prevRows.join("\n"),
+    topMerchantsAllTime: topMerchants.join("\n"),
+    largestExpensesAllTime: largestExpenses.join("\n"),
   };
-  let keep = rows.length;
-  let json = JSON.stringify({
-    ...head,
-    transactionCount: rows.length,
-    transactions: rows.join("\n"),
-  });
-  while (json.length > AI_DATA_MAX_CHARS && keep > 0) {
-    keep = Math.floor(keep * 0.85);
-    json = JSON.stringify({
+  let keepRows = rows.length;
+  let keepTotals = categoryTotals.length;
+  const make = () =>
+    JSON.stringify({
       ...head,
-      transactionCount: rows.length,
-      transactionsShown: keep,
-      transactions: rows.slice(0, keep).join("\n"),
+      monthlyCategoryTotals: categoryTotals.slice(0, keepTotals).join("\n"),
+      relatedOlderTransactions: rows.slice(0, keepRows).join("\n"),
     });
+  let json = make();
+  while (json.length > AI_DATA_MAX_CHARS && (keepRows > 0 || keepTotals > 60)) {
+    if (keepRows > 0) keepRows = Math.floor(keepRows * 0.7);
+    else keepTotals = Math.floor(keepTotals * 0.85);
+    json = make();
   }
   return JSON.parse(json) as Record<string, unknown>;
 }

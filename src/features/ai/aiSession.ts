@@ -26,6 +26,8 @@ export interface AiSessionState {
   busy: boolean;
   /** מתי נשלחה השאלה שממתינה לתשובה */
   startedAt: number | null;
+  /** התשובה שמגיעה כרגע, מילה אחרי מילה (ריק כשלא מתקבלת תשובה) */
+  partial: string;
   error: string;
   /** שאלה שנכשלה: מוחזרת לשורת הכתיבה */
   failedDraft: string;
@@ -49,6 +51,7 @@ const empty = (uid: string): AiSessionState => ({
   messages: [],
   busy: false,
   startedAt: null,
+  partial: "",
   error: "",
   failedDraft: "",
   quota: null,
@@ -130,6 +133,7 @@ export function askInSession(
   question: string,
   build: (question: string) => unknown,
   ctx: AskContext,
+  options: { deep?: boolean; lang?: string } = {},
 ): void {
   const s = currentSession(uid);
   const q = question.trim();
@@ -142,6 +146,7 @@ export function askInSession(
     messages: withQuestion,
     busy: true,
     startedAt: Date.now(),
+    partial: "",
     error: "",
     failedDraft: "",
     unread: false,
@@ -151,7 +156,12 @@ export function askInSession(
     state !== null && state.uid === uid && state.chatId === chatId;
   void (async () => {
     try {
-      const result = await askAi(q, build(q), before);
+      const result = await askAi(q, build(q), before, {
+        ...options,
+        onText: (partial) => {
+          if (stillHere() && state) set({ ...state, partial });
+        },
+      });
       const next: AiMessage[] = [
         ...withQuestion,
         { role: "model", text: result.answer },
@@ -187,6 +197,7 @@ export function askInSession(
           messages: next,
           busy: false,
           startedAt: null,
+          partial: "",
           quota: { remaining: result.remaining, limit: result.limit },
           unread: true,
           error: notSaved
@@ -198,6 +209,7 @@ export function askInSession(
           ...state,
           busy: false,
           startedAt: null,
+          partial: "",
           quota: { remaining: result.remaining, limit: result.limit },
         });
       }
@@ -208,11 +220,12 @@ export function askInSession(
           messages: before,
           busy: false,
           startedAt: null,
+          partial: "",
           error: describeAiError(caught),
           failedDraft: q,
         });
       } else if (state && state.uid === uid) {
-        set({ ...state, busy: false, startedAt: null });
+        set({ ...state, busy: false, startedAt: null, partial: "" });
       }
       loadAiQuota()
         .then((quota) => setQuota(uid, quota))

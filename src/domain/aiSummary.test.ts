@@ -57,7 +57,16 @@ describe("buildAiData", () => {
       "כמה הוצאתי על שבת",
     );
     const without = buildAiData({ ...base, items: old }, "");
-    expect(String(withQuestion.transactions)).toContain("ארוחת שבת מיוחדת");
-    expect(String(without.transactions)).not.toContain("ארוחת שבת מיוחדת");
+    expect(String(withQuestion.relatedOlderTransactions)).toContain("ארוחת שבת מיוחדת");
+    expect(String(without.relatedOlderTransactions)).not.toContain("ארוחת שבת מיוחדת");
+  });
+
+  it("נשאר קטן גם עם היסטוריה גדולה מאוד", () => {
+    const many = Array.from({ length: 20000 }, (_, i) =>
+      item(`2023-0${(i % 9) + 1}-10`, "רגיל " + i, 100 + i),
+    );
+    const out = buildAiData({ ...base, items: many }, "כמה הוצאתי על רגיל");
+    expect(JSON.stringify(out).length).toBeLessThanOrEqual(70_000);
+    expect(out.yearlyTotals).toBeTruthy();
   });
 });

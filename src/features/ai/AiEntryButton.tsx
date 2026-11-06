@@ -45,7 +45,18 @@ export function AiEntryButton() {
         <span>{hint}</span>
       </span>
       <span className="ai-card-chevron" aria-hidden="true">
-        ‹
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 5l7 7-7 7" />
+        </svg>
       </span>
     </button>
   );

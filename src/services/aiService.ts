@@ -19,10 +19,45 @@ export interface AiAnswer {
   limit: number;
 }
 
+export interface AskOptions {
+  /** חשיבה מעמיקה: איטית יותר, לשאלות מורכבות */
+  deep?: boolean;
+  /** שפת הממשק, כדי שהתשובה תהיה באותה שפה */
+  lang?: string;
+  /** נקרא בכל קטע טקסט שמגיע, כדי להציג את התשובה תוך כדי כתיבתה */
+  onText?: (soFar: string) => void;
+}
+
+type StreamingCall = {
+  stream?: (data: unknown) => Promise<{ stream: AsyncIterable<{ text?: string }>; data: Promise<{ data: AiAnswer } | AiAnswer> }>;
+};
+
 /** שאלה למודל. ההגבלות (גישה, מכסה, נושא) נאכפות בשרת. */
-export async function askAi(question: string, summary: unknown, history: readonly AiMessage[]): Promise<AiAnswer> {
-  const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk', { timeout: 175_000 });
-  return (await call({ question, summary: JSON.stringify(summary), history: history.slice(-6) })).data;
+export async function askAi(question: string, summary: unknown, history: readonly AiMessage[], options: AskOptions = {}): Promise<AiAnswer> {
+  const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk', { timeout: 125_000 });
+  const payload = { question, summary: JSON.stringify(summary), history: history.slice(-6), deep: options.deep === true, lang: options.lang ?? 'he' };
+  const streamer = (call as unknown as StreamingCall).stream;
+  if (typeof streamer === 'function' && options.onText) {
+    try {
+      const result = await streamer.call(call, payload);
+      let soFar = '';
+      for await (const chunk of result.stream) {
+        if (chunk && typeof chunk.text === 'string') {
+          soFar += chunk.text;
+          options.onText(soFar);
+        }
+      }
+      const final = (await result.data) as { data?: AiAnswer } & Partial<AiAnswer>;
+      const answer = (final.data ?? final) as AiAnswer;
+      if (answer && typeof answer.answer === 'string') return answer;
+    } catch (error) {
+      // שגיאה אמיתית מהשרת (מכסה, הרשאה, עומס) מוצגת כמו שהיא; רק כשההזרמה עצמה לא נתמכת עוברים לקריאה רגילה
+      const code = (error as { code?: string })?.code;
+      if (code && code.startsWith('functions/') && code !== 'functions/internal') throw error;
+      if (options.onText) options.onText('');
+    }
+  }
+  return (await call(payload)).data;
 }
 
 export async function loadAiQuota(): Promise<{ remaining: number; limit: number }> {

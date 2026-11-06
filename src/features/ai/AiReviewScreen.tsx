@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { getLang } from "../../i18n/lang";
 import { pickQuestions } from "../../domain/aiQuestions";
 import {
   loadAiQuota,
@@ -79,7 +80,8 @@ export function AiReviewScreen() {
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const [suggestions, setSuggestions] = useState(() => pickQuestions(5));
   const session = useAiSession(user.uid);
-  const { chatId, messages, busy, startedAt, error, quota } = session;
+  const { chatId, messages, busy, startedAt, partial, error, quota } = session;
+  const [deep, setDeep] = useState(false);
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<AiChat[]>([]);
   const [recent, setRecent] = useState<RecentQuestion[]>([]);
@@ -111,9 +113,10 @@ export function AiReviewScreen() {
   useEffect(() => {
     markSeen(user.uid);
   }, [user.uid, session.unread]);
+  const hasPartial = partial.length > 0;
   useEffect(() => {
     threadEnd.current?.scrollIntoView?.({ block: "nearest" });
-  }, [messages.length, busy]);
+  }, [messages.length, busy, hasPartial]);
 
   const isSaved = saved.some((c) => c.id === chatId);
   const pinned = saved.find((c) => c.id === chatId)?.pinned ?? false;
@@ -122,7 +125,7 @@ export function AiReviewScreen() {
     const q = raw.trim();
     if (!q || busy || !data.ready || !consent) return;
     setDraft("");
-    askInSession(user.uid, q, data.build, { saved, recent });
+    askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang() });
   };
 
   // כניסה משאלה מההיסטוריה: נשאלת אוטומטית ברגע שהנתונים מוכנים
@@ -234,6 +237,18 @@ export function AiReviewScreen() {
               שליחה
             </button>
           </form>
+          <label className="ai-deep">
+            <input
+              type="checkbox"
+              checked={deep}
+              onChange={(e) => setDeep(e.target.checked)}
+              disabled={busy}
+            />
+            <span>
+              <b>חשיבה מעמיקה</b>
+              <small>לשאלות מורכבות. התשובה איטית יותר.</small>
+            </span>
+          </label>
           <p className="muted small" role="status">
             {!data.ready && !data.error
               ? "טוען את הנתונים…"
@@ -262,7 +277,12 @@ export function AiReviewScreen() {
                 {m.text}
               </div>
             ))}
-            {busy && <ThinkingIndicator startedAt={startedAt} />}
+            {busy && partial ? (
+              <div className="ai-msg ai-msg-model">{partial}</div>
+            ) : null}
+            {busy && !partial ? (
+              <ThinkingIndicator startedAt={startedAt} />
+            ) : null}
             <div ref={threadEnd} />
             {!busy && messages.length > 0 && (
               <div className="ai-thread-actions">

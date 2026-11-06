@@ -38,8 +38,13 @@
 
 .ai-card-chevron {
   flex: none;
-  font-size: 1.4rem;
+  display: inline-flex;
   line-height: 1;
+}
+
+/* החץ מצביע תמיד "קדימה": שמאלה בעברית, ימינה באנגלית */
+:root[dir='rtl'] .ai-card-chevron svg {
+  transform: scaleX(-1);
 }
 
 .ai-card[data-activity] .ai-card-icon::after {
@@ -257,4 +262,27 @@
 
 .ai-saved-title {
   overflow-wrap: anywhere;
+}
+
+.ai-deep {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.ai-deep input {
+  margin-top: 3px;
+  flex: none;
+}
+
+.ai-deep span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-deep small {
+  color: var(--text-muted, #5b6b7a);
 }

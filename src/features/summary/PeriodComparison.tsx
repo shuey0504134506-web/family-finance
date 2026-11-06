@@ -120,7 +120,7 @@ export function PeriodComparison({
         >
           {counts.map((n) => (
             <option key={n} value={n}>
-              {n} {unitLabel} אחרונים
+              {`${n} ${unitLabel} אחרונים`}
             </option>
           ))}
         </select>
