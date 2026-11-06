@@ -533,7 +533,7 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // ---------- סקירת AI ----------
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
-const AI_DEFAULTS = { model: 'gemini-3.8-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const AI_DEFAULTS = { model: 'gemini-3.8-flash', fallbackModel: 'gemini-2.5-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 450000;
 const AI_MAX_HISTORY = 6;
@@ -646,8 +646,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', 
     .filter((m, i, all) => m.parts[0].text && (i === 0 ? m.role === 'user' : m.role !== all[i - 1].role));
 
   const quota = await takeAiQuota(uid, cfg);
-  const thinking = /2\.5-flash/.test(cfg.model) ? { thinkingBudget: 0 } : /gemini-3/.test(cfg.model) ? { thinkingLevel: 'low' } : null;
-  const makeBody = (withThinking) => ({
+  const thinkingFor = (model) => (/2\.5-flash/.test(model) ? { thinkingBudget: 0 } : /gemini-3/.test(model) ? { thinkingLevel: 'low' } : null);
+  const makeBody = (model, withThinking) => ({
     systemInstruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
     // הנתונים תמיד בתחילת השיחה ולפני השאלות: הרישא זהה בין שאלה לשאלה, ולכן המודל משתמש במטמון שלו (מהיר וזול יותר)
     contents: [
@@ -660,25 +660,42 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', 
       // החשיבה נספרת במגבלת הפלט, ולכן המגבלה נדיבה; אורך התשובה עצמה מוגבל בהוראת המערכת
       maxOutputTokens: 8192,
       // Gemini 3: גוגל ממליצים להשאיר את ברירת המחדל (1.0). טמפרטורה נמוכה מורידה את איכות החשיבה ויוצרת תשובות קצרות וחסרות
-      ...(/gemini-3/.test(cfg.model) ? {} : { temperature: 0.3 }),
-      ...(withThinking && thinking ? { thinkingConfig: thinking } : {}),
+      ...(/gemini-3/.test(model) ? {} : { temperature: 0.3 }),
+      ...(withThinking && thinkingFor(model) ? { thinkingConfig: thinkingFor(model) } : {}),
     },
   });
-  const call = (withThinking) =>
-    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent`, {
+  const startedMs = Date.now();
+  const call = (model, withThinking) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey },
-      body: JSON.stringify(makeBody(withThinking)),
-      signal: AbortSignal.timeout(165000),
+      body: JSON.stringify(makeBody(model, withThinking)),
+      signal: AbortSignal.timeout(Math.max(20000, 165000 - (Date.now() - startedMs))),
     });
+  // קריאה אחת למודל; אם הוא לא תומך בהגדרת החשיבה שנשלחה, מנסים שוב בלעדיה
+  const callModel = async (model) => {
+    const res = await call(model, true);
+    return res.status === 400 && thinkingFor(model) ? call(model, false) : res;
+  };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const retryable = (status) => status === 503 || status === 500 || status === 502 || status === 504 || status === 429;
   let text = '';
   let lastUsage = null;
   let finishReason = '';
-  const startedMs = Date.now();
+  let usedModel = cfg.model;
   try {
-    let res = await call(true);
-    // המודל לא תומך בהגדרת החשיבה שנשלחה: מנסים שוב בלעדיה
-    if (res.status === 400 && thinking) res = await call(false);
+    // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין עמוס עוברים למודל הגיבוי
+    const models = [cfg.model, ...(cfg.fallbackModel && cfg.fallbackModel !== cfg.model ? [cfg.fallbackModel] : [])];
+    let res = null;
+    for (const model of models) {
+      usedModel = model;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        res = await callModel(model);
+        if (res.ok || !retryable(res.status) || Date.now() - startedMs > 120000) break;
+        if (attempt === 0) await sleep(res.status === 429 ? 3000 : 2000);
+      }
+      if (res.ok || !retryable(res.status) || Date.now() - startedMs > 120000) break;
+    }
     if (!res.ok) {
       await refundAiQuota(uid);
       let detail = '';
@@ -687,9 +704,10 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', 
       } catch {
         detail = '';
       }
-      await recordAiError(uid, cfg.model, `HTTP ${res.status}: ${detail}`);
+      await recordAiError(uid, usedModel, `HTTP ${res.status}: ${detail}`);
       const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
       const tech = isAdmin ? ` [${res.status}] ${detail.slice(0, 200)}` : '';
+      if (res.status === 503) throw new HttpsError('unavailable', `המודל עמוס כרגע אצל גוגל. ניסינו גם מודל גיבוי. אפשר לנסות שוב בעוד דקה.${tech}`);
       if (res.status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
       if (res.status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
       if (res.status === 401 || res.status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
@@ -704,12 +722,12 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', 
     if (error instanceof HttpsError) throw error;
     await refundAiQuota(uid);
     const timedOut = error && (error.name === 'TimeoutError' || error.name === 'AbortError');
-    await recordAiError(uid, cfg.model, `${timedOut ? 'timeout' : 'network'}: ${String(error?.message ?? error).slice(0, 200)}`);
+    await recordAiError(uid, usedModel, `${timedOut ? 'timeout' : 'network'}: ${String(error?.message ?? error).slice(0, 200)}`);
     throw new HttpsError('unavailable', timedOut ? 'המודל לא הספיק לענות בזמן. אפשר לנסות שוב, או לשאול שאלה ממוקדת יותר.' : 'לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.');
   }
   if (!text) {
     await refundAiQuota(uid);
-    await recordAiError(uid, cfg.model, `empty answer, finish=${finishReason || '?'}`);
+    await recordAiError(uid, usedModel, `empty answer, finish=${finishReason || '?'}`);
     throw new HttpsError('unavailable', 'לא התקבלה תשובה. אפשר לנסות לנסח את השאלה אחרת.');
   }
   // צריכת טוקנים לפי משתמש וחודש, כדי שאפשר יהיה לדעת מי גרם לעלות
@@ -720,7 +738,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', 
     const last = {
       at: Date.now(),
       uid,
-      model: cfg.model,
+      model: usedModel,
       finish: finishReason,
       promptTokens: Number(usage.promptTokenCount) || 0,
       thoughtTokens: Number(usage.thoughtsTokenCount) || 0,

@@ -1,40 +1,46 @@
-import { MultiCurrencySummary } from '../../components/MultiCurrencySummary';
-import { useIsWide } from '../../hooks/useIsWide';
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Amount } from '../../components/Amount';
-import { Icon } from '../../components/Icon';
-import { AppHeader } from '../../components/AppHeader';
-import { HomeGreeting } from './HomeGreeting';
-import { AiEntryButton, useShowAiEntry } from '../ai/AiEntryButton';
-import { ScopeTabs } from '../../components/ScopeTabs';
-import { useMonthTransactions } from '../../hooks/useMonthTransactions';
-import { useSwipe } from '../../hooks/useSwipe';
-import { neighborSpace } from '../../domain/display';
-import { addMonths, formatDisplayDate, todayIso } from '../../domain/dates';
-import { currencyOf } from '../../domain/currency';
-import { businessIdOf } from '../../domain/spaces';
-import { useBusinessLogo } from '../../hooks/useBusinessLogo';
-import { useHomeBackground } from '../../services/homeBackground';
+import { MultiCurrencySummary } from "../../components/MultiCurrencySummary";
+import { useIsWide } from "../../hooks/useIsWide";
+import { useLayoutEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Amount } from "../../components/Amount";
+import { Icon } from "../../components/Icon";
+import { AppHeader } from "../../components/AppHeader";
+import { HomeGreeting } from "./HomeGreeting";
+import { AiEntryButton, useShowAiEntry } from "../ai/AiEntryButton";
+import { ScopeTabs } from "../../components/ScopeTabs";
+import { useMonthTransactions } from "../../hooks/useMonthTransactions";
+import { useSwipe } from "../../hooks/useSwipe";
+import { neighborSpace } from "../../domain/display";
+import { addMonths, formatDisplayDate, todayIso } from "../../domain/dates";
+import { currencyOf } from "../../domain/currency";
+import { businessIdOf } from "../../domain/spaces";
+import { useBusinessLogo } from "../../hooks/useBusinessLogo";
+import { useHomeBackground } from "../../services/homeBackground";
 import {
   householdTotals,
   totalsOf,
   transferFromBusinesses,
-} from '../../domain/summary';
-import { useReadyAuth } from '../auth/AuthContext';
-import { useMonth } from '../month/MonthContext';
-import { useSettings } from '../settings/SettingsContext';
-import { useSpace } from '../spaces/SpaceRoute';
-import { useSpaces } from '../spaces/SpacesContext';
-import { useTransactionsUpTo } from '../../hooks/useTransactionsUpTo';
-import { useCompactToFit } from './useCompactToFit';
-import { SpendingCard } from './SpendingCard';
-import { BalanceFrame } from './BalanceFrame';
-import { SavingsMeter } from './SavingsMeter';
-import { useBudgets } from '../../hooks/useBudgets';
-import { effectiveSavingsGoal } from '../../domain/budget';
-import { earliestDate, notStartedText, previousStageHeadline, sinceStartText, uptoDayOfMonth } from './homeText';
-import { TotalsTiles } from './TotalsTiles';
+} from "../../domain/summary";
+import { useReadyAuth } from "../auth/AuthContext";
+import { useMonth } from "../month/MonthContext";
+import { useSettings } from "../settings/SettingsContext";
+import { useSpace } from "../spaces/SpaceRoute";
+import { useSpaces } from "../spaces/SpacesContext";
+import { useTransactionsUpTo } from "../../hooks/useTransactionsUpTo";
+import { useCompactToFit } from "./useCompactToFit";
+import { SpendingCard } from "./SpendingCard";
+import { BalanceFrame } from "./BalanceFrame";
+import { SavingsMeter } from "./SavingsMeter";
+import { useBudgets } from "../../hooks/useBudgets";
+import { effectiveSavingsGoal } from "../../domain/budget";
+import {
+  earliestDate,
+  notStartedText,
+  previousStageHeadline,
+  sinceStartText,
+  uptoDayOfMonth,
+} from "./homeText";
+import { TotalsTiles } from "./TotalsTiles";
 
 /**
  * מסך הבית של מרחב אחד: עסק מסוים או משק הבית, לפי הנתיב.
@@ -45,11 +51,11 @@ import { TotalsTiles } from './TotalsTiles';
  * רק עסקים שנספרים במכשיר הזה (מוצגים, או שסומן "הכל משתקף") נכנסים לחישוב.
  */
 const AVATARS: [string, string][] = [
-  ['#e6eef9', '#2f5fa8'],
-  ['#e3f3ee', '#2f7d6d'],
-  ['#ece9fb', '#5b58c9'],
-  ['#fbeede', '#b46a1f'],
-  ['#fbe6e2', '#b8402e'],
+  ["#e6eef9", "#2f5fa8"],
+  ["#e3f3ee", "#2f7d6d"],
+  ["#ece9fb", "#5b58c9"],
+  ["#fbeede", "#b46a1f"],
+  ["#fbe6e2", "#b8402e"],
 ];
 /** צבע קבוע לכל קטגוריה, מחושב משמה. */
 function avatarStyle(name: string): { background: string; color: string } {
@@ -61,6 +67,10 @@ function avatarStyle(name: string): { background: string; color: string } {
 
 export function HomeScreen() {
   const navigate = useNavigate();
+  // חזרה למסך הבית ממסך שגלל למטה (למשל סקירת AI) מתחילה מראש העמוד ולא מהאמצע
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { user, profile } = useReadyAuth();
   const settings = useSettings();
   const month = useMonth();
@@ -68,25 +78,54 @@ export function HomeScreen() {
   const scope = space.scope;
   const { spaces, countedIds, nameOf } = useSpaces();
 
-  const hasHousehold = spaces.some((s) => s.scope === 'household');
-  const isBusiness = scope === 'business';
-  const needBusiness = isBusiness || countedIds.length > 0 || spaces.some((s) => s.scope === 'business');
+  const hasHousehold = spaces.some((s) => s.scope === "household");
+  const isBusiness = scope === "business";
+  const needBusiness =
+    isBusiness ||
+    countedIds.length > 0 ||
+    spaces.some((s) => s.scope === "business");
 
   // משק הבית זקוק גם לנתוני העסקים של החודש כדי לחשב את ההכנסה מהם.
-  const business = useMonthTransactions(user.uid, 'business', month.selected, needBusiness);
-  const household = useMonthTransactions(user.uid, 'household', month.selected, hasHousehold || !isBusiness);
+  const business = useMonthTransactions(
+    user.uid,
+    "business",
+    month.selected,
+    needBusiness,
+  );
+  const household = useMonthTransactions(
+    user.uid,
+    "household",
+    month.selected,
+    hasHousehold || !isBusiness,
+  );
 
   // השוואה לחודש הקודם באותו שלב (רק בחודש הנוכחי)
-  const compare = month.status === 'current';
+  const compare = month.status === "current";
   const prevMonth = addMonths(month.selected, -1);
-  const prevBusiness = useMonthTransactions(user.uid, 'business', prevMonth, month.status !== 'future' && needBusiness);
-  const prevHousehold = useMonthTransactions(user.uid, 'household', prevMonth, month.status !== 'future' && (hasHousehold || !isBusiness));
+  const prevBusiness = useMonthTransactions(
+    user.uid,
+    "business",
+    prevMonth,
+    month.status !== "future" && needBusiness,
+  );
+  const prevHousehold = useMonthTransactions(
+    user.uid,
+    "household",
+    prevMonth,
+    month.status !== "future" && (hasHousehold || !isBusiness),
+  );
 
   const ownBusinessItems = useMemo(
-    () => (isBusiness ? business.items.filter((t) => businessIdOf(t) === space.businessId) : []),
+    () =>
+      isBusiness
+        ? business.items.filter((t) => businessIdOf(t) === space.businessId)
+        : [],
     [isBusiness, business.items, space.businessId],
   );
-  const businessTotals = useMemo(() => totalsOf(ownBusinessItems), [ownBusinessItems]);
+  const businessTotals = useMemo(
+    () => totalsOf(ownBusinessItems),
+    [ownBusinessItems],
+  );
   const transferAgorot = useMemo(() => {
     const counted = new Set(countedIds);
     return transferFromBusinesses(
@@ -116,40 +155,84 @@ export function HomeScreen() {
     );
     if (hh.length === 0 && prevTransfer === 0) return null;
     return householdTotals(hh, prevTransfer).balanceAgorot;
-  }, [compare, prevBusiness, prevHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
+  }, [
+    compare,
+    prevBusiness,
+    prevHousehold,
+    isBusiness,
+    space.businessId,
+    countedIds,
+    settings.businessTransferMode,
+  ]);
   // הוצאות החודש הקודם להשוואה בכרטיס "לאן הלך הכסף": במלואו, ועד אותו יום בחודש הנוכחי
   const prevScopeItems = useMemo(
-    () => (isBusiness ? prevBusiness.items.filter((t) => businessIdOf(t) === space.businessId) : prevHousehold.items),
+    () =>
+      isBusiness
+        ? prevBusiness.items.filter((t) => businessIdOf(t) === space.businessId)
+        : prevHousehold.items,
     [isBusiness, prevBusiness.items, prevHousehold.items, space.businessId],
   );
   const prevStageScopeItems = useMemo(
-    () => (compare ? uptoDayOfMonth(prevScopeItems, Number(todayIso().slice(8, 10))) : undefined),
+    () =>
+      compare
+        ? uptoDayOfMonth(prevScopeItems, Number(todayIso().slice(8, 10)))
+        : undefined,
     [compare, prevScopeItems],
   );
-  const previousHeadline = previousStage === null ? null : previousStageHeadline(previousStage);
+  const previousHeadline =
+    previousStage === null ? null : previousStageHeadline(previousStage);
 
   useHomeBackground(user.uid);
   const showAi = useShowAiEntry();
   const wide = useIsWide();
   // שלוש הפעולות האחרונות של המרחב (במסך רחב יותר, והכרטיס חותך לפי הגובה שנכנס) והחודש שמוצגים, במטבע המקורי
   const recent = useMemo(() => {
-    const list = isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all;
+    const list = isBusiness
+      ? business.all.filter((t) => businessIdOf(t) === space.businessId)
+      : household.all;
     return [...list]
-      .sort((a, b) => (a.date === b.date ? b.createdAt - a.createdAt : a.date < b.date ? 1 : -1))
+      .sort((a, b) =>
+        a.date === b.date
+          ? b.createdAt - a.createdAt
+          : a.date < b.date
+            ? 1
+            : -1,
+      )
       .slice(0, wide ? 12 : 3);
   }, [isBusiness, business.all, household.all, space.businessId, wide]);
 
   const activeItems = isBusiness ? ownBusinessItems : household.items;
 
   // מאז תחילת התיעוד: כל ההיסטוריה, כולל פעולות עם תאריך עתידי שכבר הוזנו, לפי אותם כללים כמו בסיכום החודשי
-  const allBusiness = useTransactionsUpTo(user.uid, 'business', '9999-12', needBusiness);
-  const allHousehold = useTransactionsUpTo(user.uid, 'household', '9999-12', !isBusiness && hasHousehold);
+  const allBusiness = useTransactionsUpTo(
+    user.uid,
+    "business",
+    "9999-12",
+    needBusiness,
+  );
+  const allHousehold = useTransactionsUpTo(
+    user.uid,
+    "household",
+    "9999-12",
+    !isBusiness && hasHousehold,
+  );
   const sinceStart = useMemo(() => {
-    if (allBusiness.loading || allHousehold.loading || allBusiness.error || allHousehold.error) return null;
+    if (
+      allBusiness.loading ||
+      allHousehold.loading ||
+      allBusiness.error ||
+      allHousehold.error
+    )
+      return null;
     if (isBusiness) {
-      const own = allBusiness.items.filter((t) => businessIdOf(t) === space.businessId);
+      const own = allBusiness.items.filter(
+        (t) => businessIdOf(t) === space.businessId,
+      );
       if (own.length === 0) return null;
-      return { balanceAgorot: totalsOf(own).balanceAgorot, since: earliestDate(own) };
+      return {
+        balanceAgorot: totalsOf(own).balanceAgorot,
+        since: earliestDate(own),
+      };
     }
     const counted = new Set(countedIds);
     const transfer = transferFromBusinesses(
@@ -158,14 +241,31 @@ export function HomeScreen() {
     );
     if (allHousehold.items.length === 0 && transfer === 0) return null;
     return {
-      balanceAgorot: householdTotals(allHousehold.items, transfer).balanceAgorot,
-      since: earliestDate([...allHousehold.items, ...allBusiness.items.filter((t) => counted.has(businessIdOf(t)))]),
+      balanceAgorot: householdTotals(allHousehold.items, transfer)
+        .balanceAgorot,
+      since: earliestDate([
+        ...allHousehold.items,
+        ...allBusiness.items.filter((t) => counted.has(businessIdOf(t))),
+      ]),
     };
-  }, [allBusiness, allHousehold, isBusiness, space.businessId, countedIds, settings.businessTransferMode]);
-  const sinceStartHeadline = sinceStart === null ? null : sinceStartText(sinceStart.balanceAgorot);
+  }, [
+    allBusiness,
+    allHousehold,
+    isBusiness,
+    space.businessId,
+    countedIds,
+    settings.businessTransferMode,
+  ]);
+  const sinceStartHeadline =
+    sinceStart === null ? null : sinceStartText(sinceStart.balanceAgorot);
 
   const { budgets, loading: budgetsLoading } = useBudgets(user.uid);
-  const savingsGoal = effectiveSavingsGoal(budgets, scope, space.businessId, month.selected);
+  const savingsGoal = effectiveSavingsGoal(
+    budgets,
+    scope,
+    space.businessId,
+    month.selected,
+  );
 
   const next = neighborSpace(spaces, space.key, 1);
   const previous = neighborSpace(spaces, space.key, -1);
@@ -186,39 +286,59 @@ export function HomeScreen() {
   // המסך נפתח בבת אחת: מחכים גם לחודש הקודם, להיסטוריה (מתחילת התיעוד) ולתקציבים, ולא מציגים חלק מהמסך לפני השאר.
   // כשאחד מהם נכשל לא מחכים לו (השורה שלו פשוט לא תוצג, כמו קודם).
   const extrasLoading =
-    (compare && ((prevBusiness.loading && !prevBusiness.error) || (prevHousehold.loading && !prevHousehold.error))) ||
+    (compare &&
+      ((prevBusiness.loading && !prevBusiness.error) ||
+        (prevHousehold.loading && !prevHousehold.error))) ||
     (allBusiness.loading && !allBusiness.error) ||
     (allHousehold.loading && !allHousehold.error) ||
     budgetsLoading;
-  const loading = monthLoading || (month.status !== 'future' && extrasLoading);
+  const loading = monthLoading || (month.status !== "future" && extrasLoading);
   const totals = isBusiness ? businessTotals : householdSummary;
   const title = nameOf(space);
   useCompactToFit(
-    `${space.key}|${loading}|${active.error ? 1 : 0}|${month.status}|${month.selected}|${previousHeadline ? 1 : 0}|${savingsGoal ?? ''}|${totals.incomeAgorot === 0 && totals.expenseAgorot === 0 ? 1 : 0}|${totals.balanceAgorot}`,
+    `${space.key}|${loading}|${active.error ? 1 : 0}|${month.status}|${month.selected}|${previousHeadline ? 1 : 0}|${savingsGoal ?? ""}|${totals.incomeAgorot === 0 && totals.expenseAgorot === 0 ? 1 : 0}|${totals.balanceAgorot}`,
   );
-  const logo = useBusinessLogo(user.uid, isBusiness ? space.businessId : '');
+  const logo = useBusinessLogo(user.uid, isBusiness ? space.businessId : "");
   const manyBusinesses = countedIds.length > 1;
-  const businessIncomeLabel = manyBusinesses ? 'הכנסה מהעסקים' : 'הכנסה מהעסק';
-  const businessLossLabel = manyBusinesses ? 'הפסד מהעסקים' : 'הפסד מהעסק';
+  const businessIncomeLabel = manyBusinesses ? "הכנסה מהעסקים" : "הכנסה מהעסק";
+  const businessLossLabel = manyBusinesses ? "הפסד מהעסקים" : "הפסד מהעסק";
 
   return (
     <div className={`app-shell has-hero home-clean scope-${scope}`} {...swipe}>
       <AppHeader />
 
       <main className="content" aria-busy={loading}>
-        <HomeGreeting firstName={profile.firstName} action={showAi ? <AiEntryButton /> : undefined} />
+        <HomeGreeting
+          firstName={profile.firstName}
+          action={showAi ? <AiEntryButton /> : undefined}
+        />
         <h1 className="scope-title">
-          {logo ? <img className="scope-logo" src={logo} alt="" width={36} height={36} /> : <Icon name={isBusiness ? 'business' : 'household'} />} {title}
+          {logo ? (
+            <img
+              className="scope-logo"
+              src={logo}
+              alt=""
+              width={36}
+              height={36}
+            />
+          ) : (
+            <Icon name={isBusiness ? "business" : "household"} />
+          )}{" "}
+          {title}
         </h1>
 
         {active.error ? (
           <div className="card error-card" role="alert">
             <p>לא הצלחנו לטעון את הנתונים.</p>
-            <button type="button" className="btn btn-secondary" onClick={active.retry}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={active.retry}
+            >
               ניסיון חוזר
             </button>
           </div>
-        ) : month.status === 'future' ? (
+        ) : month.status === "future" ? (
           <div className="card notice-card" role="status">
             {notStartedText(month.selected, month.current)}
           </div>
@@ -231,7 +351,9 @@ export function HomeScreen() {
             incomeAgorot={totals.incomeAgorot}
             expenseAgorot={totals.expenseAgorot}
             balanceAgorot={totals.balanceAgorot}
-            fromBusinessAgorot={isBusiness ? undefined : householdSummary.fromBusinessAgorot}
+            fromBusinessAgorot={
+              isBusiness ? undefined : householdSummary.fromBusinessAgorot
+            }
             status={month.status}
             yearMonth={month.selected}
             currentYearMonth={month.current}
@@ -254,7 +376,11 @@ export function HomeScreen() {
               <span className="previous-stage-amount">
                 <Amount
                   agorot={previousHeadline.amountAgorot}
-                  className={previousStage !== null && previousStage < 0 ? 'tone-expense' : 'tone-income'}
+                  className={
+                    previousStage !== null && previousStage < 0
+                      ? "tone-expense"
+                      : "tone-income"
+                  }
                 />
               </span>
             )}
@@ -290,13 +416,19 @@ export function HomeScreen() {
 
         {!loading && !active.error && (
           <MultiCurrencySummary
-            items={isBusiness ? business.all.filter((t) => businessIdOf(t) === space.businessId) : household.all}
+            items={
+              isBusiness
+                ? business.all.filter(
+                    (t) => businessIdOf(t) === space.businessId,
+                  )
+                : household.all
+            }
             primaryIncomeAgorot={totals.incomeAgorot}
             primaryExpenseAgorot={totals.expenseAgorot}
           />
         )}
 
-        {!loading && !active.error && month.status !== 'future' && (
+        {!loading && !active.error && month.status !== "future" && (
           <SpendingCard
             key={`${space.key}|${month.selected}`}
             scope={scope}
@@ -317,17 +449,25 @@ export function HomeScreen() {
             <ul className="recent-list">
               {recent.map((t) => (
                 <li key={t.id} className="recent-row">
-                  <span className="recent-avatar" style={avatarStyle(t.counterparty || t.categoryName)} aria-hidden="true">
-                    {(t.counterparty || t.categoryName || '·').trim().charAt(0)}
+                  <span
+                    className="recent-avatar"
+                    style={avatarStyle(t.counterparty || t.categoryName)}
+                    aria-hidden="true"
+                  >
+                    {(t.counterparty || t.categoryName || "·").trim().charAt(0)}
                   </span>
                   <span className="recent-name">
                     {t.counterparty || t.categoryName}
-                    <span className="recent-date">{formatDisplayDate(t.date)}</span>
+                    <span className="recent-date">
+                      {formatDisplayDate(t.date)}
+                    </span>
                   </span>
                   <Amount
                     agorot={t.amountAgorot}
                     currency={currencyOf(t)}
-                    className={t.type === 'income' ? 'tone-income' : 'tone-expense'}
+                    className={
+                      t.type === "income" ? "tone-income" : "tone-expense"
+                    }
                   />
                 </li>
               ))}
@@ -341,34 +481,44 @@ export function HomeScreen() {
             {sinceStartHeadline.amountAgorot !== null && (
               <Amount
                 agorot={sinceStartHeadline.amountAgorot}
-                className={`since-amount ${sinceStartHeadline.tone === 'minus' ? 'tone-expense' : 'tone-income'}`}
+                className={`since-amount ${sinceStartHeadline.tone === "minus" ? "tone-expense" : "tone-income"}`}
               />
             )}
-            {sinceStart.since && <div className="since-note">{`מאז ${formatDisplayDate(sinceStart.since)}`}</div>}
+            {sinceStart.since && (
+              <div className="since-note">{`מאז ${formatDisplayDate(sinceStart.since)}`}</div>
+            )}
           </section>
         )}
 
         {!isBusiness && countedIds.length > 0 && !loading && (
           <section
             className="card business-income-card"
-            aria-label={householdSummary.fromBusinessAgorot < 0 ? businessLossLabel : businessIncomeLabel}
+            aria-label={
+              householdSummary.fromBusinessAgorot < 0
+                ? businessLossLabel
+                : businessIncomeLabel
+            }
           >
             <div className="row-between">
               <span>
-                <Icon name="business" />{' '}
+                <Icon name="business" />{" "}
                 {householdSummary.fromBusinessAgorot < 0
                   ? `${businessLossLabel} (נטו)`
                   : `${businessIncomeLabel} (נטו)`}
               </span>
               <Amount
                 agorot={Math.abs(householdSummary.fromBusinessAgorot)}
-                className={householdSummary.fromBusinessAgorot < 0 ? 'tone-expense' : 'tone-income'}
+                className={
+                  householdSummary.fromBusinessAgorot < 0
+                    ? "tone-expense"
+                    : "tone-income"
+                }
               />
             </div>
             <p className="muted small">
               {householdSummary.fromBusinessAgorot < 0
-                ? 'העסקים הפסידו החודש, וההפסד מקטין את הכנסות משק הבית.'
-                : 'רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים.'}
+                ? "העסקים הפסידו החודש, וההפסד מקטין את הכנסות משק הבית."
+                : "רק נטו העסק (הכנסות פחות הוצאות) נחשב הכנסה של משק הבית, כדי שלא ייספר פעמיים."}
             </p>
           </section>
         )}
