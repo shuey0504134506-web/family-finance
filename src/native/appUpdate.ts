@@ -30,7 +30,8 @@ interface AppUpdaterPlugin {
 /** התוסף המקורי באנדרואיד (AppUpdaterPlugin.java). בגרסאות ישנות שאין בהן אותו, הקריאה נכשלת ונופלים להורדה בדפדפן. */
 const AppUpdater = registerPlugin<AppUpdaterPlugin>('AppUpdater');
 
-export type ApplyResult = 'started' | 'needsPermission';
+/** started: מסך ההתקנה נפתח. needsPermission: צריך לאשר התקנת עדכונים. ready: ההורדה הסתיימה כשהאפליקציה ברקע, וההתקנה תיפתח כשיחזרו אליה. */
+export type ApplyResult = 'started' | 'needsPermission' | 'ready';
 
 export async function installed(): Promise<{ kind: UpdateKind; version: string } | null> {
   try {
@@ -87,6 +88,25 @@ function setPending(on: boolean): void {
   }
 }
 
+const READY_KEY = 'ff.update.ready';
+
+/** הגרסה ש-APK שלה כבר הורד למכשיר וממתין להתקנה (או null). */
+export function readyVersion(): string | null {
+  try {
+    return localStorage.getItem(READY_KEY);
+  } catch {
+    return null;
+  }
+}
+export function setReadyVersion(version: string | null): void {
+  try {
+    if (version) localStorage.setItem(READY_KEY, version);
+    else localStorage.removeItem(READY_KEY);
+  } catch {
+    // אחסון חסום: ממשיכים
+  }
+}
+
 /** האם מותר לאפליקציה להתקין עדכונים. בגרסה ישנה בלי התוסף נניח שכן (ההתקנה עצמה תבקש). */
 export async function canInstallUpdates(): Promise<boolean> {
   try {
@@ -129,6 +149,30 @@ export async function applyUpdate(info: UpdateInfo, onProgress?: (percent: numbe
   } finally {
     await handle?.remove().catch(() => undefined);
   }
+  setReadyVersion(info.version);
+  // אנדרואיד לא מרשה לאפליקציה שברקע לפתוח את מסך ההתקנה (הוא פשוט לא מופיע, וההורדה "אובדת").
+  // לכן אם המשתמש עזב בזמן ההורדה, לא מנסים לפתוח אותו עכשיו: ההורדה נשמרת, וההתקנה תוצע כשיחזור לאפליקציה.
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return 'ready';
   const result = await AppUpdater.install();
   return result.needsPermission ? 'needsPermission' : 'started';
+}
+
+/**
+ * התקנת APK שכבר הורד (בלי להוריד שוב). אם הקובץ נעלם (המערכת ניקתה אותו), מורידים מחדש.
+ * חייב לרוץ כשהאפליקציה בחזית.
+ */
+export async function installDownloaded(info: UpdateInfo, onProgress?: (percent: number) => void): Promise<ApplyResult> {
+  suppressLock(10 * 60_000);
+  if (!(await canInstallUpdates())) {
+    setPending(true);
+    await AppUpdater.requestInstallPermission().catch(() => undefined);
+    return 'needsPermission';
+  }
+  try {
+    const result = await AppUpdater.install();
+    return result.needsPermission ? 'needsPermission' : 'started';
+  } catch {
+    setReadyVersion(null);
+    return applyUpdate(info, onProgress);
+  }
 }

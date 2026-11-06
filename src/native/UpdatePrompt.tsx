@@ -1,36 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../components/Modal';
-import { applyUpdate, canInstallUpdates, findUpdate, updatePending, type UpdateInfo } from './appUpdate';
+import { applyUpdate, canInstallUpdates, findUpdate, installDownloaded, readyVersion, setReadyVersion, updatePending, type UpdateInfo } from './appUpdate';
 
-const SKIP_KEY = 'ff.update.skipped';
+const SKIP_KEY = 'ff.update.skipped.v2';
+/** "אחר כך" משתיק את ההצעה לכמה שעות בלבד (ולא לתמיד), ואז היא חוזרת גם בלי לסגור את האפליקציה. */
+const SKIP_MS = 6 * 60 * 60 * 1000;
+const CHECK_EVERY_MS = 30 * 60 * 1000;
+const MIN_GAP_MS = 5 * 60 * 1000;
 
-/** גרסה שהמשתמש דחה ("אחר כך"): לא מציגים שוב עד שתצא גרסה חדשה יותר. */
-function skippedVersion(): string | null {
+function skipped(version: string): boolean {
   try {
-    return localStorage.getItem(SKIP_KEY);
+    const raw = JSON.parse(localStorage.getItem(SKIP_KEY) ?? 'null') as { version?: string; until?: number } | null;
+    return raw?.version === version && typeof raw.until === 'number' && raw.until > Date.now();
   } catch {
-    return null;
+    return false;
   }
 }
 function skipVersion(version: string): void {
   try {
-    localStorage.setItem(SKIP_KEY, version);
+    localStorage.setItem(SKIP_KEY, JSON.stringify({ version, until: Date.now() + SKIP_MS }));
   } catch {
     // אחסון חסום: החלון יוצג שוב בפתיחה הבאה
   }
 }
 
+type RunnerState = 'idle' | 'busy' | 'failed' | 'permission' | 'ready';
+
 /** הורדת העדכון והתקנתו, עם מצב והתקדמות. משותף לחלון הקופץ ולמסך אודות. */
 export function useUpdateRunner(info: UpdateInfo | null) {
-  const [state, setState] = useState<'idle' | 'busy' | 'failed' | 'permission'>('idle');
+  const [state, setState] = useState<RunnerState>('idle');
   const [percent, setPercent] = useState<number | null>(null);
   const run = async () => {
     if (!info) return;
     setState('busy');
     try {
-      const result = await applyUpdate(info, setPercent);
+      // APK שכבר הורד (למשל כשהמשתמש עזב באמצע): רק מתקינים, בלי להוריד שוב
+      const result = readyVersion() === info.version && info.kind === 'android' ? await installDownloaded(info, setPercent) : await applyUpdate(info, setPercent);
       setPercent(null);
-      setState(result === 'needsPermission' ? 'permission' : 'idle');
+      setState(result === 'needsPermission' ? 'permission' : result === 'ready' ? 'ready' : 'idle');
     } catch {
       setState('failed');
     }
@@ -58,7 +65,7 @@ export function useUpdateRunner(info: UpdateInfo | null) {
 }
 
 /** הודעות המצב של ההורדה (התקדמות, אישור הרשאה, כישלון). */
-export function UpdateStatus({ state, percent }: { state: 'idle' | 'busy' | 'failed' | 'permission'; percent: number | null }) {
+export function UpdateStatus({ state, percent }: { state: RunnerState; percent: number | null }) {
   return (
     <>
       {state === 'busy' ? <p role="status">{percent === null ? 'מוריד את העדכון…' : `מוריד את העדכון… ${percent}%`}</p> : null}
@@ -66,6 +73,9 @@ export function UpdateStatus({ state, percent }: { state: 'idle' | 'busy' | 'fai
         <p role="status">
           בפעם הראשונה צריך לאשר לאפליקציה להתקין עדכונים: במסך שנפתח מדליקים את המתג וחוזרים לכאן. ההורדה וההתקנה יתחילו לבד.
         </p>
+      ) : null}
+      {state === 'ready' ? (
+        <p role="status">ההורדה הסתיימה. כשחוזרים לכאן לוחצים על "התקנה עכשיו" כדי לפתוח את מסך ההתקנה.</p>
       ) : null}
       {state === 'failed' ? (
         <p className="form-error" role="alert">
@@ -80,23 +90,49 @@ export function UpdateStatus({ state, percent }: { state: 'idle' | 'busy' | 'fai
 export function UpdatePrompt() {
   const [info, setInfo] = useState<UpdateInfo | null>(null);
   const { state, percent, run } = useUpdateRunner(info);
+  const lastCheck = useRef(0);
+  const busy = useRef(false);
+  busy.current = state === 'busy';
 
   useEffect(() => {
     let alive = true;
+    const check = (force = false) => {
+      // לא בודקים שוב ושוב, ולא מחליפים את החלון כשההורדה רצה
+      if (busy.current || (!force && Date.now() - lastCheck.current < MIN_GAP_MS)) return;
+      lastCheck.current = Date.now();
+      void findUpdate().then((u) => {
+        if (!alive || busy.current) return;
+        if (!u) {
+          setReadyVersion(null);
+          return;
+        }
+        // הורדה שהסתיימה ומחכה להתקנה מוצגת תמיד, גם אם המשתמש דחה את ההצעה קודם
+        setInfo((cur) => (cur ? cur : readyVersion() === u.version || !skipped(u.version) ? u : null));
+      });
+    };
     // מעט אחרי הפתיחה, כדי לא להתחרות בטעינת המסך
-    const t = window.setTimeout(() => {
-      void findUpdate().then((u) => alive && setInfo(u && u.version !== skippedVersion() ? u : null));
-    }, 1500);
+    const first = window.setTimeout(() => check(true), 1500);
+    // וגם בכל חזרה לאפליקציה וכל חצי שעה, לא רק בפתיחה מחדש
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check(readyVersion() !== null);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = window.setInterval(() => check(), CHECK_EVERY_MS);
     return () => {
       alive = false;
-      window.clearTimeout(t);
+      window.clearTimeout(first);
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
   if (!info) return null;
   const windows = info.kind === 'windows';
+  const downloaded = !windows && readyVersion() === info.version;
 
   const later = () => {
+    // בזמן הורדה לא סוגרים את החלון בטעות (לחיצה על הרקע או Back)
+    if (state === 'busy') return;
     skipVersion(info.version);
     setInfo(null);
   };
@@ -111,11 +147,13 @@ export function UpdatePrompt() {
         <p className="muted small">
           {windows
             ? 'התוכנה תוריד את העדכון, תיסגר ותפתח את ההתקנה. הנתונים שלך נשמרים.'
-            : 'האפליקציה תוריד את העדכון ותפתח את מסך ההתקנה. מאשרים "התקנה", והנתונים שלך נשמרים.'}
+            : downloaded
+              ? 'העדכון כבר הורד למכשיר. לחיצה על "התקנה עכשיו" פותחת את מסך ההתקנה, והנתונים שלך נשמרים.'
+              : 'האפליקציה תוריד את העדכון ותפתח את מסך ההתקנה. מאשרים "התקנה", והנתונים שלך נשמרים.'}
         </p>
         <UpdateStatus state={state} percent={percent} />
         <button type="button" className="btn btn-primary" disabled={state === 'busy'} onClick={() => void run()}>
-          עדכון עכשיו
+          {downloaded ? 'התקנה עכשיו' : 'עדכון עכשיו'}
         </button>
         <button type="button" className="btn btn-secondary" disabled={state === 'busy'} onClick={later}>
           אחר כך
