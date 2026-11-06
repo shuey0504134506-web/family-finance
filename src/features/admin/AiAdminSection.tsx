@@ -72,6 +72,14 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
         <div><dt>מורשים</dt><dd>{info.accessUids.length}</dd></div>
         <div><dt>שאלות שנשאלו היום</dt><dd>{`${info.usedToday} מתוך ${info.globalDaily}`}</dd></div>
         <div><dt>החודש: שאלות וטוקנים</dt><dd>{`${info.monthQuestions ?? 0} · ${(info.monthTokens ?? 0).toLocaleString('en-US')}`}</dd></div>
+        {info.last && (
+          <div>
+            <dt>השאלה האחרונה (אבחון)</dt>
+            <dd dir="ltr">
+              {`${info.last.finish || '?'} · prompt ${info.last.promptTokens.toLocaleString('en-US')} · thinking ${info.last.thoughtTokens.toLocaleString('en-US')} · output ${info.last.outputTokens.toLocaleString('en-US')} · ${info.last.answerChars} chars · ${(info.last.ms / 1000).toFixed(1)}s`}
+            </dd>
+          </div>
+        )}
       </dl>
 
       <label className="field-label" htmlFor="ai-key">{info.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח Gemini API'}</label>

@@ -32,7 +32,7 @@ export function AiHistoryScreen() {
   useEffect(() => subscribeAiChats(user.uid, setChats, () => setChats([])), [user.uid]);
   useEffect(() => subscribeRecentQuestions(user.uid, setRecent, () => setRecent([])), [user.uid]);
 
-  const open = (state: { chat?: AiChat; ask?: string }) => navigate(`/${space.key}/ai`, { state, replace: true });
+  const open = (state: { chat?: AiChat; ask?: string }) => navigate(`/${space.key}/ai`, { state: { ...state, from: 'history' } });
 
   return (
     <div className={`app-shell scope-${space.scope}`}>

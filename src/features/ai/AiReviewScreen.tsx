@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { pickQuestions } from '../../domain/aiQuestions';
-import { newId } from '../../services/ids';
 import {
-  askAi,
   chatToEvict,
   deleteAiChat,
-  describeAiError,
   loadAiQuota,
   saveAiChat,
-  saveRecentQuestions,
   subscribeAiChats,
   subscribeRecentQuestions,
-  withRecentQuestion,
   type AiChat,
   type AiMessage,
   type RecentQuestion,
@@ -22,6 +17,7 @@ import { useReadyAuth } from '../auth/AuthContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
+import { askInSession, markSeen, openChat, setError, setQuota, startNewChat, takeFailedDraft, useAiSession } from './aiSession';
 import { useAiSummaryData } from './useAiSummaryData';
 
 const consentKey = (uid: string) => `ff.ai.consent.v1.${uid}`;
@@ -33,23 +29,22 @@ const readConsent = (uid: string): boolean => {
   }
 };
 
-/** השיחה הנוכחית נשמרת בזיכרון, כדי שמעבר להיסטוריה וחזרה לא ימחק אותה. */
-let session: { uid: string; chatId: string; createdAt: number; messages: AiMessage[] } | null = null;
-
 interface NavState {
   chat?: AiChat;
   ask?: string;
+  /** נפתח מההיסטוריה: חזרה מחזירה אליה ולא למסך הבית */
+  from?: 'history';
 }
 
 /** סקירת AI: חמש שאלות מוצעות מהמאגר, שורת שאלה חופשית, השיחה, וכפתור להיסטוריה. */
 /** חיווי "חושב" חי: נקודות מונפשות ושעון שניות, כדי שיהיה ברור שהמודל עובד ולא נתקע. */
-function ThinkingIndicator() {
-  const [seconds, setSeconds] = useState(0);
+function ThinkingIndicator({ startedAt }: { startedAt: number | null }) {
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const started = Date.now();
-    const timer = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  const seconds = startedAt ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
   return (
     <div className="ai-msg ai-msg-model ai-typing" role="status">
       <span>חושב</span>
@@ -74,14 +69,9 @@ export function AiReviewScreen() {
 
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const [suggestions, setSuggestions] = useState(() => pickQuestions(5));
-  const restored = !nav.chat && !nav.ask && session?.uid === user.uid ? session : null;
-  const [chatId, setChatId] = useState(() => nav.chat?.id ?? restored?.chatId ?? newId());
-  const [createdAt, setCreatedAt] = useState(() => nav.chat?.createdAt ?? restored?.createdAt ?? Date.now());
-  const [messages, setMessages] = useState<AiMessage[]>(() => nav.chat?.messages ?? restored?.messages ?? []);
+  const session = useAiSession(user.uid);
+  const { chatId, createdAt, messages, busy, startedAt, error, quota } = session;
   const [draft, setDraft] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [quota, setQuota] = useState<{ remaining: number; limit: number } | null>(null);
   const [saved, setSaved] = useState<AiChat[]>([]);
   const [recent, setRecent] = useState<RecentQuestion[]>([]);
   const threadEnd = useRef<HTMLDivElement>(null);
@@ -90,82 +80,64 @@ export function AiReviewScreen() {
   useEffect(() => subscribeAiChats(user.uid, setSaved, () => undefined), [user.uid]);
   useEffect(() => subscribeRecentQuestions(user.uid, setRecent, () => undefined), [user.uid]);
   useEffect(() => {
-    loadAiQuota().then(setQuota).catch(() => undefined);
-  }, []);
+    loadAiQuota().then((q) => setQuota(user.uid, q)).catch(() => undefined);
+  }, [user.uid]);
+  // כניסה משיחה שמורה בהיסטוריה
+  useEffect(() => {
+    if (nav.chat) openChat(user.uid, nav.chat);
+  }, [nav.chat, user.uid]);
+  // שאלה שנכשלה חוזרת לשורת הכתיבה
+  useEffect(() => {
+    if (session.failedDraft) setDraft(takeFailedDraft(user.uid));
+  }, [session.failedDraft, user.uid]);
+  // כל מה שהיה בדרך ונענה בזמן שהמשתמש לא היה כאן נחשב כנראה, ברגע שחוזרים
+  useEffect(() => {
+    markSeen(user.uid);
+  }, [user.uid, session.unread]);
   useEffect(() => {
     threadEnd.current?.scrollIntoView?.({ block: 'nearest' });
   }, [messages.length, busy]);
 
-  useEffect(() => {
-    session = { uid: user.uid, chatId, createdAt, messages };
-  }, [user.uid, chatId, createdAt, messages]);
-
   const isSaved = saved.some((c) => c.id === chatId);
   const pinned = saved.find((c) => c.id === chatId)?.pinned ?? false;
 
-  const persist = useCallback(
-    (list: AiMessage[]) => {
-      const title = (list.find((m) => m.role === 'user')?.text ?? 'שיחה').slice(0, 60);
-      const existing = saved.find((c) => c.id === chatId);
-      saveAiChat(user.uid, { id: chatId, title, pinned: existing?.pinned ?? false, messages: list, createdAt, updatedAt: Date.now() }).catch(() =>
-        reportFailure('לא הצלחנו לשמור את השיחה. יש לנסות שוב.'),
-      );
-    },
-    [saved, chatId, createdAt, user.uid, reportFailure],
-  );
+  const persist = (list: AiMessage[]) => {
+    const title = (list.find((m) => m.role === 'user')?.text ?? 'שיחה').slice(0, 60);
+    const existing = saved.find((c) => c.id === chatId);
+    saveAiChat(user.uid, { id: chatId, title, pinned: existing?.pinned ?? false, messages: list, createdAt, updatedAt: Date.now() }).catch(() =>
+      reportFailure('לא הצלחנו לשמור את השיחה. יש לנסות שוב.'),
+    );
+  };
 
-  const ask = useCallback(
-    async (raw: string) => {
-      const q = raw.trim();
-      if (!q || busy || !data.ready || !consent) return;
-      setError('');
-      setBusy(true);
-      setDraft('');
-      const before = messages;
-      setMessages([...before, { role: 'user', text: q }]);
-      try {
-        const result = await askAi(q, data.build(), before);
-        const next: AiMessage[] = [...before, { role: 'user', text: q }, { role: 'model', text: result.answer }];
-        setMessages(next);
-        setQuota({ remaining: result.remaining, limit: result.limit });
-        saveRecentQuestions(user.uid, withRecentQuestion(recent, q, Date.now())).catch(() => undefined);
-        if (saved.some((c) => c.id === chatId)) persist(next);
-      } catch (caught) {
-        setMessages(before);
-        setDraft(q);
-        setError(describeAiError(caught));
-        loadAiQuota().then(setQuota).catch(() => undefined);
-      } finally {
-        setBusy(false);
-      }
-    },
-    [busy, data, consent, messages, user.uid, recent, saved, chatId, persist],
-  );
+  const ask = (raw: string) => {
+    const q = raw.trim();
+    if (!q || busy || !data.ready || !consent) return;
+    setDraft('');
+    askInSession(user.uid, q, data.build, { saved, recent });
+  };
 
   // כניסה משאלה מההיסטוריה: נשאלת אוטומטית ברגע שהנתונים מוכנים
   useEffect(() => {
     if (!nav.ask || autoAsked.current || !data.ready || !consent) return;
     autoAsked.current = true;
-    void ask(nav.ask);
-  }, [nav.ask, data.ready, consent, ask]);
+    ask(nav.ask);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav.ask, data.ready, consent]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    void ask(draft);
+    ask(draft);
   };
 
   const newConversation = () => {
-    setChatId(newId());
-    setCreatedAt(Date.now());
-    setMessages([]);
-    setError('');
+    startNewChat(user.uid);
     setSuggestions(pickQuestions(5, Math.random, suggestions));
   };
 
   const save = () => {
     const evict = chatToEvict(saved, chatId);
     if (evict === 'full') {
-      setError('יש כבר חמש שיחות שמורות ונעוצות. כדי לשמור שיחה חדשה צריך למחוק או לבטל נעיצה בהיסטוריה.');
+      setError(user.uid, 'יש כבר חמש שיחות שמורות ונעוצות. כדי לשמור שיחה חדשה צריך למחוק או לבטל נעיצה בהיסטוריה.');
       return;
     }
     if (evict) deleteAiChat(user.uid, evict).catch(() => undefined);
@@ -193,7 +165,7 @@ export function AiReviewScreen() {
 
   return (
     <div className={`app-shell scope-${space.scope}`}>
-      <ScreenHeader title={title} backTo={`/${space.key}`} />
+      <ScreenHeader title={title} backTo={nav.from === 'history' ? `/${space.key}/ai/history` : `/${space.key}`} />
       <main className="content ai-page" aria-busy={busy}>
         {!consent && (
           <section className="card ai-consent" aria-label="לפני שמתחילים">
@@ -212,7 +184,7 @@ export function AiReviewScreen() {
           <ul className="ai-suggest">
             {suggestions.map((q) => (
               <li key={q}>
-                <button type="button" className="ai-suggest-btn" disabled={!canAsk || exhausted} onClick={() => void ask(q)}>
+                <button type="button" className="ai-suggest-btn" disabled={!canAsk || exhausted} onClick={() => ask(q)}>
                   {q}
                 </button>
               </li>
@@ -259,7 +231,7 @@ export function AiReviewScreen() {
                 {m.text}
               </div>
             ))}
-            {busy && <ThinkingIndicator />}
+            {busy && <ThinkingIndicator startedAt={startedAt} />}
             <div ref={threadEnd} />
             {!busy && messages.length > 0 && (
               <div className="ai-thread-actions">

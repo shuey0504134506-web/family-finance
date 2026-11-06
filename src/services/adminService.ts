@@ -195,6 +195,8 @@ export interface AdminAiInfo {
   monthTokens?: number;
   /** צריכה לפי משתמש: היום, החודש (שאלות וטוקנים) וסך הכול */
   usage?: Record<string, { today: number; month: number; monthTokens: number; total: number }>;
+  /** אבחון השאלה האחרונה שנשלחה למודל */
+  last?: { at: number; uid: string; model: string; finish: string; promptTokens: number; thoughtTokens: number; outputTokens: number; answerChars: number; ms: number } | null;
   accessUids: string[];
 }
 
