@@ -21,7 +21,7 @@ export interface AiAnswer {
 
 /** שאלה למודל. ההגבלות (גישה, מכסה, נושא) נאכפות בשרת. */
 export async function askAi(question: string, summary: unknown, history: readonly AiMessage[]): Promise<AiAnswer> {
-  const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk');
+  const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk', { timeout: 175_000 });
   return (await call({ question, summary: JSON.stringify(summary), history: history.slice(-6) })).data;
 }
 
@@ -35,6 +35,7 @@ export function describeAiError(error: unknown): string {
   const e = error as { code?: string; message?: string };
   const known = ['functions/permission-denied', 'functions/resource-exhausted', 'functions/failed-precondition', 'functions/unavailable', 'functions/invalid-argument'];
   if (e?.code && known.includes(e.code) && e.message) return e.message;
+  if (e?.code === 'functions/deadline-exceeded') return 'התשובה לקחה יותר מדי זמן. אפשר לנסות שוב, או לשאול שאלה ממוקדת יותר.';
   return 'לא הצלחנו לקבל תשובה. יש לבדוק את החיבור ולנסות שוב.';
 }
 

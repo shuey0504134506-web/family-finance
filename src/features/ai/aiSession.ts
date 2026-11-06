@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from 'react';
-import { newId } from '../../services/ids';
+import { useSyncExternalStore } from "react";
+import { newId } from "../../services/ids";
 import {
   askAi,
   describeAiError,
@@ -10,7 +10,7 @@ import {
   type AiChat,
   type AiMessage,
   type RecentQuestion,
-} from '../../services/aiService';
+} from "../../services/aiService";
 
 /**
  * השיחה הנוכחית עם ה-AI. היא חיה מחוץ למסך, ולכן יציאה מהמסך (לבית, להיסטוריה) לא עוצרת שאלה שבדרך:
@@ -47,8 +47,8 @@ const empty = (uid: string): AiSessionState => ({
   messages: [],
   busy: false,
   startedAt: null,
-  error: '',
-  failedDraft: '',
+  error: "",
+  failedDraft: "",
   quota: null,
   unread: false,
 });
@@ -70,10 +70,10 @@ export function useAiSession(uid: string): AiSessionState {
 }
 
 /** האם יש שאלה בדרך או תשובה שלא נראתה (לחיווי על כפתור הכניסה). */
-export function useAiActivity(uid: string): 'busy' | 'unread' | null {
+export function useAiActivity(uid: string): "busy" | "unread" | null {
   const s = useSyncExternalStore(subscribe, () => state);
   if (!s || s.uid !== uid) return null;
-  return s.busy ? 'busy' : s.unread ? 'unread' : null;
+  return s.busy ? "busy" : s.unread ? "unread" : null;
 }
 
 export function markSeen(uid: string): void {
@@ -81,15 +81,18 @@ export function markSeen(uid: string): void {
   if (s.unread) set({ ...s, unread: false });
 }
 
-export function setQuota(uid: string, quota: { remaining: number; limit: number } | null): void {
+export function setQuota(
+  uid: string,
+  quota: { remaining: number; limit: number } | null,
+): void {
   set({ ...currentSession(uid), quota });
 }
 
 /** מחזיר את השאלה שנכשלה (פעם אחת) כדי להחזיר אותה לשורת הכתיבה. */
 export function takeFailedDraft(uid: string): string {
   const s = currentSession(uid);
-  if (!s.failedDraft) return '';
-  set({ ...s, failedDraft: '' });
+  if (!s.failedDraft) return "";
+  set({ ...s, failedDraft: "" });
   return s.failedDraft;
 }
 
@@ -106,7 +109,13 @@ export function startNewChat(uid: string): void {
 export function openChat(uid: string, chat: AiChat): void {
   const s = currentSession(uid);
   if (s.chatId === chat.id) return;
-  set({ ...empty(uid), chatId: chat.id, createdAt: chat.createdAt, messages: chat.messages, quota: s.quota });
+  set({
+    ...empty(uid),
+    chatId: chat.id,
+    createdAt: chat.createdAt,
+    messages: chat.messages,
+    quota: s.quota,
+  });
 }
 
 export interface AskContext {
@@ -114,39 +123,89 @@ export interface AskContext {
   recent: readonly RecentQuestion[];
 }
 
-export function askInSession(uid: string, question: string, build: () => unknown, ctx: AskContext): void {
+export function askInSession(
+  uid: string,
+  question: string,
+  build: (question: string) => unknown,
+  ctx: AskContext,
+): void {
   const s = currentSession(uid);
   const q = question.trim();
   if (!q || s.busy) return;
   const { chatId, createdAt } = s;
   const before = s.messages;
-  const withQuestion: AiMessage[] = [...before, { role: 'user', text: q }];
-  set({ ...s, messages: withQuestion, busy: true, startedAt: Date.now(), error: '', failedDraft: '', unread: false });
+  const withQuestion: AiMessage[] = [...before, { role: "user", text: q }];
+  set({
+    ...s,
+    messages: withQuestion,
+    busy: true,
+    startedAt: Date.now(),
+    error: "",
+    failedDraft: "",
+    unread: false,
+  });
 
-  const stillHere = () => state !== null && state.uid === uid && state.chatId === chatId;
+  const stillHere = () =>
+    state !== null && state.uid === uid && state.chatId === chatId;
   void (async () => {
     try {
-      const result = await askAi(q, build(), before);
-      const next: AiMessage[] = [...withQuestion, { role: 'model', text: result.answer }];
+      const result = await askAi(q, build(q), before);
+      const next: AiMessage[] = [
+        ...withQuestion,
+        { role: "model", text: result.answer },
+      ];
       const existing = ctx.saved.find((c) => c.id === chatId);
       // שיחה שמורה מתעדכנת גם אם המשתמש כבר עבר למסך אחר
       if (existing) {
-        const title = (next.find((m) => m.role === 'user')?.text ?? 'שיחה').slice(0, 60);
-        saveAiChat(uid, { id: chatId, title, pinned: existing.pinned ?? false, messages: next, createdAt, updatedAt: Date.now() }).catch(() => undefined);
+        const title = (
+          next.find((m) => m.role === "user")?.text ?? "שיחה"
+        ).slice(0, 60);
+        saveAiChat(uid, {
+          id: chatId,
+          title,
+          pinned: existing.pinned ?? false,
+          messages: next,
+          createdAt,
+          updatedAt: Date.now(),
+        }).catch(() => undefined);
       }
-      saveRecentQuestions(uid, withRecentQuestion(ctx.recent, q, Date.now())).catch(() => undefined);
+      saveRecentQuestions(
+        uid,
+        withRecentQuestion(ctx.recent, q, Date.now()),
+      ).catch(() => undefined);
       if (stillHere() && state) {
-        set({ ...state, messages: next, busy: false, startedAt: null, quota: { remaining: result.remaining, limit: result.limit }, unread: true });
+        set({
+          ...state,
+          messages: next,
+          busy: false,
+          startedAt: null,
+          quota: { remaining: result.remaining, limit: result.limit },
+          unread: true,
+        });
       } else if (state && state.uid === uid) {
-        set({ ...state, busy: false, startedAt: null, quota: { remaining: result.remaining, limit: result.limit } });
+        set({
+          ...state,
+          busy: false,
+          startedAt: null,
+          quota: { remaining: result.remaining, limit: result.limit },
+        });
       }
     } catch (caught) {
       if (stillHere() && state) {
-        set({ ...state, messages: before, busy: false, startedAt: null, error: describeAiError(caught), failedDraft: q });
+        set({
+          ...state,
+          messages: before,
+          busy: false,
+          startedAt: null,
+          error: describeAiError(caught),
+          failedDraft: q,
+        });
       } else if (state && state.uid === uid) {
         set({ ...state, busy: false, startedAt: null });
       }
-      loadAiQuota().then((quota) => setQuota(uid, quota)).catch(() => undefined);
+      loadAiQuota()
+        .then((quota) => setQuota(uid, quota))
+        .catch(() => undefined);
     }
   })();
 }

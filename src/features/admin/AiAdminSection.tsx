@@ -76,7 +76,9 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
           <div>
             <dt>השאלה האחרונה (אבחון)</dt>
             <dd dir="ltr">
-              {`${info.last.finish || '?'} · prompt ${info.last.promptTokens.toLocaleString('en-US')} · thinking ${info.last.thoughtTokens.toLocaleString('en-US')} · output ${info.last.outputTokens.toLocaleString('en-US')} · ${info.last.answerChars} chars · ${(info.last.ms / 1000).toFixed(1)}s`}
+              {info.last.error
+                ? `ERROR · ${info.last.error}`
+                : `${info.last.finish || '?'} · prompt ${(info.last.promptTokens ?? 0).toLocaleString('en-US')} · thinking ${(info.last.thoughtTokens ?? 0).toLocaleString('en-US')} · output ${(info.last.outputTokens ?? 0).toLocaleString('en-US')} · ${info.last.answerChars ?? 0} chars · ${((info.last.ms ?? 0) / 1000).toFixed(1)}s`}
             </dd>
           </div>
         )}

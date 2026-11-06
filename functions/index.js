@@ -540,7 +540,7 @@ const AI_MAX_HISTORY = 6;
 const AI_REFUSAL = 'אני יכול לעזור רק בנושאי הכספים שלך והאפליקציה.';
 
 const AI_SYSTEM_PROMPT = `אתה "סקירת AI": יועץ פיננסי אישי, מקצועי ומעמיק, בתוך אפליקציית ניהול כספים בעברית.
-יש לך גישה לנתונים המלאים של המשתמש (JSON): כל הפעולות מתחילת התיעוד, סכומי כל החודשים, תקציבים ויעד חיסכון, חובות, הוראות קבע וקטגוריות. בדוק את הנתונים לפני שאתה עונה: חשב סכומים, ממוצעים, שינויים בין חודשים, מגמות ופעולות חריגות, ואל תענה מהזיכרון או בהערכה כללית כשאפשר לחשב.
+יש לך גישה לנתוני המשתמש (JSON): הפעולות של החודש שנבחר, הפעולות האחרונות (ומהישנות יותר רק אלה שקשורות לשאלה), סיכום חודשי לפי קטגוריה על כל ההיסטוריה מתחילת התיעוד, סכומי כל החודשים, תקציבים ויעד חיסכון, חובות, הוראות קבע וקטגוריות. לשאלות על תקופות רחבות השתמש בסיכום החודשי לפי קטגוריה. בדוק את הנתונים לפני שאתה עונה: חשב סכומים, ממוצעים, שינויים בין חודשים, מגמות ופעולות חריגות, ואל תענה מהזיכרון או בהערכה כללית כשאפשר לחשב.
 כשהשאלה היא על נושא, אירוע או מטרה (למשל \"כמה הוצאתי לכבוד שבת\" או \"על חגים\"), חפש בכל השורות של התקופה המבוקשת בכל השדות: ההערה, בית העסק, הקטגוריה, כולל צורות כתיבה קרובות (שבת, שבת קודש, לשבת, ליל שבת, וכדומה). סכם את כל השורות שמתאימות, וציין אילו שורות (תאריך, סכום, הערה) נספרו. שאלות על \"החודש\" או \"החודש הזה\" מתייחסות ל-selectedMonthTransactions. אם לא נמצאה שום שורה מתאימה, אמור זאת במפורש ואל תנחש.
 התחומים היחידים שבהם מותר לך לעזור:
 1. ניתוח הנתונים הכספיים של המשתמש.
@@ -603,9 +603,29 @@ async function refundAiQuota(uid) {
   }
 }
 
+/** שגיאת המודל האחרונה, לאבחון במסך הניהול (בלי תוכן הנתונים). */
+async function saveAiLast(last) {
+  const ref = admin.firestore().collection('aiUsage').doc('_global');
+  try {
+    // update מחליף את כל השדה (set עם merge היה משאיר שדות ישנים, למשל שגיאה קודמת)
+    await ref.update({ last });
+  } catch {
+    try {
+      await ref.set({ last }, { merge: true });
+    } catch {
+      // האבחון הוא עזר בלבד
+    }
+  }
+}
+
+async function recordAiError(uid, model, message) {
+  console.error('aiAsk error', model, message);
+  await saveAiLast({ at: Date.now(), uid, model, error: String(message).slice(0, 400) });
+}
+
 const cleanText = (value, max) => (typeof value === 'string' ? value.replace(/\u0000/g, '').trim().slice(0, max) : '');
 
-exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '512MiB', maxInstances: 5 }, async (request) => {
+exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 180, memory: '512MiB', maxInstances: 5 }, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'יש להתחבר.');
   const uid = request.auth.uid;
   const db = admin.firestore();
@@ -649,7 +669,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '512MiB', m
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey },
       body: JSON.stringify(makeBody(withThinking)),
-      signal: AbortSignal.timeout(50000),
+      signal: AbortSignal.timeout(165000),
     });
   let text = '';
   let lastUsage = null;
@@ -661,8 +681,20 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '512MiB', m
     if (res.status === 400 && thinking) res = await call(false);
     if (!res.ok) {
       await refundAiQuota(uid);
-      if (res.status === 429) throw new HttpsError('resource-exhausted', 'המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.');
-      throw new HttpsError('unavailable', 'לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.');
+      let detail = '';
+      try {
+        detail = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
+      } catch {
+        detail = '';
+      }
+      await recordAiError(uid, cfg.model, `HTTP ${res.status}: ${detail}`);
+      const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
+      const tech = isAdmin ? ` [${res.status}] ${detail.slice(0, 200)}` : '';
+      if (res.status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
+      if (res.status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
+      if (res.status === 401 || res.status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
+      if (res.status === 400) throw new HttpsError('unavailable', `הבקשה נדחתה על ידי המודל (ייתכן שהנתונים גדולים מדי).${tech}`);
+      throw new HttpsError('unavailable', `לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.${tech}`);
     }
     const json = await res.json();
     lastUsage = json.usageMetadata ?? null;
@@ -671,10 +703,13 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '512MiB', m
   } catch (error) {
     if (error instanceof HttpsError) throw error;
     await refundAiQuota(uid);
-    throw new HttpsError('unavailable', 'לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.');
+    const timedOut = error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+    await recordAiError(uid, cfg.model, `${timedOut ? 'timeout' : 'network'}: ${String(error?.message ?? error).slice(0, 200)}`);
+    throw new HttpsError('unavailable', timedOut ? 'המודל לא הספיק לענות בזמן. אפשר לנסות שוב, או לשאול שאלה ממוקדת יותר.' : 'לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.');
   }
   if (!text) {
     await refundAiQuota(uid);
+    await recordAiError(uid, cfg.model, `empty answer, finish=${finishReason || '?'}`);
     throw new HttpsError('unavailable', 'לא התקבלה תשובה. אפשר לנסות לנסח את השאלה אחרת.');
   }
   // צריכת טוקנים לפי משתמש וחודש, כדי שאפשר יהיה לדעת מי גרם לעלות
@@ -694,7 +729,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 60, memory: '512MiB', m
       ms: Date.now() - startedMs,
     };
     console.log('aiAsk', JSON.stringify(last));
-    await db.collection('aiUsage').doc('_global').set({ last }, { merge: true });
+    await saveAiLast(last);
     if (tokens > 0) {
       const ym = dayKey(Date.now()).slice(0, 7);
       const add = admin.firestore.FieldValue.increment(tokens);
