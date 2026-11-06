@@ -36,7 +36,7 @@ export function AiHistoryScreen() {
 
   return (
     <div className={`app-shell scope-${space.scope}`}>
-      <ScreenHeader title="היסטוריה · סקירת AI" />
+      <ScreenHeader title="היסטוריה · סקירת AI" backTo={`/${space.key}/ai`} />
       <main className="content ai-page">
         <section className="card" aria-label="הסבר">
           <h2 className="card-title">איך זה עובד</h2>

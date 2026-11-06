@@ -33,6 +33,9 @@ const readConsent = (uid: string): boolean => {
   }
 };
 
+/** השיחה הנוכחית נשמרת בזיכרון, כדי שמעבר להיסטוריה וחזרה לא ימחק אותה. */
+let session: { uid: string; chatId: string; createdAt: number; messages: AiMessage[] } | null = null;
+
 interface NavState {
   chat?: AiChat;
   ask?: string;
@@ -50,9 +53,10 @@ export function AiReviewScreen() {
 
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const [suggestions, setSuggestions] = useState(() => pickQuestions(5));
-  const [chatId, setChatId] = useState(() => nav.chat?.id ?? newId());
-  const [createdAt, setCreatedAt] = useState(() => nav.chat?.createdAt ?? Date.now());
-  const [messages, setMessages] = useState<AiMessage[]>(() => nav.chat?.messages ?? []);
+  const restored = !nav.chat && !nav.ask && session?.uid === user.uid ? session : null;
+  const [chatId, setChatId] = useState(() => nav.chat?.id ?? restored?.chatId ?? newId());
+  const [createdAt, setCreatedAt] = useState(() => nav.chat?.createdAt ?? restored?.createdAt ?? Date.now());
+  const [messages, setMessages] = useState<AiMessage[]>(() => nav.chat?.messages ?? restored?.messages ?? []);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +74,10 @@ export function AiReviewScreen() {
   useEffect(() => {
     threadEnd.current?.scrollIntoView?.({ block: 'nearest' });
   }, [messages.length, busy]);
+
+  useEffect(() => {
+    session = { uid: user.uid, chatId, createdAt, messages };
+  }, [user.uid, chatId, createdAt, messages]);
 
   const isSaved = saved.some((c) => c.id === chatId);
   const pinned = saved.find((c) => c.id === chatId)?.pinned ?? false;
@@ -164,7 +172,7 @@ export function AiReviewScreen() {
 
   return (
     <div className={`app-shell scope-${space.scope}`}>
-      <ScreenHeader title={title} />
+      <ScreenHeader title={title} backTo={`/${space.key}`} />
       <main className="content ai-page" aria-busy={busy}>
         {!consent && (
           <section className="card ai-consent" aria-label="לפני שמתחילים">
