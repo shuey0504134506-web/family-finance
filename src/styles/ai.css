@@ -292,16 +292,32 @@
 .ai-chat-shell .app-header { flex: none; }
 .ai-chat-shell .ai-chat-page { min-height: 0; min-width: 0; flex: 1; padding-bottom: calc(8px + var(--safe-bottom, 0px)); gap: 8px; }
 .ai-chat-top { display: flex; justify-content: flex-end; flex: none; }
+.ai-chat-top .btn { min-height: 44px; background: transparent; border: 0; box-shadow: none; color: var(--text-muted); font-weight: 500; padding-inline: 10px; }
+.ai-chat-top .btn:hover { color: var(--text); text-decoration: underline; }
 .ai-chat-scroll { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .ai-welcome { margin: auto 0; text-align: center; color: var(--text); overflow-wrap: anywhere; }
 .ai-welcome h2 { font-size: clamp(1.25rem, 6vw, 2rem); margin: 0 0 8px; }
 .ai-welcome p { margin: 0; }
-.ai-composer { flex: none; min-width: 0; display: grid; gap: 6px; padding: 10px; }
-.ai-composer textarea { width: 100%; min-width: 0; resize: none; font: inherit; }
-.ai-composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.ai-composer-actions select { width: auto; max-width: calc(100% - 50px); min-width: 0; font-size: .875rem; }
+.ai-chat-page { container-type: inline-size; }
+.ai-composer { flex: none; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 8px 10px; border-radius: 18px; background: rgba(255, 255, 255, .95); box-shadow: 0 3px 16px rgba(16, 42, 69, .08); }
+.ai-composer textarea.input { width: 100%; min-width: 0; min-height: 44px; resize: none; font: inherit; line-height: 1.45; padding: 10px 6px; background: transparent; border: 0; border-radius: 8px; }
+.ai-composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.ai-composer-actions select.input { width: auto; max-width: calc(100% - 50px); min-width: 0; min-height: 44px; padding: 4px 6px; font-size: .82rem; font-weight: 400; color: var(--text-muted); border: 0; background: transparent; border-radius: 6px; }
+.ai-composer textarea:focus-visible, .ai-composer select:focus-visible, .ai-chat-top .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; box-shadow: none; }
 .ai-send { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 1.4rem; }
-.ai-chat-scroll .ai-thread { min-width: 0; }
+.ai-chat-scroll .ai-thread { min-width: 0; background: rgba(255, 255, 255, .68); border: 1px solid rgba(255, 255, 255, .85); border-radius: 20px; padding: clamp(8px, 2vw, 18px); gap: 10px; }
+.ai-chat-scroll .ai-msg { border-radius: 18px; max-width: 94%; padding: 9px 12px; }
+.ai-chat-scroll .ai-msg-user { background: #e0eceb; border-end-start-radius: 6px; }
+.ai-chat-scroll .ai-msg-model { background: rgba(255, 255, 255, .96); border-color: var(--border); border-end-end-radius: 6px; }
+/* Use available content width, not the monitor width (desktop has a sidebar). */
+@container (min-width: 440px) {
+  .ai-composer { grid-template-columns: minmax(0, 1fr) max-content 44px; align-items: center; gap: 8px; }
+  .ai-composer-actions { display: contents; }
+  .ai-composer textarea.input { grid-column: 1; }
+  .ai-composer-actions select.input { grid-column: 2; max-width: 100%; }
+  .ai-composer .ai-send { grid-column: 3; }
+  .ai-composer > [role='status'] { grid-column: 1 / -1; margin: 0; }
+}
 @media (max-width: 340px), (max-height: 500px) {
   .ai-chat-shell .ai-chat-page { padding-top: 4px; gap: 4px; }
   .ai-composer { padding: 6px; gap: 4px; }
