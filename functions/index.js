@@ -666,7 +666,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       await refundAiQuota(uid);
       throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.');
     }
-    return { answer: analyze(parsed, q), remaining: quota.remaining, limit: cfg.perUserDaily };
+    return { answer: analyze(parsed, q, history), remaining: quota.remaining, limit: cfg.perUserDaily };
   }
   if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) {
     await refundAiQuota(uid);
@@ -955,12 +955,15 @@ exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   }
   if (typeof model === 'string' && model.trim()) {
     if (!/^[A-Za-z0-9._:/\-]{1,200}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
+    const effectiveProvider = patch.provider ?? (await aiConfig()).provider;
+    if ((effectiveProvider === 'google' && !/^gemini-/i.test(model.trim())) || (effectiveProvider === 'groq' && (/^gemini-/i.test(model.trim()) || model.trim() === 'llama-3.3-70b-versatile'))) throw new HttpsError('invalid-argument', 'המודל אינו מתאים לספק שנבחר.');
     patch.model = model.trim();
   }
   if (request.data?.freeBackup !== undefined) {
     const b = request.data.freeBackup;
     const current = await aiConfig();
     if (!b || typeof b.enabled !== 'boolean' || !['google', 'groq'].includes(b.provider) || typeof b.model !== 'string' || !/^[a-zA-Z0-9._:/-]{1,120}$/.test(b.model)) throw new HttpsError('invalid-argument', 'הגדרות גיבוי לא תקינות.');
+    if ((b.provider === 'google' && !/^gemini-/i.test(b.model)) || (b.provider === 'groq' && (/^gemini-/i.test(b.model) || b.model === 'llama-3.3-70b-versatile'))) throw new HttpsError('invalid-argument', 'מודל הגיבוי אינו מתאים לספק שנבחר.');
     const key = typeof b.apiKey === 'string' && b.apiKey.trim() ? b.apiKey.trim() : (current.freeBackup?.provider === b.provider ? current.freeBackup?.apiKey : '');
     if (b.enabled && (b.provider === (patch.provider ?? current.provider) || !/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key ?? ''))) throw new HttpsError('invalid-argument', 'נדרש ספק גיבוי שונה ומפתח תקין.');
     patch.freeBackup = { enabled: b.enabled, provider: b.provider, model: b.model, apiKey: key ?? '' };
