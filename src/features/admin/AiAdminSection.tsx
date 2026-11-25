@@ -88,13 +88,14 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       </dl>
 
       <label className="field-label" htmlFor="ai-provider">ספק AI</label>
-      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(''); setApiKey(''); }}>
+      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(e.target.value === 'groq' ? 'openai/gpt-oss-120b' : ''); setApiKey(''); }}>
         <option value="google">Google Gemini</option>
         <option value="openai">OpenAI</option>
         <option value="xai">xAI Grok</option>
         <option value="anthropic">Anthropic Claude</option>
         <option value="deepseek">DeepSeek</option>
         <option value="openrouter">OpenRouter</option>
+        <option value="groq">GroqCloud</option>
       </select>
       {provider !== (info.provider ?? 'google') && <p className="muted small">בהחלפת ספק יש להזין מפתח ומודל חדשים. מודל הגיבוי הקודם יוסר.</p>}
       <label className="field-label" htmlFor="ai-key">{info.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח API'}</label>
