@@ -181,7 +181,10 @@ export async function loadAdminLog(): Promise<AdminLogEntry[]> {
   return result.data.entries;
 }
 
+export type AiProvider = 'google' | 'openai' | 'xai' | 'anthropic' | 'deepseek' | 'openrouter';
+
 export interface AdminAiInfo {
+  provider?: AiProvider;
   hasKey: boolean;
   /** ארבע הספרות האחרונות של המפתח השמור (המפתח עצמו לא חוזר מהשרת) */
   keyHint: string;
@@ -204,7 +207,7 @@ export async function loadAdminAi(): Promise<AdminAiInfo> {
   return (await httpsCallable<void, AdminAiInfo>(functions(), 'adminGetAi')()).data;
 }
 
-export async function saveAdminAi(patch: { apiKey?: string; model?: string; perUserDaily?: number; globalDaily?: number; enabled?: boolean }): Promise<void> {
+export async function saveAdminAi(patch: { provider?: AiProvider; apiKey?: string; model?: string; perUserDaily?: number; globalDaily?: number; enabled?: boolean }): Promise<void> {
   await httpsCallable(functions(), 'adminSetAi')(patch);
 }
 
