@@ -286,3 +286,24 @@
 .ai-deep small {
   color: var(--text-muted, #5b6b7a);
 }
+
+/* AI chat only: reuse the home hero and existing card/button tokens. */
+.ai-chat-shell { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+.ai-chat-shell .app-header { flex: none; }
+.ai-chat-shell .ai-chat-page { min-height: 0; min-width: 0; flex: 1; padding-bottom: calc(8px + var(--safe-bottom, 0px)); gap: 8px; }
+.ai-chat-top { display: flex; justify-content: flex-end; flex: none; }
+.ai-chat-scroll { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ai-welcome { margin: auto 0; text-align: center; color: var(--text); overflow-wrap: anywhere; }
+.ai-welcome h2 { font-size: clamp(1.25rem, 6vw, 2rem); margin: 0 0 8px; }
+.ai-welcome p { margin: 0; }
+.ai-composer { flex: none; min-width: 0; display: grid; gap: 6px; padding: 10px; }
+.ai-composer textarea { width: 100%; min-width: 0; resize: none; font: inherit; }
+.ai-composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.ai-composer-actions select { width: auto; max-width: calc(100% - 50px); min-width: 0; font-size: .875rem; }
+.ai-send { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 1.4rem; }
+.ai-chat-scroll .ai-thread { min-width: 0; }
+@media (max-width: 340px), (max-height: 500px) {
+  .ai-chat-shell .ai-chat-page { padding-top: 4px; gap: 4px; }
+  .ai-composer { padding: 6px; gap: 4px; }
+  .ai-composer textarea { min-height: 44px; }
+}
