@@ -309,7 +309,7 @@
 }
 
 .ai-welcome-prompt { min-height: 4.5em; display: grid; place-items: center; }
-.ai-welcome-suggestion { font: inherit; color: inherit; background: transparent; border: 0; padding: 6px; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.ai-welcome-suggestion { font: inherit; color: inherit; background: transparent; border: 0; padding: 6px; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; text-decoration: none; cursor: pointer; }
 .ai-welcome-suggestion:disabled { opacity: .65; cursor: default; }
 .ai-welcome-suggestion:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -319,3 +319,6 @@
 .ai-type-cursor { animation: ai-cursor-blink .8s step-end infinite; }
 @keyframes ai-cursor-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ai-type-cursor { animation: none; } }
+
+.ai-welcome-suggestion { font-family: inherit; font-size: clamp(.95rem, 4.5vw, 1.2rem); font-weight: 500; line-height: 1.65; letter-spacing: normal; text-decoration: none; }
+.ai-suggestion-hint { font-weight: 400; }
