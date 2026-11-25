@@ -3,6 +3,7 @@ import type { Storage } from '../core/session';
 import type { DocData } from '../db/localDb';
 import { auth_probe } from './probe';
 import { Controller } from './controller';
+import { functionsBackend } from '../shims/functionsBackend';
 import { derivedCandidates } from '../core/recovery';
 import type { CloudAuth, CloudUser } from '../sync/firebaseCloud';
 import type { Cloud, Remote, Target } from '../sync/engine';
@@ -58,6 +59,7 @@ describe('Controller', () => {
     expect(c.getState().phase).toBe('in');
     expect(c.getState().sync).toEqual({ kind: 'local' });
     expect(auth_probe.user()?.offlineOnly).toBe(true);
+    expect(() => functionsBackend.call('aiAsk', { question: 'test' })).toThrow('functions/unavailable');
     c.db!.set('users/x/householdTransactions/t1', { amount: 5 });
     const id = c.getState().me!.id;
     await c.logout();

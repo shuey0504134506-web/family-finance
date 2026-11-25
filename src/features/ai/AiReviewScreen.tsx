@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { AI_QUESTION_BANK, pickQuestions } from "../../domain/aiQuestions";
 import { getLang } from "../../i18n/lang";
-import { pickQuestions } from "../../domain/aiQuestions";
 import {
   loadAiQuota,
   saveAiChat,
@@ -26,7 +26,7 @@ import {
 } from "./aiSession";
 import { useAiSummaryData } from "./useAiSummaryData";
 
-const consentKey = (uid: string) => `ff.ai.consent.v1.${uid}`;
+const consentKey = (uid: string) => `ff.ai.consent.v2.${uid}`;
 const readConsent = (uid: string): boolean => {
   try {
     return localStorage.getItem(consentKey(uid)) === "1";
@@ -69,7 +69,7 @@ function ThinkingIndicator({ startedAt }: { startedAt: number | null }) {
 }
 
 export function AiReviewScreen() {
-  const { user } = useReadyAuth();
+  const { user, profile } = useReadyAuth();
   const space = useSpace();
   const { nameOf } = useSpaces();
   const navigate = useNavigate();
@@ -78,9 +78,54 @@ export function AiReviewScreen() {
   const data = useAiSummaryData();
 
   const [consent, setConsent] = useState(() => readConsent(user.uid));
-  const [suggestions, setSuggestions] = useState(() => pickQuestions(5));
   const session = useAiSession(user.uid);
   const { chatId, messages, busy, startedAt, partial, error, quota } = session;
+  const [suggestion, setSuggestion] = useState("");
+  const [typed, setTyped] = useState("");
+  const [suggestionFocused, setSuggestionFocused] = useState(false);
+  const welcomeVisible = messages.length === 0 && !busy && consent;
+  const questionQueue = useRef<string[]>([]);
+  const lastQuestion = useRef("");
+  useEffect(() => {
+    setSuggestion("");
+    setTyped("");
+    setSuggestionFocused(false);
+    if (!welcomeVisible) return;
+    let previous = lastQuestion.current;
+    try { previous = sessionStorage.getItem("ff.ai.lastSuggestion") || previous; } catch { /* storage unavailable */ }
+    questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+    if (questionQueue.current[0] === previous && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
+    setSuggestion(questionQueue.current.shift() ?? "");
+  }, [chatId, welcomeVisible]);
+  useEffect(() => {
+    if (!welcomeVisible || !suggestion) return;
+    lastQuestion.current = suggestion;
+    try { sessionStorage.setItem("ff.ai.lastSuggestion", suggestion); } catch { /* storage unavailable */ }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setTyped(suggestion);
+      return;
+    }
+    let index = 0;
+    setTyped("");
+    const timer = window.setInterval(() => {
+      index += 1;
+      setTyped(suggestion.slice(0, index));
+      if (index >= suggestion.length) window.clearInterval(timer);
+    }, 35);
+    return () => window.clearInterval(timer);
+  }, [suggestion, welcomeVisible]);
+  useEffect(() => {
+    if (!welcomeVisible || !suggestion || typed !== suggestion || suggestionFocused) return;
+    const timer = window.setTimeout(() => {
+      if (!questionQueue.current.length) {
+        questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+        if (questionQueue.current[0] === suggestion && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
+      }
+      setTyped("");
+      setSuggestion(questionQueue.current.shift() ?? "");
+    }, 10000);
+    return () => window.clearTimeout(timer);
+  }, [welcomeVisible, suggestion, typed, suggestionFocused]);
   const [deep, setDeep] = useState(false);
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<AiChat[]>([]);
@@ -123,7 +168,7 @@ export function AiReviewScreen() {
 
   const ask = (raw: string) => {
     const q = raw.trim();
-    if (!q || busy || !data.ready || !consent) return;
+    if (!q || busy || !data.ready || data.error || !consent || (quota !== null && quota.remaining <= 0)) return;
     setDraft("");
     askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang() });
   };
@@ -143,7 +188,6 @@ export function AiReviewScreen() {
 
   const newConversation = () => {
     startNewChat(user.uid);
-    setSuggestions(pickQuestions(5, Math.random, suggestions));
   };
 
   const togglePin = () => {
@@ -163,24 +207,26 @@ export function AiReviewScreen() {
     setConsent(true);
   };
 
-  const canAsk = consent && data.ready && !busy;
+  const canAsk = consent && data.ready && !data.error && !busy;
   const exhausted = quota !== null && quota.remaining <= 0;
   const title = useMemo(() => `סקירת AI · ${nameOf(space)}`, [nameOf, space]);
 
   return (
-    <div className={`app-shell scope-${space.scope}`}>
+    <div className={`app-shell has-hero ai-chat-shell scope-${space.scope}`}>
       <ScreenHeader
         title={title}
         backTo={
           nav.from === "history" ? `/${space.key}/ai/history` : `/${space.key}`
         }
       />
-      <main className="content ai-page" aria-busy={busy}>
+      <main className="content ai-page ai-chat-page" aria-busy={busy}>
+        <div className="ai-chat-top"><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate(`/${space.key}/ai/history`)}>היסטוריה</button></div>
+        <div className="ai-chat-scroll">
         {!consent && (
           <section className="card ai-consent" aria-label="לפני שמתחילים">
             <h2 className="card-title">לפני שמתחילים</h2>
             <p className="small">
-              כדי לענות, האפליקציה שולחת ל-AI של Google את הנתונים הכספיים של
+              כדי לענות, האפליקציה שולחת לספק ה-AI שהוגדר על ידי מנהל האפליקציה את הנתונים הכספיים של
               המרחב הזה: הפעולות (כולל שמות בתי עסק והערות), התקציבים, החובות
               והוראות הקבע. לא נשלחים תמונות מצורפות, סיסמאות או פרטי חשבון.
             </p>
@@ -194,72 +240,9 @@ export function AiReviewScreen() {
           </section>
         )}
 
-        <section className="card ai-ask" aria-label="שאלות">
-          <h2 className="card-title">שאלות מוצעות</h2>
-          <ul className="ai-suggest">
-            {suggestions.map((q) => (
-              <li key={q}>
-                <button
-                  type="button"
-                  className="ai-suggest-btn"
-                  disabled={!canAsk || exhausted}
-                  onClick={() => ask(q)}
-                >
-                  {q}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() =>
-              setSuggestions(pickQuestions(5, Math.random, suggestions))
-            }
-          >
-            שאלות אחרות
-          </button>
-          <form className="ai-form" onSubmit={onSubmit}>
-            <input
-              className="input"
-              value={draft}
-              maxLength={500}
-              placeholder="אפשר לכתוב שאלה משלך"
-              aria-label="שאלה"
-              onChange={(e) => setDraft(e.target.value)}
-              disabled={!consent || exhausted}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary btn-small"
-              disabled={!canAsk || exhausted || !draft.trim()}
-            >
-              שליחה
-            </button>
-          </form>
-          <label className="ai-deep">
-            <input
-              type="checkbox"
-              checked={deep}
-              onChange={(e) => setDeep(e.target.checked)}
-              disabled={busy}
-            />
-            <span>
-              <b>חשיבה מעמיקה</b>
-              <small>לשאלות מורכבות. התשובה איטית יותר.</small>
-            </span>
-          </label>
-          <p className="muted small" role="status">
-            {!data.ready && !data.error
-              ? "טוען את הנתונים…"
-              : quota
-                ? exhausted
-                  ? "המכסה היומית נגמרה. אפשר להמשיך מחר."
-                  : `נותרו ${quota.remaining} שאלות היום`
-                : ""}
-          </p>
-        </section>
-
+        {messages.length === 0 && !busy && consent && (
+          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><p>מה תרצה לשאול היום?</p><div className="ai-welcome-prompt">{suggestion && <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted || typed !== suggestion} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)} aria-label={suggestion}><span aria-hidden="true">{typed}{typed !== suggestion && <span className="ai-type-cursor">|</span>}</span>{typed === suggestion && <small className="ai-suggestion-hint">לחץ לשאול</small>}</button>}</div></section>
+        )}
         {error && (
           <div className="card error-card" role="alert">
             {error}
@@ -311,13 +294,17 @@ export function AiReviewScreen() {
           </section>
         )}
 
-        <button
-          type="button"
-          className="btn btn-secondary ai-history-btn"
-          onClick={() => navigate(`/${space.key}/ai/history`)}
-        >
-          היסטוריה
-        </button>
+        </div>
+        <form className="card ai-composer" onSubmit={onSubmit}>
+          <textarea className="input" rows={2} value={draft} maxLength={500} placeholder="כתוב שאלה…" aria-label="שאלה" onChange={e => setDraft(e.target.value)} disabled={!consent || exhausted} />
+          <div className="ai-composer-actions">
+            <select className="input" aria-label="עוצמת חשיבה" value={deep ? "deep" : "normal"} onChange={e => setDeep(e.target.value === "deep")} disabled={busy}>
+              <option value="normal">חשיבה רגילה</option><option value="deep">חשיבה מעמיקה</option>
+            </select>
+            <button type="submit" className="btn btn-primary ai-send" aria-label="שליחה" disabled={!canAsk || exhausted || !draft.trim()}>↑</button>
+          </div>
+          {(!data.ready || exhausted || data.error) && <p className="muted small" role="status">{data.error ? "טעינת הנתונים נכשלה" : exhausted ? "המכסה היומית נגמרה" : "טוען נתונים…"}</p>}
+        </form>
       </main>
     </div>
   );

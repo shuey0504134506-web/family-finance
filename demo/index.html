@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Family Finance — ניסיון מבודד</title>
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body><main><header><small>Family Finance • סביבת ניסיון</small><h1>סקירה פיננסית</h1><p>נתונים פיקטיביים בלבד · ספקים חיצוניים חסומים · ₪0</p></header>
+<section class="card" aria-label="סיכום חודשי"><label for="month">חודש</label><select id="month"><option>2026-11</option><option>2026-10</option><option>2026-09</option></select><div class="totals" id="totals"></div></section>
+<section class="card"><h2>סקירת AI מקומית</h2><p>שאלו על החודש, השוואה, שנה או יעד חיסכון.</p><div id="messages" role="log" aria-live="polite"></div><form id="chat"><label for="question">השאלה שלך</label><textarea id="question" maxlength="500" required placeholder="כמה חסכתי החודש?"></textarea><button>שליחה</button></form><p id="quota" role="status"></p><button id="clear" type="button">מחיקת היסטוריה</button></section>
+<section class="card"><h2>ספקים ומפתחות</h2><p>Google Gemini / Groq — חסומים במצב אפס עלות. אין להזין מפתח אמיתי בניסוי.</p><label for="key">מפתח פיקטיבי לבדיקה מקומית</label><input id="key" type="password" autocomplete="off"><button id="validate" type="button">בדיקת מבנה בלבד</button><p id="keyResult" role="status"></p></section></main><script type="module" src="demo.mjs"></script></body></html>

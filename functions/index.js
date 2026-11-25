@@ -545,13 +545,15 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // ---------- סקירת AI ----------
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
-const AI_DEFAULTS = { model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const { buildRequest } = require('./ai/providers');
+const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter', 'groq'];
+const AI_DEFAULTS = { provider: 'google', model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
 const AI_REFUSAL = 'אני יכול לעזור רק בנושאי הכספים שלך והאפליקציה.';
 
-const AI_SYSTEM_PROMPT = `אתה "סקירת AI": יועץ פיננסי אישי, מקצועי ומעמיק, בתוך אפליקציית ניהול כספים בעברית.
+const AI_SYSTEM_PROMPT = `בדוק תמיד את coverage. אם מספר השורות שנכללו קטן ממספר ההתאמות, אל תציג סכום חלקי כסכום מלא. חיפוש מילות מפתח אינו מבטיח שכל הפעולות בנושא נמצאו. הסיכומים השנתיים והחודשיים כוללים העברות לפי הגדרות האפליקציה; אל תוסיף אותן שוב.\nאתה "סקירת AI": יועץ פיננסי אישי, מקצועי ומעמיק, בתוך אפליקציית ניהול כספים בעברית.
 יש לך גישה לנתוני המשתמש (JSON), מסוכמים מראש: כל הפעולות של החודש שנבחר ושל החודש הקודם, פעולות ישנות יותר שקשורות לשאלה (relatedOlderTransactions), סיכום חודשי לפי קטגוריה על כל ההיסטוריה, סיכום שנתי, בתי העסק הגדולים והוצאות גדולות לאורך כל התקופה, סכומי כל החודשים, תקציבים ויעד חיסכון, חובות, הוראות קבע וקטגוריות. לשאלות על תקופות רחבות השתמש בסיכומים. חשב סכומים, ממוצעים ושינויים בין חודשים בדיוק מהנתונים, ואל תענה בהערכה כללית כשאפשר לחשב.
 כשהשאלה היא על נושא, אירוע או מטרה (למשל \"כמה הוצאתי לכבוד שבת\" או \"על חגים\"), חפש בכל השורות הרלוונטיות בכל השדות: ההערה, בית העסק, הקטגוריה, כולל צורות כתיבה קרובות (שבת, שבת קודש, לשבת, ליל שבת, וכדומה). סכם את כל השורות שמתאימות, וציין אילו שורות (תאריך, סכום, הערה) נספרו. שאלות על \"החודש\" או \"החודש הזה\" מתייחסות ל-selectedMonthTransactions. אם לא נמצאה שום שורה מתאימה, אמור זאת במפורש ואל תנחש.
 התחומים היחידים שבהם מותר לך לעזור:
@@ -644,7 +646,6 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const [access, cfg] = await Promise.all([db.collection('aiAccess').doc(uid).get(), aiConfig()]);
   if (!access.exists || access.data().enabled !== true) throw new HttpsError('permission-denied', 'אין לך גישה לסקירת AI.');
   if (cfg.enabled === false) throw new HttpsError('failed-precondition', 'סקירת ה-AI כבויה כרגע.');
-  if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) throw new HttpsError('failed-precondition', 'סקירת ה-AI עדיין לא הוגדרה.');
 
   const { question, summary, history, deep, lang } = request.data ?? {};
   const q = cleanText(question, AI_MAX_QUESTION);
@@ -657,11 +658,27 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     // ההקשר חייב להתחיל בהודעת משתמש ולהתחלף
     .filter((m, i, all) => m.parts[0].text && (i === 0 ? m.role === 'user' : m.role !== all[i - 1].role));
 
+  const { analyze, remoteGenerationAllowed } = await import('./ai/local-analysis.mjs');
   const quota = await takeAiQuota(uid, cfg);
+  if (!remoteGenerationAllowed()) {
+    let parsed;
+    try { parsed = JSON.parse(data); } catch {
+      await refundAiQuota(uid);
+      throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.');
+    }
+    return { answer: analyze(parsed, q), remaining: quota.remaining, limit: cfg.perUserDaily };
+  }
+  if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) {
+    await refundAiQuota(uid);
+    throw new HttpsError('failed-precondition', 'סקירת ה-AI עדיין לא הוגדרה.');
+  }
   const wantDeep = deep === true;
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
+  let activeProvider = cfg.provider;
+  let activeKey = cfg.apiKey;
   const ladderFor = (model) => {
+    if (activeProvider !== 'google') return [null];
     if (/2\.5-flash/.test(model)) return [{ thinkingBudget: wantDeep ? -1 : 0 }, null];
     if (/gemini-3/.test(model)) return wantDeep ? [{ thinkingLevel: 'high' }, { thinkingLevel: 'low' }, null] : [{ thinkingLevel: 'low' }, null];
     return [null];
@@ -685,13 +702,13 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   });
   const startedMs = Date.now();
   const deadline = startedMs + 100000;
-  const openStream = (model, thinkingConfig) =>
-    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey },
-      body: JSON.stringify(makeBody(model, thinkingConfig)),
-      signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())),
-    });
+  const openStream = (model, thinkingConfig) => {
+    const original = makeBody(model, thinkingConfig);
+    const req = activeProvider === 'google'
+      ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': activeKey }, body: original }
+      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 8192 : 4096 });
+    return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())) });
+  };
   const openModel = async (model) => {
     let res = null;
     for (const thinkingConfig of ladderFor(model)) {
@@ -711,22 +728,30 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין לא זמין עוברים למודל הגיבוי.
     // כל כשל נשמר, כדי שהשגיאה שמוצגת (והלוג) תהיה של המודל הראשי ולא של הגיבוי שרק ניסה להציל
     const models = [cfg.model, ...(cfg.fallbackModel && cfg.fallbackModel !== cfg.model ? [cfg.fallbackModel] : [])];
+    const candidates = models.map(model => ({ model, provider: cfg.provider, apiKey: cfg.apiKey }));
+    // Explicitly configured free-tier backup only; never discover or enable paid providers.
+    const backup = cfg.freeBackup;
+    if (backup?.enabled === true && ['google', 'groq'].includes(backup.provider) && backup.provider !== cfg.provider && typeof backup.apiKey === 'string' && backup.apiKey.length >= 20 && typeof backup.model === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(backup.model)) candidates.push(backup);
     const failures = [];
     let res = null;
-    for (const model of models) {
+    for (const candidate of candidates) {
+      const { model } = candidate;
+      activeProvider = candidate.provider;
+      activeKey = candidate.apiKey;
       usedModel = model;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         res = await openModel(model);
         if (res.ok) break;
         let detail = '';
         try {
-          detail = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
+          detail = 'Provider request rejected';
         } catch {
           detail = '';
         }
         failures.push({ model, status: res.status, detail });
         if (!retryable(res.status) || Date.now() - startedMs > 60000) break;
-        if (attempt === 0) await sleep(res.status === 429 ? 3000 : 1500);
+        if (res.status === 429) break;
+        if (attempt === 0) await sleep(1500);
       }
       if (res.ok || Date.now() - startedMs > 80000) break;
     }
@@ -737,7 +762,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
       const tech = isAdmin ? failures.map((f) => ` [${f.model} ${f.status}] ${f.detail.slice(0, 160)}`).join('') : '';
       const status = first.status;
-      if (status === 503) throw new HttpsError('unavailable', `המודל עמוס כרגע אצל גוגל. ניסינו גם מודל גיבוי. אפשר לנסות שוב בעוד דקה.${tech}`);
+      if (status === 503) throw new HttpsError('unavailable', `ספק ה-AI עמוס כרגע. אפשר לנסות שוב בעוד דקה.${tech}`);
       if (status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
       if (status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
       if (status === 401 || status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
@@ -749,6 +774,19 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     const decoder = new TextDecoder();
     let buffer = '';
     const handle = (json) => {
+      if (activeProvider !== 'google') {
+        if (json.type === 'error' || json.error) throw new Error('Provider stream error');
+        const choice = json.choices?.[0];
+        const delta = activeProvider === 'anthropic' ? (json.delta?.type === 'text_delta' ? json.delta.text : '') : choice?.delta?.content;
+        finishReason = String(choice?.finish_reason ?? json.delta?.stop_reason ?? finishReason);
+        const usage = json.usage ?? json.message?.usage;
+        if (usage) lastUsage = { ...lastUsage, ...(usage.prompt_tokens != null || usage.input_tokens != null ? { promptTokenCount: usage.prompt_tokens ?? usage.input_tokens } : {}), ...(usage.completion_tokens != null || usage.output_tokens != null ? { candidatesTokenCount: usage.completion_tokens ?? usage.output_tokens } : {}) };
+        if (typeof delta === 'string' && delta) {
+          text += delta;
+          if (streaming) { try { response.sendChunk({ text: delta }); } catch { /* disconnected */ } }
+        }
+        return;
+      }
       if (json.usageMetadata) lastUsage = json.usageMetadata;
       const candidate = json.candidates?.[0];
       finishReason = String(candidate?.finishReason ?? json.promptFeedback?.blockReason ?? finishReason);
@@ -775,11 +813,9 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
           if (line.startsWith('data:')) {
             const payload = line.slice(5).trim();
             if (payload && payload !== '[DONE]') {
-              try {
-                handle(JSON.parse(payload));
-              } catch {
-                // שורה חלקית או לא תקינה: מדלגים
-              }
+              let event;
+              try { event = JSON.parse(payload); } catch { /* malformed event */ }
+              if (event) handle(event);
             }
           }
           newline = buffer.indexOf('\n');
@@ -884,6 +920,8 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
   return {
     hasKey: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20,
     keyHint: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20 ? cfg.apiKey.slice(-4) : '',
+    provider: cfg.provider,
+    freeBackup: { enabled: cfg.freeBackup?.enabled === true, provider: cfg.freeBackup?.provider ?? 'groq', model: cfg.freeBackup?.model ?? 'openai/gpt-oss-120b', hasKey: !!cfg.freeBackup?.apiKey },
     model: cfg.model,
     perUserDaily: cfg.perUserDaily,
     globalDaily: cfg.globalDaily,
@@ -899,16 +937,33 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
 
 exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
-  const { apiKey, model, perUserDaily, globalDaily, enabled } = request.data ?? {};
+  const { provider, apiKey, model, perUserDaily, globalDaily, enabled } = request.data ?? {};
   const patch = { updatedAt: Date.now() };
+  if (provider !== undefined) {
+    if (!AI_PROVIDERS.includes(provider)) throw new HttpsError('invalid-argument', 'ספק לא נתמך.');
+    const current = await aiConfig();
+    if (provider !== current.provider) {
+      if (typeof apiKey !== 'string' || !apiKey.trim() || typeof model !== 'string' || !model.trim()) throw new HttpsError('invalid-argument', 'בהחלפת ספק יש להזין מפתח ומודל חדשים.');
+      patch.fallbackModel = '';
+    }
+    patch.provider = provider;
+  }
   if (typeof apiKey === 'string' && apiKey.trim()) {
     const key = apiKey.trim();
     if (!/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key)) throw new HttpsError('invalid-argument', 'המפתח אינו נראה תקין.');
     patch.apiKey = key;
   }
   if (typeof model === 'string' && model.trim()) {
-    if (!/^[a-z0-9.\-]{3,60}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
+    if (!/^[A-Za-z0-9._:/\-]{1,200}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
     patch.model = model.trim();
+  }
+  if (request.data?.freeBackup !== undefined) {
+    const b = request.data.freeBackup;
+    const current = await aiConfig();
+    if (!b || typeof b.enabled !== 'boolean' || !['google', 'groq'].includes(b.provider) || typeof b.model !== 'string' || !/^[a-zA-Z0-9._:/-]{1,120}$/.test(b.model)) throw new HttpsError('invalid-argument', 'הגדרות גיבוי לא תקינות.');
+    const key = typeof b.apiKey === 'string' && b.apiKey.trim() ? b.apiKey.trim() : (current.freeBackup?.provider === b.provider ? current.freeBackup?.apiKey : '');
+    if (b.enabled && (b.provider === (patch.provider ?? current.provider) || !/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key ?? ''))) throw new HttpsError('invalid-argument', 'נדרש ספק גיבוי שונה ומפתח תקין.');
+    patch.freeBackup = { enabled: b.enabled, provider: b.provider, model: b.model, apiKey: key ?? '' };
   }
   if (perUserDaily !== undefined) {
     if (!Number.isInteger(perUserDaily) || perUserDaily < 0 || perUserDaily > 200) throw new HttpsError('invalid-argument', 'מכסה למשתמש: מספר שלם בין 0 ל-200.');

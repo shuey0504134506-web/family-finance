@@ -3,6 +3,11 @@ import { FullScreenMessage } from '../../../src/components/FullScreenMessage';
 import { isAdminEmail } from '../../../src/config/admin';
 import { AdminMessageHost } from '../../../src/features/admin/AdminMessageHost';
 import { AdminScreen } from '../../../src/features/admin/AdminScreen';
+import { AiReviewScreen } from '../../../src/features/ai/AiReviewScreen';
+import { AiHistoryScreen } from '../../../src/features/ai/AiHistoryScreen';
+import { useReadyAuth } from '../../../src/features/auth/AuthContext';
+import { useAiAccess } from '../../../src/services/aiService';
+import { useUi } from './useController';
 import { ApprovalGate } from '../../../src/features/auth/ApprovalGate';
 import { useAuth } from '../../../src/features/auth/AuthContext';
 import { CompleteSetupScreen } from '../../../src/features/auth/CompleteSetupScreen';
@@ -98,6 +103,15 @@ function MenuToHome() {
   return <Navigate to={`/${scope ?? ''}`} replace />;
 }
 
+function ConnectedAi({ history = false }: { history?: boolean }) {
+  const { user } = useReadyAuth();
+  const ui = useUi();
+  const allowed = useAiAccess(user.uid, ui.me?.kind !== 'online');
+  const { scope } = useParams();
+  if (!allowed || ui.me?.kind !== 'online' || !ui.online) return <Navigate to={`/${scope ?? ''}`} replace />;
+  return history ? <AiHistoryScreen /> : <AiReviewScreen />;
+}
+
 export function DesktopRoutes({ phone = false }: { phone?: boolean } = {}) {
   return (
     <Routes>
@@ -118,6 +132,8 @@ export function DesktopRoutes({ phone = false }: { phone?: boolean } = {}) {
           <Route path="/:scope/standing" element={<StandingOrdersScreen />} />
           <Route path="/:scope/tasks" element={<TasksScreen />} />
           <Route path="/:scope/shopping" element={<ShoppingScreen />} />
+          {!phone && <Route path="/:scope/ai" element={<ConnectedAi />} />}
+          {!phone && <Route path="/:scope/ai/history" element={<ConnectedAi history />} />}
         </Route>
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/summary" element={<SummaryScreen />} />
@@ -125,9 +141,14 @@ export function DesktopRoutes({ phone = false }: { phone?: boolean } = {}) {
         <Route path="/help" element={phone ? <HelpScreen /> : <DesktopHelp />} />
         <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/recovery" element={<RecoverySettings />} />
-        {!phone && <Route path="/admin" element={<AdminScreen />} />}
+        {!phone && <Route path="/admin" element={<ConnectedAdmin />} />}
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function ConnectedAdmin() {
+  const ui = useUi();
+  return ui.me?.kind === 'online' ? <AdminScreen /> : <Navigate to="/" replace />;
 }

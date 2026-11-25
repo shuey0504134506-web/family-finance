@@ -9,7 +9,7 @@ export function AiEntryButton() {
   const navigate = useNavigate();
   const { user } = useReadyAuth();
   const space = useSpace();
-  const allowed = useAiAccess(user.uid);
+  const allowed = useAiAccess(user.uid, (user as { offlineOnly?: boolean }).offlineOnly === true);
   const activity = useAiActivity(user.uid);
   if (!AI_SUPPORTED || !allowed) return null;
   const hint =
