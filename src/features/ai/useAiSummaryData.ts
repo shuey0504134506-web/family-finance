@@ -70,6 +70,7 @@ export function useAiSummaryData(): {
   const build = (question = "") => {
     const present = new Set<string>([month.selected]);
     for (const t of scopeItems) present.add(t.yearMonth);
+    if (!isBusiness) for (const t of businessForCalc) present.add(t.yearMonth);
     const ordered = [...present].sort();
     // כל החודשים מהראשון בתיעוד ועד החודש הנבחר (חודשים עתידיים עם פעולות כלולים)
     const first = ordered[0];
