@@ -26,7 +26,7 @@ import {
 } from "./aiSession";
 import { useAiSummaryData } from "./useAiSummaryData";
 
-const consentKey = (uid: string) => `ff.ai.consent.v1.${uid}`;
+const consentKey = (uid: string) => `ff.ai.consent.v2.${uid}`;
 const readConsent = (uid: string): boolean => {
   try {
     return localStorage.getItem(consentKey(uid)) === "1";
@@ -180,7 +180,7 @@ export function AiReviewScreen() {
           <section className="card ai-consent" aria-label="לפני שמתחילים">
             <h2 className="card-title">לפני שמתחילים</h2>
             <p className="small">
-              כדי לענות, האפליקציה שולחת ל-AI של Google את הנתונים הכספיים של
+              כדי לענות, האפליקציה שולחת לספק ה-AI שהוגדר על ידי מנהל האפליקציה את הנתונים הכספיים של
               המרחב הזה: הפעולות (כולל שמות בתי עסק והערות), התקציבים, החובות
               והוראות הקבע. לא נשלחים תמונות מצורפות, סיסמאות או פרטי חשבון.
             </p>
