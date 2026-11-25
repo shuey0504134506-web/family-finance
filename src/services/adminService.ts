@@ -185,6 +185,7 @@ export type AiProvider = 'google' | 'openai' | 'xai' | 'anthropic' | 'deepseek' 
 
 export interface AdminAiInfo {
   provider?: AiProvider;
+  freeBackup?: { enabled: boolean; provider: 'google' | 'groq'; model: string; hasKey: boolean };
   hasKey: boolean;
   /** ארבע הספרות האחרונות של המפתח השמור (המפתח עצמו לא חוזר מהשרת) */
   keyHint: string;
@@ -207,7 +208,7 @@ export async function loadAdminAi(): Promise<AdminAiInfo> {
   return (await httpsCallable<void, AdminAiInfo>(functions(), 'adminGetAi')()).data;
 }
 
-export async function saveAdminAi(patch: { provider?: AiProvider; apiKey?: string; model?: string; perUserDaily?: number; globalDaily?: number; enabled?: boolean }): Promise<void> {
+export async function saveAdminAi(patch: { freeBackup?: { enabled: boolean; provider: 'google' | 'groq'; model: string; apiKey?: string }; provider?: AiProvider; apiKey?: string; model?: string; perUserDaily?: number; globalDaily?: number; enabled?: boolean }): Promise<void> {
   await httpsCallable(functions(), 'adminSetAi')(patch);
 }
 
