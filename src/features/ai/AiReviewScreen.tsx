@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { AI_QUESTION_BANK, pickQuestions } from "../../domain/aiQuestions";
 import { getLang } from "../../i18n/lang";
 import {
   loadAiQuota,
@@ -79,6 +80,23 @@ export function AiReviewScreen() {
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const session = useAiSession(user.uid);
   const { chatId, messages, busy, startedAt, partial, error, quota } = session;
+  const [suggestion, setSuggestion] = useState("");
+  const [suggestionFocused, setSuggestionFocused] = useState(false);
+  const welcomeVisible = messages.length === 0 && !busy && consent;
+  useEffect(() => {
+    setSuggestion("");
+    setSuggestionFocused(false);
+  }, [chatId, welcomeVisible]);
+  useEffect(() => {
+    if (!welcomeVisible || suggestionFocused) return;
+    const questions = pickQuestions(AI_QUESTION_BANK.length);
+    let index = 0;
+    const timer = window.setInterval(() => {
+      setSuggestion(questions[index % questions.length] ?? "");
+      index += 1;
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [chatId, welcomeVisible, suggestionFocused]);
   const [deep, setDeep] = useState(false);
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<AiChat[]>([]);
@@ -121,7 +139,7 @@ export function AiReviewScreen() {
 
   const ask = (raw: string) => {
     const q = raw.trim();
-    if (!q || busy || !data.ready || data.error || !consent) return;
+    if (!q || busy || !data.ready || data.error || !consent || (quota !== null && quota.remaining <= 0)) return;
     setDraft("");
     askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang() });
   };
@@ -194,7 +212,7 @@ export function AiReviewScreen() {
         )}
 
         {messages.length === 0 && !busy && consent && (
-          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><p>מה תרצה לשאול היום?</p></section>
+          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><div className="ai-welcome-prompt">{suggestion ? <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)}>{suggestion}</button> : <p>מה תרצה לשאול היום?</p>}</div></section>
         )}
         {error && (
           <div className="card error-card" role="alert">
