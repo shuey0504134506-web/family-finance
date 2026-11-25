@@ -241,7 +241,7 @@ export function AiReviewScreen() {
         )}
 
         {messages.length === 0 && !busy && consent && (
-          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><p>מה תרצה לשאול היום?</p><div className="ai-welcome-prompt">{suggestion && <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted || typed !== suggestion} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)} aria-label={suggestion}><span aria-hidden="true">{typed}{typed !== suggestion && <span className="ai-type-cursor">|</span>}</span>{typed === suggestion && <small className="ai-suggestion-hint">לחץ לשאול ↗</small>}</button>}</div></section>
+          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><p>מה תרצה לשאול היום?</p><div className="ai-welcome-prompt">{suggestion && <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted || typed !== suggestion} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)} aria-label={suggestion}><span aria-hidden="true">{typed}{typed !== suggestion && <span className="ai-type-cursor">|</span>}</span>{typed === suggestion && <small className="ai-suggestion-hint">לחץ לשאול</small>}</button>}</div></section>
         )}
         {error && (
           <div className="card error-card" role="alert">
