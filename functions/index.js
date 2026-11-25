@@ -909,6 +909,7 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
     hasKey: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20,
     keyHint: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20 ? cfg.apiKey.slice(-4) : '',
     provider: cfg.provider,
+    freeBackup: { enabled: cfg.freeBackup?.enabled === true, provider: cfg.freeBackup?.provider ?? 'groq', model: cfg.freeBackup?.model ?? 'openai/gpt-oss-120b', hasKey: !!cfg.freeBackup?.apiKey },
     model: cfg.model,
     perUserDaily: cfg.perUserDaily,
     globalDaily: cfg.globalDaily,
@@ -943,6 +944,14 @@ exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   if (typeof model === 'string' && model.trim()) {
     if (!/^[A-Za-z0-9._:/\-]{1,200}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
     patch.model = model.trim();
+  }
+  if (request.data?.freeBackup !== undefined) {
+    const b = request.data.freeBackup;
+    const current = await aiConfig();
+    if (!b || typeof b.enabled !== 'boolean' || !['google', 'groq'].includes(b.provider) || typeof b.model !== 'string' || !/^[a-zA-Z0-9._:/-]{1,120}$/.test(b.model)) throw new HttpsError('invalid-argument', 'הגדרות גיבוי לא תקינות.');
+    const key = typeof b.apiKey === 'string' && b.apiKey.trim() ? b.apiKey.trim() : (current.freeBackup?.provider === b.provider ? current.freeBackup?.apiKey : '');
+    if (b.enabled && (b.provider === (patch.provider ?? current.provider) || !/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key ?? ''))) throw new HttpsError('invalid-argument', 'נדרש ספק גיבוי שונה ומפתח תקין.');
+    patch.freeBackup = { enabled: b.enabled, provider: b.provider, model: b.model, apiKey: key ?? '' };
   }
   if (perUserDaily !== undefined) {
     if (!Number.isInteger(perUserDaily) || perUserDaily < 0 || perUserDaily > 200) throw new HttpsError('invalid-argument', 'מכסה למשתמש: מספר שלם בין 0 ל-200.');
