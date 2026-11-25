@@ -546,7 +546,7 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
 const { buildRequest } = require('./ai/providers');
-const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter'];
+const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter', 'groq'];
 const AI_DEFAULTS = { provider: 'google', model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
