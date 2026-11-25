@@ -312,3 +312,10 @@
 .ai-welcome-suggestion { font: inherit; color: inherit; background: transparent; border: 0; padding: 6px; min-height: 44px; max-width: 100%; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 .ai-welcome-suggestion:disabled { opacity: .65; cursor: default; }
 .ai-welcome-suggestion:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.ai-welcome-prompt { min-height: 6em; margin-top: 8px; }
+.ai-welcome-suggestion { display: grid; justify-items: center; gap: 4px; }
+.ai-suggestion-hint { font-size: .75rem; color: var(--text-muted); text-decoration: none; }
+.ai-type-cursor { animation: ai-cursor-blink .8s step-end infinite; }
+@keyframes ai-cursor-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ai-type-cursor { animation: none; } }
