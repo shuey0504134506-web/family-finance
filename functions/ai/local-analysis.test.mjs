@@ -10,3 +10,9 @@ test('precise integer-cent balance and previous month', () => {
 });
 test('zero spend fails closed even with keys', () => assert.equal(remoteGenerationAllowed({apiKey:'test',billing:false}), false));
 test('missing month never invents totals', () => assert.match(analyze(summary, 'סיכום חודש 2026-02'), /אין נתונים/));
+test('payment method ranking and follow-up', () => {
+  const s = {...summary,selectedMonthTransactions:'2026-01-01|E|10|food|shop|אשראי|\n2026-01-02|E|20|food|shop|אשראי|\n2026-01-03|E|90|food|shop|מזומן|'};
+  const q = 'איזו צורת תשלום אני משתמש בה הכי הרבה?';
+  assert.match(analyze(s,q), /הוא אשראי/);
+  assert.match(analyze(s,'למה',[{role:'user',text:q}]), /2 פעולות/);
+});

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { compatibleAiModel, defaultAiModel } from '../../domain/aiModels';
 import { loadAdminAi, saveAdminAi, setAiAccess, type AiProvider, type AdminAiInfo, type AdminUserRow } from '../../services/adminService';
 
 /** סקירת AI: מפתח, מכסות, כיבוי כללי, ומי מורשה להשתמש. כל ההגבלות נאכפות בשרת. */
@@ -23,10 +24,10 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       .then((r) => {
         setInfo(r);
         setProvider(r.provider ?? 'google');
-        setModel(r.model);
+        setModel(compatibleAiModel(r.provider ?? 'google', r.model));
         setBackupEnabled(r.freeBackup?.enabled ?? false);
         setBackupProvider(r.freeBackup?.provider ?? 'groq');
-        setBackupModel(r.freeBackup?.model ?? 'openai/gpt-oss-120b');
+        setBackupModel(compatibleAiModel(r.freeBackup?.provider ?? 'groq', r.freeBackup?.model ?? ''));
         setPerUser(String(r.perUserDaily));
         setGlobal(String(r.globalDaily));
       })
@@ -53,8 +54,8 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       await saveAdminAi({
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         provider,
-        freeBackup: { enabled: backupEnabled, provider: backupProvider, model: backupModel.trim(), ...(backupKey.trim() ? { apiKey: backupKey.trim() } : {}) },
-        model: model.trim(),
+        freeBackup: { enabled: backupEnabled, provider: backupProvider, model: compatibleAiModel(backupProvider, backupModel), ...(backupKey.trim() ? { apiKey: backupKey.trim() } : {}) },
+        model: compatibleAiModel(provider, model),
         perUserDaily: Number(perUser),
         globalDaily: Number(global),
       });
@@ -97,7 +98,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       </dl>
 
       <label className="field-label" htmlFor="ai-provider">ספק AI</label>
-      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(e.target.value === 'groq' ? 'openai/gpt-oss-120b' : e.target.value === 'google' ? 'gemini-3.8-flash' : ''); setApiKey(''); }}>
+      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(defaultAiModel(e.target.value)); setApiKey(''); }}>
         <option value="google">Google Gemini</option>
         <option value="openai">OpenAI</option>
         <option value="xai">xAI Grok</option>
