@@ -88,7 +88,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       </dl>
 
       <label className="field-label" htmlFor="ai-provider">ספק AI</label>
-      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(e.target.value === 'groq' ? 'openai/gpt-oss-120b' : ''); setApiKey(''); }}>
+      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(e.target.value === 'groq' ? 'openai/gpt-oss-120b' : e.target.value === 'google' ? 'gemini-3.8-flash' : ''); setApiKey(''); }}>
         <option value="google">Google Gemini</option>
         <option value="openai">OpenAI</option>
         <option value="xai">xAI Grok</option>
