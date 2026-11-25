@@ -211,7 +211,7 @@ export function buildAiData(
     .filter((t) => t.date.startsWith(prevMonth))
     .map(line);
   const keywords = questionKeywords(question);
-  const matchedOld = keywords.length
+  const allMatchedOld = keywords.length
     ? sorted
         .filter((t) => {
           if (inFocus(t)) return false;
@@ -219,20 +219,20 @@ export function buildAiData(
             `${t.categoryName ?? ""} ${t.counterparty ?? ""} ${t.note ?? ""}`.toLowerCase();
           return keywords.some((k) => hay.includes(k));
         })
-        .slice(0, AI_MATCHED_OLD_ROWS)
     : [];
-  const rows = matchedOld.map(line);
+  const rows = allMatchedOld.slice(0, AI_MATCHED_OLD_ROWS).map(line);
   // סיכום חודשי לפי קטגוריה על כל ההיסטוריה, כדי שאפשר יהיה לענות על שאלות רחבות גם בלי כל הפעולות הישנות
   const byMonthCategory = new Map<string, number>();
   const byMerchant = new Map<string, number>();
   const byYear = new Map<string, { i: number; e: number }>();
+  for (const m of input.months) {
+    const year = m.yearMonth.slice(0, 4);
+    const y = byYear.get(year) ?? { i: 0, e: 0 };
+    y.i += m.incomeAgorot; y.e += m.expenseAgorot; byYear.set(year, y);
+  }
   for (const t of input.items) {
     const key = `${t.date.slice(0, 7)}|${t.type === "income" ? "I" : "E"}|${(t.categoryName ?? "").replace(/[|\r\n]+/g, " ")}`;
     byMonthCategory.set(key, (byMonthCategory.get(key) ?? 0) + t.amountAgorot);
-    const y = byYear.get(t.date.slice(0, 4)) ?? { i: 0, e: 0 };
-    if (t.type === "income") y.i += t.amountAgorot;
-    else y.e += t.amountAgorot;
-    byYear.set(t.date.slice(0, 4), y);
     const who = (t.counterparty ?? "").replace(/[|\r\n]+/g, " ").trim();
     if (t.type === "expense" && who) {
       const mk = `${who}|${t.categoryName ?? ""}`;
@@ -287,6 +287,7 @@ export function buildAiData(
   const make = () =>
     JSON.stringify({
       ...head,
+      coverage: { matchedOlderTotal: allMatchedOld.length, matchedOlderIncluded: keepRows, categoryTotalsTotal: categoryTotals.length, categoryTotalsIncluded: keepTotals, olderRowsAreKeywordMatchesOnly: true, yearlyTotalsIncludeConfiguredTransfers: true },
       monthlyCategoryTotals: categoryTotals.slice(0, keepTotals).join("\n"),
       relatedOlderTransactions: rows.slice(0, keepRows).join("\n"),
     });
