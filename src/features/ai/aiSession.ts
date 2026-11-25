@@ -156,7 +156,7 @@ export function askInSession(
     state !== null && state.uid === uid && state.chatId === chatId;
   void (async () => {
     try {
-      const result = await askAi(q, build(q), before, {
+      const result = await askAi(q, build([...before.filter(m => m.role === 'user').slice(-3).map(m => m.text), q].join(' ')), before, {
         ...options,
         onText: (partial) => {
           if (stillHere() && state) set({ ...state, partial });
@@ -177,15 +177,17 @@ export function askInSession(
       if (evict === "full") {
         notSaved = true;
       } else {
-        if (evict) deleteAiChat(uid, evict).catch(() => undefined);
-        saveAiChat(uid, {
+        try {
+        await saveAiChat(uid, {
           id: chatId,
           title,
           pinned: existing?.pinned ?? false,
           messages: next,
           createdAt,
           updatedAt: Date.now(),
-        }).catch(() => undefined);
+        });
+        if (evict) await deleteAiChat(uid, evict);
+        } catch { notSaved = true; }
       }
       saveRecentQuestions(
         uid,
@@ -201,16 +203,8 @@ export function askInSession(
           quota: { remaining: result.remaining, limit: result.limit },
           unread: true,
           error: notSaved
-            ? "כל חמש השיחות השמורות נעוצות, ולכן השיחה הזאת לא נשמרה בהיסטוריה. אפשר לבטל נעיצה של שיחה בהיסטוריה."
+            ? "לא ניתן היה להשלים את שמירת השיחה בהיסטוריה. בדוק את החיבור ואת מקום השמירה."
             : "",
-        });
-      } else if (state && state.uid === uid) {
-        set({
-          ...state,
-          busy: false,
-          startedAt: null,
-          partial: "",
-          quota: { remaining: result.remaining, limit: result.limit },
         });
       }
     } catch (caught) {
@@ -224,8 +218,6 @@ export function askInSession(
           error: describeAiError(caught),
           failedDraft: q,
         });
-      } else if (state && state.uid === uid) {
-        set({ ...state, busy: false, startedAt: null, partial: "" });
       }
       loadAiQuota()
         .then((quota) => setQuota(uid, quota))
