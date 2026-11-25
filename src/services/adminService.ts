@@ -181,7 +181,7 @@ export async function loadAdminLog(): Promise<AdminLogEntry[]> {
   return result.data.entries;
 }
 
-export type AiProvider = 'google' | 'openai' | 'xai' | 'anthropic' | 'deepseek' | 'openrouter';
+export type AiProvider = 'google' | 'openai' | 'xai' | 'anthropic' | 'deepseek' | 'openrouter' | 'groq';
 
 export interface AdminAiInfo {
   provider?: AiProvider;
