@@ -8,6 +8,10 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
   const [busy, setBusy] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [provider, setProvider] = useState<AiProvider>('google');
+  const [backupEnabled, setBackupEnabled] = useState(false);
+  const [backupProvider, setBackupProvider] = useState<'google' | 'groq'>('groq');
+  const [backupModel, setBackupModel] = useState('openai/gpt-oss-120b');
+  const [backupKey, setBackupKey] = useState('');
   const [model, setModel] = useState('');
   const [perUser, setPerUser] = useState('');
   const [global, setGlobal] = useState('');
@@ -20,6 +24,9 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
         setInfo(r);
         setProvider(r.provider ?? 'google');
         setModel(r.model);
+        setBackupEnabled(r.freeBackup?.enabled ?? false);
+        setBackupProvider(r.freeBackup?.provider ?? 'groq');
+        setBackupModel(r.freeBackup?.model ?? 'openai/gpt-oss-120b');
         setPerUser(String(r.perUserDaily));
         setGlobal(String(r.globalDaily));
       })
@@ -46,11 +53,13 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       await saveAdminAi({
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
         provider,
+        freeBackup: { enabled: backupEnabled, provider: backupProvider, model: backupModel.trim(), ...(backupKey.trim() ? { apiKey: backupKey.trim() } : {}) },
         model: model.trim(),
         perUserDaily: Number(perUser),
         globalDaily: Number(global),
       });
       setApiKey('');
+      setBackupKey('');
     });
 
   if (!info) {
@@ -102,6 +111,17 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       <input id="ai-key" className="input" type="password" dir="ltr" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
       <label className="field-label" htmlFor="ai-model">מודל</label>
       <input id="ai-model" className="input" dir="ltr" value={model} onChange={(e) => setModel(e.target.value)} />
+      <h3 className="subhead">ספק גיבוי</h3>
+      <label><input type="checkbox" checked={backupEnabled} onChange={e => setBackupEnabled(e.target.checked)} /> הפעלת גיבוי אוטומטי</label>
+      <label className="field-label" htmlFor="ai-backup-provider">ספק גיבוי</label>
+      <select id="ai-backup-provider" className="input" value={backupProvider} onChange={e => { const p = e.target.value as 'google' | 'groq'; setBackupProvider(p); setBackupModel(p === 'google' ? 'gemini-3.8-flash' : 'openai/gpt-oss-120b'); setBackupKey(''); }}>
+        <option value="google">Google Gemini</option><option value="groq">GroqCloud</option>
+      </select>
+      <label className="field-label" htmlFor="ai-backup-model">מודל גיבוי</label>
+      <input id="ai-backup-model" className="input" dir="ltr" value={backupModel} onChange={e => setBackupModel(e.target.value)} />
+      <label className="field-label" htmlFor="ai-backup-key">{info.freeBackup?.hasKey && info.freeBackup.provider === backupProvider ? 'מפתח גיבוי שמור (אפשר להשאיר ריק)' : 'מפתח גיבוי'}</label>
+      <input id="ai-backup-key" className="input" type="password" dir="ltr" autoComplete="off" value={backupKey} onChange={e => setBackupKey(e.target.value)} />
+      <p className="muted small">יש להשתמש בחשבונות ללא חיוב בלבד. הגדרת גיבוי אינה מבטלת חיוב אצל הספק.</p>
       <label className="field-label" htmlFor="ai-user">מכסה יומית למשתמש (שאלות)</label>
       <input id="ai-user" className="input" inputMode="numeric" value={perUser} onChange={(e) => setPerUser(e.target.value)} />
       <label className="field-label" htmlFor="ai-global">תקרה יומית לכל המשתמשים ביחד</label>
