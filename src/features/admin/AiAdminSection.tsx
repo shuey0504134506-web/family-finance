@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadAdminAi, saveAdminAi, setAiAccess, type AdminAiInfo, type AdminUserRow } from '../../services/adminService';
+import { loadAdminAi, saveAdminAi, setAiAccess, type AiProvider, type AdminAiInfo, type AdminUserRow } from '../../services/adminService';
 
 /** סקירת AI: מפתח, מכסות, כיבוי כללי, ומי מורשה להשתמש. כל ההגבלות נאכפות בשרת. */
 export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
@@ -7,6 +7,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [provider, setProvider] = useState<AiProvider>('google');
   const [model, setModel] = useState('');
   const [perUser, setPerUser] = useState('');
   const [global, setGlobal] = useState('');
@@ -17,6 +18,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
     loadAdminAi()
       .then((r) => {
         setInfo(r);
+        setProvider(r.provider ?? 'google');
         setModel(r.model);
         setPerUser(String(r.perUserDaily));
         setGlobal(String(r.globalDaily));
@@ -43,6 +45,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
     run(async () => {
       await saveAdminAi({
         ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
+        provider,
         model: model.trim(),
         perUserDaily: Number(perUser),
         globalDaily: Number(global),
@@ -68,7 +71,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
   return (
     <div className="stack">
       <dl className="detail-list">
-        <div><dt>מפתח Gemini</dt><dd>{info.hasKey ? `מוגדר (…${info.keyHint})` : 'לא הוגדר'}</dd></div>
+        <div><dt>מפתח API</dt><dd>{info.hasKey ? `מוגדר (…${info.keyHint})` : 'לא הוגדר'}</dd></div>
         <div><dt>מורשים</dt><dd>{info.accessUids.length}</dd></div>
         <div><dt>שאלות שנשאלו היום</dt><dd>{`${info.usedToday} מתוך ${info.globalDaily}`}</dd></div>
         <div><dt>החודש: שאלות וטוקנים</dt><dd>{`${info.monthQuestions ?? 0} · ${(info.monthTokens ?? 0).toLocaleString('en-US')}`}</dd></div>
@@ -84,7 +87,17 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
         )}
       </dl>
 
-      <label className="field-label" htmlFor="ai-key">{info.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח Gemini API'}</label>
+      <label className="field-label" htmlFor="ai-provider">ספק AI</label>
+      <select id="ai-provider" className="input" value={provider} onChange={(e) => { setProvider(e.target.value as AiProvider); setModel(''); setApiKey(''); }}>
+        <option value="google">Google Gemini</option>
+        <option value="openai">OpenAI</option>
+        <option value="xai">xAI Grok</option>
+        <option value="anthropic">Anthropic Claude</option>
+        <option value="deepseek">DeepSeek</option>
+        <option value="openrouter">OpenRouter</option>
+      </select>
+      {provider !== (info.provider ?? 'google') && <p className="muted small">בהחלפת ספק יש להזין מפתח ומודל חדשים. מודל הגיבוי הקודם יוסר.</p>}
+      <label className="field-label" htmlFor="ai-key">{info.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח API'}</label>
       <input id="ai-key" className="input" type="password" dir="ltr" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
       <label className="field-label" htmlFor="ai-model">מודל</label>
       <input id="ai-model" className="input" dir="ltr" value={model} onChange={(e) => setModel(e.target.value)} />
@@ -102,7 +115,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       {error && <div className="form-error" role="alert">{error}</div>}
 
       <p className="muted small">
-        הצריכה לפי משתמש נרשמת בכל שאלה (שאלות וטוקנים), כך שאפשר לדעת מי גרם לעלות. אם בעתיד תעבור לתעריף בתשלום, מחירי הטוקנים נקבעים לפי מחירון Google של המודל.
+        הצריכה לפי משתמש נרשמת בכל שאלה (שאלות וטוקנים), כך שאפשר לדעת מי גרם לעלות. אם בעתיד תעבור לתעריף בתשלום, מחירי הטוקנים נקבעים לפי מחירון הספק של המודל.
       </p>
       <h3 className="subhead">מי מורשה</h3>
       <input className="input" aria-label="חיפוש חשבון לפי אימייל" placeholder="חיפוש לפי אימייל" value={search} onChange={(e) => setSearch(e.target.value)} />
