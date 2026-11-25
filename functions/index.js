@@ -646,7 +646,6 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const [access, cfg] = await Promise.all([db.collection('aiAccess').doc(uid).get(), aiConfig()]);
   if (!access.exists || access.data().enabled !== true) throw new HttpsError('permission-denied', 'אין לך גישה לסקירת AI.');
   if (cfg.enabled === false) throw new HttpsError('failed-precondition', 'סקירת ה-AI כבויה כרגע.');
-  if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) throw new HttpsError('failed-precondition', 'סקירת ה-AI עדיין לא הוגדרה.');
 
   const { question, summary, history, deep, lang } = request.data ?? {};
   const q = cleanText(question, AI_MAX_QUESTION);
@@ -659,7 +658,20 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     // ההקשר חייב להתחיל בהודעת משתמש ולהתחלף
     .filter((m, i, all) => m.parts[0].text && (i === 0 ? m.role === 'user' : m.role !== all[i - 1].role));
 
+  const { analyze, remoteGenerationAllowed } = await import('./ai/local-analysis.mjs');
   const quota = await takeAiQuota(uid, cfg);
+  if (!remoteGenerationAllowed()) {
+    let parsed;
+    try { parsed = JSON.parse(data); } catch {
+      await refundAiQuota(uid);
+      throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.');
+    }
+    return { answer: analyze(parsed, q), remaining: quota.remaining, limit: cfg.perUserDaily };
+  }
+  if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) {
+    await refundAiQuota(uid);
+    throw new HttpsError('failed-precondition', 'סקירת ה-AI עדיין לא הוגדרה.');
+  }
   const wantDeep = deep === true;
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה

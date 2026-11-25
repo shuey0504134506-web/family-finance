@@ -121,7 +121,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       <input id="ai-backup-model" className="input" dir="ltr" value={backupModel} onChange={e => setBackupModel(e.target.value)} />
       <label className="field-label" htmlFor="ai-backup-key">{info.freeBackup?.hasKey && info.freeBackup.provider === backupProvider ? 'מפתח גיבוי שמור (אפשר להשאיר ריק)' : 'מפתח גיבוי'}</label>
       <input id="ai-backup-key" className="input" type="password" dir="ltr" autoComplete="off" value={backupKey} onChange={e => setBackupKey(e.target.value)} />
-      <p className="muted small">יש להשתמש בחשבונות ללא חיוב בלבד. הגדרת גיבוי אינה מבטלת חיוב אצל הספק.</p>
+      <p className="muted small">תקציב ספקים: ₪0. פניות חיצוניות חסומות עד שניתן לאמת תקרת חיוב אפס; בינתיים החישובים נעשים במנוע המקומי. בדיקת מבנה המפתח אינה אימות חשבון.</p>
       <label className="field-label" htmlFor="ai-user">מכסה יומית למשתמש (שאלות)</label>
       <input id="ai-user" className="input" inputMode="numeric" value={perUser} onChange={(e) => setPerUser(e.target.value)} />
       <label className="field-label" htmlFor="ai-global">תקרה יומית לכל המשתמשים ביחד</label>

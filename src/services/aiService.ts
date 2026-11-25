@@ -53,8 +53,10 @@ export async function askAi(question: string, summary: unknown, history: readonl
     } catch (error) {
       // שגיאה אמיתית מהשרת (מכסה, הרשאה, עומס) מוצגת כמו שהיא; רק כשההזרמה עצמה לא נתמכת עוברים לקריאה רגילה
       const code = (error as { code?: string })?.code;
-      if (code && code.startsWith('functions/') && code !== 'functions/internal') throw error;
-      if (options.onText) options.onText('');
+      // The server may already have accepted the request. Never replay an
+      // ambiguous streaming failure: a replay can consume another quota slot.
+      if (code && code.startsWith('functions/')) throw error;
+      throw error;
     }
   }
   return (await call(payload)).data;
