@@ -81,22 +81,51 @@ export function AiReviewScreen() {
   const session = useAiSession(user.uid);
   const { chatId, messages, busy, startedAt, partial, error, quota } = session;
   const [suggestion, setSuggestion] = useState("");
+  const [typed, setTyped] = useState("");
   const [suggestionFocused, setSuggestionFocused] = useState(false);
   const welcomeVisible = messages.length === 0 && !busy && consent;
+  const questionQueue = useRef<string[]>([]);
+  const lastQuestion = useRef("");
   useEffect(() => {
     setSuggestion("");
+    setTyped("");
     setSuggestionFocused(false);
+    if (!welcomeVisible) return;
+    let previous = lastQuestion.current;
+    try { previous = sessionStorage.getItem("ff.ai.lastSuggestion") || previous; } catch { /* storage unavailable */ }
+    questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+    if (questionQueue.current[0] === previous && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
+    setSuggestion(questionQueue.current.shift() ?? "");
   }, [chatId, welcomeVisible]);
   useEffect(() => {
-    if (!welcomeVisible || suggestionFocused) return;
-    const questions = pickQuestions(AI_QUESTION_BANK.length);
+    if (!welcomeVisible || !suggestion) return;
+    lastQuestion.current = suggestion;
+    try { sessionStorage.setItem("ff.ai.lastSuggestion", suggestion); } catch { /* storage unavailable */ }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setTyped(suggestion);
+      return;
+    }
     let index = 0;
+    setTyped("");
     const timer = window.setInterval(() => {
-      setSuggestion(questions[index % questions.length] ?? "");
       index += 1;
-    }, 10000);
+      setTyped(suggestion.slice(0, index));
+      if (index >= suggestion.length) window.clearInterval(timer);
+    }, 35);
     return () => window.clearInterval(timer);
-  }, [chatId, welcomeVisible, suggestionFocused]);
+  }, [suggestion, welcomeVisible]);
+  useEffect(() => {
+    if (!welcomeVisible || !suggestion || typed !== suggestion || suggestionFocused) return;
+    const timer = window.setTimeout(() => {
+      if (!questionQueue.current.length) {
+        questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+        if (questionQueue.current[0] === suggestion && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
+      }
+      setTyped("");
+      setSuggestion(questionQueue.current.shift() ?? "");
+    }, 10000);
+    return () => window.clearTimeout(timer);
+  }, [welcomeVisible, suggestion, typed, suggestionFocused]);
   const [deep, setDeep] = useState(false);
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<AiChat[]>([]);
@@ -212,7 +241,7 @@ export function AiReviewScreen() {
         )}
 
         {messages.length === 0 && !busy && consent && (
-          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><div className="ai-welcome-prompt">{suggestion ? <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)}>{suggestion}</button> : <p>מה תרצה לשאול היום?</p>}</div></section>
+          <section className="ai-welcome"><h2>שלום{profile.firstName ? `, ${profile.firstName}` : ""}</h2><p>מה תרצה לשאול היום?</p><div className="ai-welcome-prompt">{suggestion && <button type="button" className="ai-welcome-suggestion" disabled={!canAsk || exhausted || typed !== suggestion} onFocus={() => setSuggestionFocused(true)} onBlur={() => setSuggestionFocused(false)} onClick={() => ask(suggestion)} aria-label={suggestion}><span aria-hidden="true">{typed}{typed !== suggestion && <span className="ai-type-cursor">|</span>}</span>{typed === suggestion && <small className="ai-suggestion-hint">לחץ לשאול ↗</small>}</button>}</div></section>
         )}
         {error && (
           <div className="card error-card" role="alert">
