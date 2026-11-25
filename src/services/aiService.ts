@@ -8,8 +8,8 @@ import { MAX_CHAT_MESSAGES, MAX_RECENT_QUESTIONS, type AiChat, type AiMessage, t
 export { MAX_RECENT_QUESTIONS, MAX_SAVED_CHATS, chatToEvict, withRecentQuestion } from '../domain/aiChats';
 export type { AiChat, AiMessage, RecentQuestion } from '../domain/aiChats';
 
-/** סקירת AI זמינה רק באתר ובאפליקציית האנדרואיד המקוונת (לא בתוכנת המחשב ולא בגרסה הלא מקוונת, שאין להן חיבור לשרת). */
-export const AI_SUPPORTED = typeof window !== 'undefined' && !(window as { desktopUpdate?: unknown }).desktopUpdate && import.meta.env.VITE_TARGET !== 'phone';
+/** סקירת AI באתר, באנדרואיד המקוון וב-Windows המחובר; מעולם לא בחשבון מקומי. */
+export const AI_SUPPORTED = typeof window !== 'undefined' && import.meta.env.VITE_TARGET !== 'phone';
 
 const functions = () => getFunctions(app, 'europe-west1');
 
@@ -77,17 +77,17 @@ export function describeAiError(error: unknown): string {
 }
 
 /** האם יש למשתמש גישת AI (נקבעת ע"י המנהל). */
-export function useAiAccess(uid: string): boolean {
-  const [allowed, setAllowed] = useState(false);
+export function useAiAccess(uid: string, offlineOnly = false): boolean {
+  const [access, setAccess] = useState<{ uid: string; allowed: boolean } | null>(null);
   useEffect(() => {
-    if (!AI_SUPPORTED) return undefined;
+    if (!AI_SUPPORTED || offlineOnly) return undefined;
     return onSnapshot(
       doc(db, 'aiAccess', uid),
-      (snap) => setAllowed(snap.exists() && snap.data()?.enabled === true),
-      () => setAllowed(false),
+      (snap) => setAccess({ uid, allowed: snap.exists() && snap.data()?.enabled === true }),
+      () => setAccess({ uid, allowed: false }),
     );
-  }, [uid]);
-  return allowed;
+  }, [uid, offlineOnly]);
+  return AI_SUPPORTED && !offlineOnly && access?.uid === uid && access.allowed;
 }
 
 const chatsCollection = (uid: string) => collection(db, 'users', uid, 'aiChats');

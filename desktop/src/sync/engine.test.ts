@@ -25,6 +25,19 @@ const tx = `users/${U}/householdTransactions`;
 const make = (cloud: FakeCloud, db = new LocalDb(undefined, true)) => ({ db, eng: new SyncEngine(db, cloud, U, null, () => undefined, 5) });
 
 describe('SyncEngine', () => {
+  it('מושך הרשאת AI והיסטוריה לחשבון מקוון בלבד ומסנכרן שיחה', async () => {
+    const c = new FakeCloud();
+    c.docs.set(`aiAccess/${U}`, { enabled: true });
+    const { db, eng } = make(c);
+    await eng.syncNow();
+    expect(db.get(`aiAccess/${U}`)?.data.enabled).toBe(true);
+    db.set(`users/${U}/aiChats/test`, { title: 'test' });
+    await eng.syncNow();
+    expect(c.docs.get(`users/${U}/aiChats/test`)).toEqual({ title: 'test' });
+    c.docs.delete(`aiAccess/${U}`);
+    await eng.syncNow();
+    expect(db.get(`aiAccess/${U}`)).toBeNull();
+  });
   it('דוחף כתיבות ומחיקות ממתינות ומנקה את התור', async () => {
     const c = new FakeCloud();
     c.docs.set(`${tx}/old`, { v: 0 });
