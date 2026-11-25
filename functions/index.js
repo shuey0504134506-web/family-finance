@@ -553,7 +553,7 @@ const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
 const AI_REFUSAL = 'אני יכול לעזור רק בנושאי הכספים שלך והאפליקציה.';
 
-const AI_SYSTEM_PROMPT = `אתה "סקירת AI": יועץ פיננסי אישי, מקצועי ומעמיק, בתוך אפליקציית ניהול כספים בעברית.
+const AI_SYSTEM_PROMPT = `בדוק תמיד את coverage. אם מספר השורות שנכללו קטן ממספר ההתאמות, אל תציג סכום חלקי כסכום מלא. חיפוש מילות מפתח אינו מבטיח שכל הפעולות בנושא נמצאו. הסיכומים השנתיים והחודשיים כוללים העברות לפי הגדרות האפליקציה; אל תוסיף אותן שוב.\nאתה "סקירת AI": יועץ פיננסי אישי, מקצועי ומעמיק, בתוך אפליקציית ניהול כספים בעברית.
 יש לך גישה לנתוני המשתמש (JSON), מסוכמים מראש: כל הפעולות של החודש שנבחר ושל החודש הקודם, פעולות ישנות יותר שקשורות לשאלה (relatedOlderTransactions), סיכום חודשי לפי קטגוריה על כל ההיסטוריה, סיכום שנתי, בתי העסק הגדולים והוצאות גדולות לאורך כל התקופה, סכומי כל החודשים, תקציבים ויעד חיסכון, חובות, הוראות קבע וקטגוריות. לשאלות על תקופות רחבות השתמש בסיכומים. חשב סכומים, ממוצעים ושינויים בין חודשים בדיוק מהנתונים, ואל תענה בהערכה כללית כשאפשר לחשב.
 כשהשאלה היא על נושא, אירוע או מטרה (למשל \"כמה הוצאתי לכבוד שבת\" או \"על חגים\"), חפש בכל השורות הרלוונטיות בכל השדות: ההערה, בית העסק, הקטגוריה, כולל צורות כתיבה קרובות (שבת, שבת קודש, לשבת, ליל שבת, וכדומה). סכם את כל השורות שמתאימות, וציין אילו שורות (תאריך, סכום, הערה) נספרו. שאלות על \"החודש\" או \"החודש הזה\" מתייחסות ל-selectedMonthTransactions. אם לא נמצאה שום שורה מתאימה, אמור זאת במפורש ואל תנחש.
 התחומים היחידים שבהם מותר לך לעזור:
@@ -723,7 +723,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
         if (res.ok) break;
         let detail = '';
         try {
-          detail = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
+          detail = 'Provider request rejected';
         } catch {
           detail = '';
         }
@@ -740,7 +740,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
       const tech = isAdmin ? failures.map((f) => ` [${f.model} ${f.status}] ${f.detail.slice(0, 160)}`).join('') : '';
       const status = first.status;
-      if (status === 503) throw new HttpsError('unavailable', `המודל עמוס כרגע אצל גוגל. ניסינו גם מודל גיבוי. אפשר לנסות שוב בעוד דקה.${tech}`);
+      if (status === 503) throw new HttpsError('unavailable', `ספק ה-AI עמוס כרגע. אפשר לנסות שוב בעוד דקה.${tech}`);
       if (status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
       if (status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
       if (status === 401 || status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
@@ -761,7 +761,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
         if (usage) lastUsage = { ...lastUsage, ...(usage.prompt_tokens != null || usage.input_tokens != null ? { promptTokenCount: usage.prompt_tokens ?? usage.input_tokens } : {}), ...(usage.completion_tokens != null || usage.output_tokens != null ? { candidatesTokenCount: usage.completion_tokens ?? usage.output_tokens } : {}) };
         if (typeof delta === 'string' && delta) {
           text += delta;
-          if (streaming) response.sendChunk({ text: delta });
+          if (streaming) { try { response.sendChunk({ text: delta }); } catch { /* disconnected */ } }
         }
         return;
       }
@@ -791,11 +791,9 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
           if (line.startsWith('data:')) {
             const payload = line.slice(5).trim();
             if (payload && payload !== '[DONE]') {
-              try {
-                handle(JSON.parse(payload));
-              } catch {
-                // שורה חלקית או לא תקינה: מדלגים
-              }
+              let event;
+              try { event = JSON.parse(payload); } catch { /* malformed event */ }
+              if (event) handle(event);
             }
           }
           newline = buffer.indexOf('\n');
