@@ -545,7 +545,9 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // ---------- סקירת AI ----------
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
-const AI_DEFAULTS = { model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const { buildRequest } = require('./ai/providers');
+const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter'];
+const AI_DEFAULTS = { provider: 'google', model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
@@ -662,6 +664,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
   const ladderFor = (model) => {
+    if (cfg.provider !== 'google') return [null];
     if (/2\.5-flash/.test(model)) return [{ thinkingBudget: wantDeep ? -1 : 0 }, null];
     if (/gemini-3/.test(model)) return wantDeep ? [{ thinkingLevel: 'high' }, { thinkingLevel: 'low' }, null] : [{ thinkingLevel: 'low' }, null];
     return [null];
@@ -685,13 +688,13 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   });
   const startedMs = Date.now();
   const deadline = startedMs + 100000;
-  const openStream = (model, thinkingConfig) =>
-    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey },
-      body: JSON.stringify(makeBody(model, thinkingConfig)),
-      signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())),
-    });
+  const openStream = (model, thinkingConfig) => {
+    const original = makeBody(model, thinkingConfig);
+    const req = cfg.provider === 'google'
+      ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey }, body: original }
+      : buildRequest({ provider: cfg.provider, model, apiKey: cfg.apiKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 8192 : 4096 });
+    return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())) });
+  };
   const openModel = async (model) => {
     let res = null;
     for (const thinkingConfig of ladderFor(model)) {
@@ -749,6 +752,19 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     const decoder = new TextDecoder();
     let buffer = '';
     const handle = (json) => {
+      if (cfg.provider !== 'google') {
+        if (json.type === 'error' || json.error) throw new Error('Provider stream error');
+        const choice = json.choices?.[0];
+        const delta = cfg.provider === 'anthropic' ? (json.delta?.type === 'text_delta' ? json.delta.text : '') : choice?.delta?.content;
+        finishReason = String(choice?.finish_reason ?? json.delta?.stop_reason ?? finishReason);
+        const usage = json.usage ?? json.message?.usage;
+        if (usage) lastUsage = { ...lastUsage, ...(usage.prompt_tokens != null || usage.input_tokens != null ? { promptTokenCount: usage.prompt_tokens ?? usage.input_tokens } : {}), ...(usage.completion_tokens != null || usage.output_tokens != null ? { candidatesTokenCount: usage.completion_tokens ?? usage.output_tokens } : {}) };
+        if (typeof delta === 'string' && delta) {
+          text += delta;
+          if (streaming) response.sendChunk({ text: delta });
+        }
+        return;
+      }
       if (json.usageMetadata) lastUsage = json.usageMetadata;
       const candidate = json.candidates?.[0];
       finishReason = String(candidate?.finishReason ?? json.promptFeedback?.blockReason ?? finishReason);
@@ -884,6 +900,7 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
   return {
     hasKey: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20,
     keyHint: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20 ? cfg.apiKey.slice(-4) : '',
+    provider: cfg.provider,
     model: cfg.model,
     perUserDaily: cfg.perUserDaily,
     globalDaily: cfg.globalDaily,
@@ -899,15 +916,24 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
 
 exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   requireAdmin(request);
-  const { apiKey, model, perUserDaily, globalDaily, enabled } = request.data ?? {};
+  const { provider, apiKey, model, perUserDaily, globalDaily, enabled } = request.data ?? {};
   const patch = { updatedAt: Date.now() };
+  if (provider !== undefined) {
+    if (!AI_PROVIDERS.includes(provider)) throw new HttpsError('invalid-argument', 'ספק לא נתמך.');
+    const current = await aiConfig();
+    if (provider !== current.provider) {
+      if (typeof apiKey !== 'string' || !apiKey.trim() || typeof model !== 'string' || !model.trim()) throw new HttpsError('invalid-argument', 'בהחלפת ספק יש להזין מפתח ומודל חדשים.');
+      patch.fallbackModel = '';
+    }
+    patch.provider = provider;
+  }
   if (typeof apiKey === 'string' && apiKey.trim()) {
     const key = apiKey.trim();
     if (!/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key)) throw new HttpsError('invalid-argument', 'המפתח אינו נראה תקין.');
     patch.apiKey = key;
   }
   if (typeof model === 'string' && model.trim()) {
-    if (!/^[a-z0-9.\-]{3,60}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
+    if (!/^[A-Za-z0-9._:/\-]{1,200}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
     patch.model = model.trim();
   }
   if (perUserDaily !== undefined) {
