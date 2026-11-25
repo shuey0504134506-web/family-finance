@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { buildRequest } = require('./providers');
 const base = { model: 'test-model', apiKey: 'fake-test-key', system: 'system', messages: [{ role: 'user', content: 'question' }] };
-for (const [provider, host] of Object.entries({google:'generativelanguage.googleapis.com',xai:'api.x.ai',openai:'api.openai.com',anthropic:'api.anthropic.com',deepseek:'api.deepseek.com',openrouter:'openrouter.ai'})) {
+for (const [provider, host] of Object.entries({groq:'api.groq.com',google:'generativelanguage.googleapis.com',xai:'api.x.ai',openai:'api.openai.com',anthropic:'api.anthropic.com',deepseek:'api.deepseek.com',openrouter:'openrouter.ai'})) {
   test(provider + ' routes to fixed provider endpoint', () => {
     const req = buildRequest({...base,provider});
     assert.equal(new URL(req.url).hostname,host);
