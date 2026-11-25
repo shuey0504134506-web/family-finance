@@ -3,6 +3,7 @@
 // Provider transport layer. No credentials are stored here.
 // Keep endpoints fixed: arbitrary URLs could expose secrets or enable SSRF.
 const endpoints = Object.freeze({
+  groq: 'https://api.groq.com/openai/v1/chat/completions',
   openai: 'https://api.openai.com/v1/chat/completions',
   xai: 'https://api.x.ai/v1/chat/completions',
   deepseek: 'https://api.deepseek.com/chat/completions',
