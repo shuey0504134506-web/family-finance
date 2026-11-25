@@ -663,8 +663,10 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const wantDeep = deep === true;
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
+  let activeProvider = cfg.provider;
+  let activeKey = cfg.apiKey;
   const ladderFor = (model) => {
-    if (cfg.provider !== 'google') return [null];
+    if (activeProvider !== 'google') return [null];
     if (/2\.5-flash/.test(model)) return [{ thinkingBudget: wantDeep ? -1 : 0 }, null];
     if (/gemini-3/.test(model)) return wantDeep ? [{ thinkingLevel: 'high' }, { thinkingLevel: 'low' }, null] : [{ thinkingLevel: 'low' }, null];
     return [null];
@@ -690,9 +692,9 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const deadline = startedMs + 100000;
   const openStream = (model, thinkingConfig) => {
     const original = makeBody(model, thinkingConfig);
-    const req = cfg.provider === 'google'
-      ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': cfg.apiKey }, body: original }
-      : buildRequest({ provider: cfg.provider, model, apiKey: cfg.apiKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 8192 : 4096 });
+    const req = activeProvider === 'google'
+      ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': activeKey }, body: original }
+      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 8192 : 4096 });
     return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())) });
   };
   const openModel = async (model) => {
@@ -714,9 +716,16 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין לא זמין עוברים למודל הגיבוי.
     // כל כשל נשמר, כדי שהשגיאה שמוצגת (והלוג) תהיה של המודל הראשי ולא של הגיבוי שרק ניסה להציל
     const models = [cfg.model, ...(cfg.fallbackModel && cfg.fallbackModel !== cfg.model ? [cfg.fallbackModel] : [])];
+    const candidates = models.map(model => ({ model, provider: cfg.provider, apiKey: cfg.apiKey }));
+    // Explicitly configured free-tier backup only; never discover or enable paid providers.
+    const backup = cfg.freeBackup;
+    if (backup?.enabled === true && ['google', 'groq'].includes(backup.provider) && backup.provider !== cfg.provider && typeof backup.apiKey === 'string' && backup.apiKey.length >= 20 && typeof backup.model === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(backup.model)) candidates.push(backup);
     const failures = [];
     let res = null;
-    for (const model of models) {
+    for (const candidate of candidates) {
+      const { model } = candidate;
+      activeProvider = candidate.provider;
+      activeKey = candidate.apiKey;
       usedModel = model;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         res = await openModel(model);
@@ -729,7 +738,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
         }
         failures.push({ model, status: res.status, detail });
         if (!retryable(res.status) || Date.now() - startedMs > 60000) break;
-        if (attempt === 0) await sleep(res.status === 429 ? 3000 : 1500);
+        if (res.status === 429) break;
+        if (attempt === 0) await sleep(1500);
       }
       if (res.ok || Date.now() - startedMs > 80000) break;
     }
@@ -752,10 +762,10 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     const decoder = new TextDecoder();
     let buffer = '';
     const handle = (json) => {
-      if (cfg.provider !== 'google') {
+      if (activeProvider !== 'google') {
         if (json.type === 'error' || json.error) throw new Error('Provider stream error');
         const choice = json.choices?.[0];
-        const delta = cfg.provider === 'anthropic' ? (json.delta?.type === 'text_delta' ? json.delta.text : '') : choice?.delta?.content;
+        const delta = activeProvider === 'anthropic' ? (json.delta?.type === 'text_delta' ? json.delta.text : '') : choice?.delta?.content;
         finishReason = String(choice?.finish_reason ?? json.delta?.stop_reason ?? finishReason);
         const usage = json.usage ?? json.message?.usage;
         if (usage) lastUsage = { ...lastUsage, ...(usage.prompt_tokens != null || usage.input_tokens != null ? { promptTokenCount: usage.prompt_tokens ?? usage.input_tokens } : {}), ...(usage.completion_tokens != null || usage.output_tokens != null ? { candidatesTokenCount: usage.completion_tokens ?? usage.output_tokens } : {}) };
