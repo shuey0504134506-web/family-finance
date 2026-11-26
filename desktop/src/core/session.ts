@@ -68,6 +68,9 @@ export class Unlocked {
   }
 
   async setRecovery(questions: readonly RecoveryQuestion[], answers: readonly string[]): Promise<void> {
+    // Finish any queued data encryption before replacing the recovery wrapper;
+    // otherwise an older flush may overwrite the newly generated wrapper.
+    await this.flush();
     this.file = await setVaultRecovery(this.file, this.dataKey, questions, answers);
     this.recoveryAnswers = [...answers];
     await this.flush();
