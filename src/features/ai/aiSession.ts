@@ -97,10 +97,6 @@ export function takeFailedDraft(uid: string): string {
   return s.failedDraft;
 }
 
-export function setError(uid: string, error: string): void {
-  set({ ...currentSession(uid), error });
-}
-
 export function startNewChat(uid: string): void {
   const s = currentSession(uid);
   set({ ...empty(uid), quota: s.quota });

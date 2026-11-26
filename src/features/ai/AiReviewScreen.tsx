@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useLocation } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { AI_QUESTION_BANK, pickQuestions } from "../../domain/aiQuestions";
 import { getLang } from "../../i18n/lang";
@@ -9,7 +8,6 @@ import {
   deleteAiChat,
   toggleAiChatPin,
   subscribeAiChats,
-  type AiChat,
   type StoredAiChat,
 } from "../../services/aiService";
 import { useReadyAuth } from "../auth/AuthContext";
@@ -27,6 +25,8 @@ import {
 } from "./aiSession";
 import { useAiSummaryData } from "./useAiSummaryData";
 import { AiChatHistory } from "./AiChatHistory";
+import { AiMarkdown } from "./AiMarkdown";
+import { useAiViewport } from "./useAiViewport";
 
 const consentKey = (uid: string) => `ff.ai.consent.v3.${uid}`;
 const readConsent = (uid: string): boolean => {
@@ -37,14 +37,6 @@ const readConsent = (uid: string): boolean => {
   }
 };
 
-interface NavState {
-  chat?: AiChat;
-  ask?: string;
-  /** נפתח מההיסטוריה: חזרה מחזירה אליה ולא למסך הבית */
-  from?: "history";
-}
-
-/** סקירת AI: חמש שאלות מוצעות מהמאגר, שורת שאלה חופשית, השיחה, וכפתור להיסטוריה. */
 /** חיווי "חושב" חי: נקודות מונפשות ושעון שניות, כדי שיהיה ברור שהמודל עובד ולא נתקע. */
 function ThinkingIndicator({ startedAt }: { startedAt: number | null }) {
   const [now, setNow] = useState(() => Date.now());
@@ -75,8 +67,9 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
   const space = useSpace();
   const { nameOf } = useSpaces();
   const { reportFailure } = useSyncNotice();
-  const nav = (useLocation().state ?? {}) as NavState;
   const data = useAiSummaryData();
+  const shellRef = useRef<HTMLDivElement>(null);
+  useAiViewport(shellRef);
 
   const [consent, setConsent] = useState(() => readConsent(user.uid));
   const session = useAiSession(user.uid);
@@ -131,8 +124,8 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
   const [draft, setDraft] = useState("");
   const [saved, setSaved] = useState<StoredAiChat[]>([]);
   const [historyOpen, setHistoryOpen] = useState(initialHistory);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const threadEnd = useRef<HTMLDivElement>(null);
-  const autoAsked = useRef(false);
 
   useEffect(
     () => subscribeAiChats(user.uid, setSaved, () => undefined),
@@ -149,10 +142,6 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
       .then((q) => setQuota(user.uid, q))
       .catch(() => undefined);
   }, [user.uid]);
-  // כניסה משיחה שמורה בהיסטוריה
-  useEffect(() => {
-    if (nav.chat) openChat(user.uid, nav.chat);
-  }, [nav.chat, user.uid]);
   // שאלה שנכשלה חוזרת לשורת הכתיבה
   useEffect(() => {
     if (session.failedDraft) setDraft(takeFailedDraft(user.uid));
@@ -163,7 +152,15 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
   }, [user.uid, session.unread]);
   const hasPartial = partial.length > 0;
   useEffect(() => {
-    threadEnd.current?.scrollIntoView?.({ block: "nearest" });
+    const scroll = scrollRef.current;
+    const end = threadEnd.current;
+    if (!scroll || !end) return;
+    // Scroll only the thread; scrollIntoView may pan the Android webview
+    // itself while the keyboard is open, hiding the composer.
+    const viewport = scroll.getBoundingClientRect();
+    const marker = end.getBoundingClientRect();
+    if (marker.bottom > viewport.bottom) scroll.scrollTop += marker.bottom - viewport.bottom;
+    else if (marker.top < viewport.top) scroll.scrollTop -= viewport.top - marker.top;
   }, [messages.length, busy, hasPartial]);
 
   const isSaved = saved.some((c) => c.id === chatId);
@@ -175,14 +172,6 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
     setDraft("");
     askInSession(user.uid, q, data.build, { saved }, { deep, lang: getLang(), remoteConsent: consent });
   };
-
-  // כניסה משאלה מההיסטוריה: נשאלת אוטומטית ברגע שהנתונים מוכנים
-  useEffect(() => {
-    if (!nav.ask || autoAsked.current || !data.ready || !consent) return;
-    autoAsked.current = true;
-    ask(nav.ask);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav.ask, data.ready, consent]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -215,15 +204,15 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
   const title = useMemo(() => `סקירת AI · ${nameOf(space)}`, [nameOf, space]);
 
   return (
-    <div className={`app-shell has-hero ai-chat-shell scope-${space.scope}`}>
+    <div ref={shellRef} className={`app-shell has-hero ai-chat-shell scope-${space.scope}`}>
       <ScreenHeader
         title={title}
         backTo={`/${space.key}`}
       />
       <div className="ai-chat-layout">
-      <main className="content ai-page ai-chat-page" aria-busy={busy}>
+      <main className="content ai-chat-page" aria-busy={busy}>
         <div className="ai-chat-top"><button type="button" className="btn btn-secondary btn-small" aria-controls="ai-chat-history" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5m4-1v5l3 2"/></svg>היסטוריה</button></div>
-        <div className="ai-chat-scroll">
+        <div ref={scrollRef} className="ai-chat-scroll">
         {!consent && (
           <section className="card ai-consent" aria-label="לפני שמתחילים">
             <h2 className="card-title">לפני שמתחילים</h2>
@@ -259,12 +248,12 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
             aria-live="polite"
           >
             {messages.map((m, i) => (
-              <div key={`${i}-${m.role}`} className={`ai-msg ai-msg-${m.role}`}>
-                {m.text}
+              <div key={`${i}-${m.role}`} className={`ai-msg ai-msg-${m.role}`} translate="no">
+                {m.role === 'model' ? <AiMarkdown message={m}/> : m.text}
               </div>
             ))}
             {busy && partial ? (
-              <div className="ai-msg ai-msg-model">{partial}</div>
+              <div className="ai-msg ai-msg-model"><AiMarkdown message={{text:partial}}/></div>
             ) : null}
             {busy && !partial ? (
               <ThinkingIndicator startedAt={startedAt} />
@@ -290,11 +279,11 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
                 ) : null}
               </div>
             )}
+            {!busy && messages.length > 0 && <p className="ai-chat-disclaimer muted small">התשובות הן הערכה כללית על סמך הנתונים באפליקציה, ואינן ייעוץ פיננסי, מס או השקעות.</p>}
           </section>
         )}
 
         </div>
-        {(messages.length > 0 || busy) && <p className="ai-chat-disclaimer muted small">התשובות הן הערכה כללית על סמך הנתונים באפליקציה, ואינן ייעוץ פיננסי, מס או השקעות.</p>}
         <form className="card ai-composer" onSubmit={onSubmit}>
           <textarea className="input" rows={1} value={draft} maxLength={500} placeholder="שאל שאלה…" aria-label="שאלה" onChange={e => setDraft(e.target.value)} disabled={!consent || exhausted} />
           <div className="ai-composer-actions">
