@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { parseAiMarkdown } from './aiMarkdown';
+import { parseAiMarkdown } from './parseAiMarkdown';
 
 function inline(text: string): ReactNode[] {
   const pattern = /(`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_)/g;
