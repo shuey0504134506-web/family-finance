@@ -133,7 +133,7 @@ export function askInSession(
   question: string,
   build: (question: string) => unknown,
   ctx: AskContext,
-  options: { deep?: boolean; lang?: string } = {},
+  options: { deep?: boolean; lang?: string; remoteConsent?: boolean } = {},
 ): void {
   const s = currentSession(uid);
   const q = question.trim();

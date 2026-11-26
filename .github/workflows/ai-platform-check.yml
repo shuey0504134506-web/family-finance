@@ -20,6 +20,7 @@ jobs:
       - run: node --check functions/index.js
       - run: node --test functions/ai/providers.test.cjs
       - run: node --test functions/ai/local-analysis.test.mjs
+      - run: node --test functions/ai/routing.test.cjs
       - name: Package isolated fictitious demo (never deploy production)
         run: |
           mkdir -p demo-dist

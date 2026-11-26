@@ -26,7 +26,7 @@ import {
 } from "./aiSession";
 import { useAiSummaryData } from "./useAiSummaryData";
 
-const consentKey = (uid: string) => `ff.ai.consent.v2.${uid}`;
+const consentKey = (uid: string) => `ff.ai.consent.v3.${uid}`;
 const readConsent = (uid: string): boolean => {
   try {
     return localStorage.getItem(consentKey(uid)) === "1";
@@ -170,7 +170,7 @@ export function AiReviewScreen() {
     const q = raw.trim();
     if (!q || busy || !data.ready || data.error || !consent || (quota !== null && quota.remaining <= 0)) return;
     setDraft("");
-    askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang() });
+    askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang(), remoteConsent: consent });
   };
 
   // כניסה משאלה מההיסטוריה: נשאלת אוטומטית ברגע שהנתונים מוכנים
@@ -229,6 +229,7 @@ export function AiReviewScreen() {
               כדי לענות, האפליקציה שולחת לספק ה-AI שהוגדר על ידי מנהל האפליקציה את הנתונים הכספיים של
               המרחב הזה: הפעולות (כולל שמות בתי עסק והערות), התקציבים, החובות
               והוראות הקבע. לא נשלחים תמונות מצורפות, סיסמאות או פרטי חשבון.
+              במסלול חינמי ספקים כגון Google עשויים להשתמש בתוכן לשיפור השירות בהתאם למדיניות הפרטיות שלהם. אין להזין פרטים רגישים בשאלות.
             </p>
             <button
               type="button"

@@ -8,7 +8,17 @@ export function analyze(summary, question, history = []) {
   const previous = Array.isArray(history) ? [...history].reverse().find(m => m?.role === 'user' && typeof m.text === 'string')?.text : '';
   const followup = /^(למה|מדוע|איך|ומה|ואיך|why|how)[?\s]*$/i.test(raw.trim());
   const q = followup && previous ? previous : raw;
-  const targetMonth = q.match(/\b\d{4}-\d{2}\b/)?.[0] ?? summary?.selectedMonth;
+  const baseMonth=summary?.selectedMonth;
+  let targetMonth = q.match(/\b\d{4}-\d{2}\b/)?.[0] ?? baseMonth;
+  if (/בחודש הקודם|בחודש שעבר|last month/i.test(q) && /^\d{4}-\d{2}$/.test(baseMonth??'')) { const [y,m]=baseMonth.split('-').map(Number); targetMonth=`${m===1?y-1:y}-${String(m===1?12:m-1).padStart(2,'0')}`; }
+  const topic = q.match(/(?:כמה\s+(?:הוצאתי|שילמתי|הוצאות)|הוצאות)\s+(?:לכבוד|עבור|על|ל)\s*([^?\n]+?)(?=\s+(?:החודש|בחודש|השנה|בשנה|ב-?\d{4})|[?\n]|$)/)?.[1]?.trim();
+  if (topic) {
+    const matches=[];
+    const all=[summary?.selectedMonthTransactions,summary?.previousMonthTransactions].filter(x=>typeof x==='string').join('\n');
+    for(const line of all.split('\n')) { const [date,type,amount,category,merchant,,note]=line.split('|'); if(type!=='E'||!date?.startsWith(targetMonth)||!Number.isFinite(Number(amount)))continue; if([category,merchant,note].some(s=>String(s??'').includes(topic))) matches.push(cents(Number(amount))); }
+    if(!matches.length) return `לא נמצאו פעולות שמסומנות במפורש כ״${topic}״ בחודש ${targetMonth}. אי אפשר להסיק מכך שלא היו הוצאות בנושא.`;
+    return `בחודש ${targetMonth} נמצאו ${matches.length} הוצאות הקשורות ל״${topic}״, בסכום ${fmt(matches.reduce((a,b)=>a+b,0))}. הסכום מבוסס על שמות וקטגוריות והערות, וייתכן שאינו כולל הוצאות שלא סומנו כך.`;
+  }
   if (/קטגור|על מה|איפה.*כסף|category/i.test(q)) {
     const totals = new Map();
     for (const line of String(summary?.monthlyCategoryTotals ?? '').split('\n')) {
@@ -59,7 +69,3 @@ export function analyze(summary, question, history = []) {
   }
   return lines.join('\n');
 }
-
-// API-key format is not proof that billing is disabled. Until a provider can
-// attest enforceable zero spend, all remote generation must stay blocked.
-export function remoteGenerationAllowed() { return false; }

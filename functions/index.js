@@ -647,7 +647,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   if (!access.exists || access.data().enabled !== true) throw new HttpsError('permission-denied', 'אין לך גישה לסקירת AI.');
   if (cfg.enabled === false) throw new HttpsError('failed-precondition', 'סקירת ה-AI כבויה כרגע.');
 
-  const { question, summary, history, deep, lang } = request.data ?? {};
+  const { question, summary, history, deep, lang, remoteConsent } = request.data ?? {};
   const q = cleanText(question, AI_MAX_QUESTION);
   if (!q) throw new HttpsError('invalid-argument', 'יש לכתוב שאלה.');
   const data = cleanText(typeof summary === 'string' ? summary : JSON.stringify(summary ?? {}), AI_MAX_SUMMARY);
@@ -658,20 +658,14 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     // ההקשר חייב להתחיל בהודעת משתמש ולהתחלף
     .filter((m, i, all) => m.parts[0].text && (i === 0 ? m.role === 'user' : m.role !== all[i - 1].role));
 
-  const { analyze, remoteGenerationAllowed } = await import('./ai/local-analysis.mjs');
+  const { analyze } = await import('./ai/local-analysis.mjs');
+  const { candidatesFor, compactForGroq } = require('./ai/routing');
+  let parsed;
+  try { parsed = JSON.parse(data); } catch { throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.'); }
   const quota = await takeAiQuota(uid, cfg);
-  if (!remoteGenerationAllowed()) {
-    let parsed;
-    try { parsed = JSON.parse(data); } catch {
-      await refundAiQuota(uid);
-      throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.');
-    }
-    return { answer: analyze(parsed, q, history), remaining: quota.remaining, limit: cfg.perUserDaily };
-  }
-  if (typeof cfg.apiKey !== 'string' || cfg.apiKey.length < 20) {
-    await refundAiQuota(uid);
-    throw new HttpsError('failed-precondition', 'סקירת ה-AI עדיין לא הוגדרה.');
-  }
+  const candidates = candidatesFor(cfg, remoteConsent);
+  const localAnswer = () => ({ answer: `${remoteConsent === true ? 'מענה מקומי (ספק חיצוני לא זמין)' : 'מענה מקומי (יש לאשר שימוש בספק חיצוני בגרסה החדשה)'}\n${analyze(parsed,q,history)}`, remaining: quota.remaining, limit: cfg.perUserDaily });
+  if (!candidates.length) return localAnswer();
   const wantDeep = deep === true;
   const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
@@ -687,7 +681,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     systemInstruction: { parts: [{ text: system }] },
     // הנתונים תמיד בתחילת השיחה ולפני השאלות: הרישא זהה בין שאלה לשאלה, ולכן המודל משתמש במטמון שלו (מהיר וזול יותר)
     contents: [
-      { role: 'user', parts: [{ text: `נתוני המשתמש (JSON):\n${data}` }] },
+      { role: 'user', parts: [{ text: `נתוני המשתמש (JSON):\n${activeProvider==='groq'?compactForGroq(parsed,q):data}${activeProvider==='groq'?`\nחישוב מקומי (לבדיקה): ${analyze(parsed,q,history)}`:''}` }] },
       { role: 'model', parts: [{ text: 'קיבלתי את הנתונים. מה השאלה?' }] },
       ...past,
       { role: 'user', parts: [{ text: q }] },
@@ -706,8 +700,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     const original = makeBody(model, thinkingConfig);
     const req = activeProvider === 'google'
       ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': activeKey }, body: original }
-      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 8192 : 4096 });
-    return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.max(15000, deadline - Date.now())) });
+      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 4096 : 2048 });
+    return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.min(35000,Math.max(1000, deadline - Date.now()))) });
   };
   const openModel = async (model) => {
     let res = null;
@@ -717,58 +711,24 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     }
     return res;
   };
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const retryable = (status) => status === 503 || status === 500 || status === 502 || status === 504 || status === 429;
   const streaming = request.acceptsStreaming === true && response && typeof response.sendChunk === 'function';
   let text = '';
   let lastUsage = null;
   let finishReason = '';
   let usedModel = cfg.model;
   try {
-    // עומס רגעי אצל גוגל (503): מנסים שוב קצת אחר כך, ואם המודל עדיין לא זמין עוברים למודל הגיבוי.
-    // כל כשל נשמר, כדי שהשגיאה שמוצגת (והלוג) תהיה של המודל הראשי ולא של הגיבוי שרק ניסה להציל
-    const models = [cfg.model, ...(cfg.fallbackModel && cfg.fallbackModel !== cfg.model ? [cfg.fallbackModel] : [])];
-    const candidates = models.map(model => ({ model, provider: cfg.provider, apiKey: cfg.apiKey }));
-    // Explicitly configured free-tier backup only; never discover or enable paid providers.
-    const backup = cfg.freeBackup;
-    if (backup?.enabled === true && ['google', 'groq'].includes(backup.provider) && backup.provider !== cfg.provider && typeof backup.apiKey === 'string' && backup.apiKey.length >= 20 && typeof backup.model === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(backup.model)) candidates.push(backup);
+    // Try configured free-capable providers in order, without retrying quota or payment failures.
     const failures = [];
-    let res = null;
     for (const candidate of candidates) {
+      if(Date.now() >= deadline) break;
       const { model } = candidate;
       activeProvider = candidate.provider;
       activeKey = candidate.apiKey;
       usedModel = model;
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        res = await openModel(model);
-        if (res.ok) break;
-        let detail = '';
-        try {
-          detail = 'Provider request rejected';
-        } catch {
-          detail = '';
-        }
-        failures.push({ model, status: res.status, detail });
-        if (!retryable(res.status) || Date.now() - startedMs > 60000) break;
-        if (res.status === 429) break;
-        if (attempt === 0) await sleep(1500);
-      }
-      if (res.ok || Date.now() - startedMs > 80000) break;
-    }
-    if (!res.ok) {
-      await refundAiQuota(uid);
-      const first = failures[0] ?? { model: usedModel, status: res.status, detail: '' };
-      await recordAiError(uid, first.model, failures.map((f) => `${f.model} HTTP ${f.status}: ${f.detail.slice(0, 150)}`).join(' || '));
-      const isAdmin = ADMIN_EMAILS.includes(String(request.auth?.token?.email ?? '').toLowerCase());
-      const tech = isAdmin ? failures.map((f) => ` [${f.model} ${f.status}] ${f.detail.slice(0, 160)}`).join('') : '';
-      const status = first.status;
-      if (status === 503) throw new HttpsError('unavailable', `ספק ה-AI עמוס כרגע. אפשר לנסות שוב בעוד דקה.${tech}`);
-      if (status === 429) throw new HttpsError('resource-exhausted', `המודל עמוס כרגע או שהמכסה שלו נגמרה. אפשר לנסות שוב בעוד רגע.${tech}`);
-      if (status === 404) throw new HttpsError('unavailable', `המודל שהוגדר לא נמצא. צריך לעדכן את שם המודל במסך הניהול.${tech}`);
-      if (status === 401 || status === 403) throw new HttpsError('unavailable', `המפתח של ה-AI לא תקין או שאין לו הרשאה. צריך לבדוק אותו במסך הניהול.${tech}`);
-      if (status === 400) throw new HttpsError('unavailable', `הבקשה נדחתה על ידי המודל (ייתכן שהנתונים גדולים מדי).${tech}`);
-      throw new HttpsError('unavailable', `לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.${tech}`);
-    }
+      let res;
+      try { res=await openModel(model); } catch { failures.push({model,status:0,detail:'network or timeout'}); continue; }
+      if(!res?.ok || !res.body) { failures.push({model,status:res?.status??0,detail:'Provider request rejected'}); continue; }
+      lastUsage=null; finishReason='';
     // קוראים את התשובה תוך כדי הגעתה ומעבירים אותה ללקוח מיד, כדי שהמשתמש יראה אותה נבנית ולא יחכה לסוף
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -821,23 +781,28 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
           newline = buffer.indexOf('\n');
         }
       }
-    } catch (readError) {
+    } catch {
       // נקטע באמצע (זמן או רשת): אם כבר יש תשובה חלקית, מחזירים אותה עם סימון במקום לזרוק הכול
-      if (!text) throw readError;
+      if (!text) { failures.push({model,status:0,detail:'stream failed before answer'}); continue; }
       text += lang === 'en' ? '\n\n(The answer was cut off.)' : '\n\n(התשובה נקטעה.)';
     }
     text = text.trim();
+    if(text) break;
+    failures.push({model,status:0,detail:'empty stream'});
+    }
+    if(!text && failures.length) {
+      await recordAiError(uid,usedModel,failures.map(f=>`${f.model} HTTP ${f.status}: ${f.detail}`).join(' || '));
+      return localAnswer();
+    }
   } catch (error) {
     if (error instanceof HttpsError) throw error;
-    await refundAiQuota(uid);
     const timedOut = error && (error.name === 'TimeoutError' || error.name === 'AbortError');
-    await recordAiError(uid, usedModel, `${timedOut ? 'timeout' : 'network'}: ${String(error?.message ?? error).slice(0, 200)}`);
-    throw new HttpsError('unavailable', timedOut ? 'המודל לא הספיק לענות בזמן. אפשר לנסות שוב, או לשאול שאלה ממוקדת יותר.' : 'לא הצלחנו לקבל תשובה כרגע. אפשר לנסות שוב.');
+    await recordAiError(uid, usedModel, timedOut ? 'timeout' : 'network/stream error');
+    return localAnswer();
   }
   if (!text) {
-    await refundAiQuota(uid);
     await recordAiError(uid, usedModel, `empty answer, finish=${finishReason || '?'}`);
-    throw new HttpsError('unavailable', 'לא התקבלה תשובה. אפשר לנסות לנסח את השאלה אחרת.');
+    return localAnswer();
   }
   // צריכת טוקנים לפי משתמש וחודש, כדי שאפשר יהיה לדעת מי גרם לעלות
   try {
