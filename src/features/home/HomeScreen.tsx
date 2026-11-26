@@ -15,7 +15,6 @@ import { addMonths, formatDisplayDate, todayIso } from "../../domain/dates";
 import { currencyOf } from "../../domain/currency";
 import { businessIdOf } from "../../domain/spaces";
 import { useBusinessLogo } from "../../hooks/useBusinessLogo";
-import { useHomeBackground } from "../../services/homeBackground";
 import {
   householdTotals,
   totalsOf,
@@ -182,7 +181,6 @@ export function HomeScreen() {
   const previousHeadline =
     previousStage === null ? null : previousStageHeadline(previousStage);
 
-  useHomeBackground(user.uid);
   const wide = useIsWide();
   // שלוש הפעולות האחרונות של המרחב (במסך רחב יותר, והכרטיס חותך לפי הגובה שנכנס) והחודש שמוצגים, במטבע המקורי
   const recent = useMemo(() => {

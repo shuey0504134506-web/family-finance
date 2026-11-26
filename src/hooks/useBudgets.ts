@@ -25,7 +25,7 @@ export function useBudgets(uid: string): { budgets: Budget[]; loading: boolean; 
     if (needsRates) requestRates([today]);
   }, [needsRates, today, version]);
   const budgets = useMemo(
-    () => (needsRates ? convertBudgets(state.budgets, getRatesFor(today)) : state.budgets),
+    () => (needsRates ? convertBudgets(state.budgets, getRatesFor(today, uid)) : state.budgets),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [state.budgets, needsRates, today, version],
   );

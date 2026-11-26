@@ -4,14 +4,18 @@ import { saveSettings } from '../../services/accountService';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useSyncNotice } from '../sync/SyncNotice';
 import { useSettings } from './SettingsContext';
+import { useManualRate } from '../../components/ManualRateDialog';
+import { todayIso } from '../../domain/dates';
 
 /** שפת הממשק (במכשיר הזה) והמטבע הראשי של החשבון. */
 export function LanguageCurrencySection() {
   const { user } = useReadyAuth();
   const settings = useSettings();
   const { reportFailure } = useSyncNotice();
+  const manualRate=useManualRate(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
 
-  const changeMainCurrency = (currency: CurrencyCode) => {
+  const changeMainCurrency = async (currency: CurrencyCode) => {
+    if (currency !== settings.currency && !await manualRate.ensure(todayIso(),settings.currency,currency,true)) return;
     saveSettings(user.uid, {
       titheBps: settings.titheBps,
       countBusinessTithePayments: settings.countBusinessTithePayments,
@@ -64,6 +68,7 @@ export function LanguageCurrencySection() {
         הטפסים, כך שאפשר להזין בשקלים ולראות הכול בדולרים. ברשימות מופיע הסכום המקורי, ומתחתיו ההמרה. כשיש פעולות
         ביותר ממטבע אחד, מופיע בבית סיכום לפי מטבע, עם כפתור המרה לפי השער העדכני.
       </p>
+      {manualRate.dialog}
     </form>
   );
 }

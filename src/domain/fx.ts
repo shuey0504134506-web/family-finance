@@ -10,13 +10,13 @@ import type { Budget, TransactionRecord } from './types';
 /** שווי הפעולה במטבע הראשי, או undefined אם הפעולה במטבע זר ועדיין אין שער ליום שלה. */
 export function mainAmountOf(
   t: { currency?: TransactionRecord['currency']; amountAgorot: number },
-  rates: Rates | undefined,
+  rates: Partial<Rates> | undefined,
 ): number | undefined {
   const from = currencyOf(t);
   const main = getCurrency();
   if (from === main) return t.amountAgorot;
-  if (!rates) return undefined;
-  return convertAgorot(t.amountAgorot, from, main, rates);
+  if (!rates || !Number.isFinite(rates[from]) || !Number.isFinite(rates[main]) || !(rates[from]! > 0) || !(rates[main]! > 0)) return undefined;
+  return convertAgorot(t.amountAgorot, from, main, rates as Rates);
 }
 
 export interface Converted {
@@ -28,7 +28,7 @@ export interface Converted {
 
 export function applyConversion(
   all: readonly TransactionRecord[],
-  ratesOf: (date: string) => Rates | undefined,
+  ratesOf: (date: string) => Partial<Rates> | undefined,
 ): Converted {
   const items: TransactionRecord[] = [];
   const list: TransactionRecord[] = [];
@@ -62,15 +62,15 @@ export function datesNeedingRates(all: readonly { date: string; currency?: Trans
  * תקציבים במטבע הראשי: תקציב שנקבע במטבע אחר מומר לפי השער הנתון (העדכני).
  * המסמך השמור לא משתנה. בלי שער, תקציב במטבע אחר מושמט במקום לנחש.
  */
-export function convertBudgets(budgets: readonly Budget[], rates: Rates | undefined): Budget[] {
+export function convertBudgets(budgets: readonly Budget[], rates: Partial<Rates> | undefined): Budget[] {
   const main = getCurrency();
   const out: Budget[] = [];
   for (const b of budgets) {
     const from = currencyOf(b);
     if (from === main) {
       out.push(b);
-    } else if (rates) {
-      out.push({ ...b, amountAgorot: convertAgorot(b.amountAgorot, from, main, rates), currency: main });
+    } else if (rates && Number.isFinite(rates[from]) && Number.isFinite(rates[main]) && rates[from]! > 0 && rates[main]! > 0) {
+      out.push({ ...b, amountAgorot: convertAgorot(b.amountAgorot, from, main, rates as Rates), currency: main });
     }
   }
   return out;

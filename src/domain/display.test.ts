@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { countedBusinessIds, defaultDisplayPrefs, neighborSpace, parseDisplayPrefs, visibleSpaces } from './display';
+import { countedBusinessIds, defaultDisplayPrefs, defaultVisibleSpace, neighborSpace, parseDisplayPrefs, visibleSpaces } from './display';
 
 const biz = (id: string) => ({ id, name: id, sortOrder: 0, createdAt: 0, updatedAt: 0 });
 const businesses = [biz('main'), biz('b2'), biz('b3')];
 
 describe('display prefs', () => {
+  it('household is the default even with multiple businesses',()=>expect(defaultVisibleSpace(visibleSpaces(businesses,defaultDisplayPrefs('both',businesses))).key).toBe('household'));
   it('ברירת מחדל לפי הייעוד הישן', () => {
     expect(defaultDisplayPrefs('both', businesses)).toEqual({ showHousehold: true, hiddenBusinessIds: [], includeHiddenInHousehold: false });
-    expect(defaultDisplayPrefs('business', businesses).showHousehold).toBe(false);
+    expect(defaultDisplayPrefs('business', businesses).showHousehold).toBe(true);
     expect(defaultDisplayPrefs('household', businesses).hiddenBusinessIds).toEqual(['main', 'b2', 'b3']);
   });
 

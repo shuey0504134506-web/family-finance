@@ -128,12 +128,14 @@ export function AttachmentsField({
       {viewing !== null && images[viewing] && (
         <Modal title="תמונה מצורפת" onClose={() => setViewing(null)}>
           <img className="att-full" src={images[viewing]} alt="" />
+          <div className="stack attachment-modal-actions">
           <button type="button" className="btn btn-primary" onClick={() => void download(viewing)}>
             שמירה במכשיר
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => setViewing(null)}>
             סגירה
           </button>
+          </div>
         </Modal>
       )}
     </div>

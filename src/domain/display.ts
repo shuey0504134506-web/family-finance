@@ -19,7 +19,7 @@ export interface DisplayPrefs {
 /** ברירת מחדל למכשיר שעוד לא נבחר בו כלום, לפי ייעוד החשבון שנבחר בעבר. */
 export function defaultDisplayPrefs(legacyMode: AccountMode, businesses: readonly Business[]): DisplayPrefs {
   return {
-    showHousehold: legacyMode !== 'business',
+    showHousehold: true,
     hiddenBusinessIds: legacyMode === 'household' ? businesses.map((b) => b.id) : [],
     includeHiddenInHousehold: false,
   };
@@ -57,6 +57,11 @@ export function visibleSpaces(businesses: readonly Business[], prefs: DisplayPre
     return [...businesses.map((b) => businessSpace(b.id)), HOUSEHOLD_SPACE];
   }
   return result;
+}
+
+/** Household is the initial destination whenever enabled; explicit device visibility is retained. */
+export function defaultVisibleSpace(spaces: readonly Space[]): Space {
+  return spaces.find(s=>s.scope==='household') ?? spaces[0] ?? HOUSEHOLD_SPACE;
 }
 
 /** העסקים שהכנסתם נכנסת למשק הבית: המוצגים, או כולם אם סומן "הכל משתקף". */

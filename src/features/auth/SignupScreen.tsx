@@ -162,6 +162,7 @@ export function SignupScreen() {
           <Field
             label="סיסמה"
             type="password"
+            revealPassword
             autoComplete="new-password"
             dir="ltr"
             value={values.password}
@@ -172,6 +173,7 @@ export function SignupScreen() {
           <Field
             label="אימות סיסמה"
             type="password"
+            revealPassword
             autoComplete="new-password"
             dir="ltr"
             value={values.confirmPassword}

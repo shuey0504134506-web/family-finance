@@ -39,7 +39,7 @@ export function EntryFlow() {
   const back = () => setView({ name: 'list' });
 
   return (
-    <AuthShell width={480} scroll={view.name === 'privacy'}>
+    <AuthShell width={480} scroll={view.name === 'privacy' || view.name === 'signup-offline' || view.name === 'recover'}>
       <div className="entry-panel">
         {view.name !== 'list' && <button type="button" className="entry-back" onClick={back}><ChevronRight />חזור</button>}
         {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
@@ -279,8 +279,8 @@ function Signup({ kind }: { kind: 'online' | 'offline' }) {
         <BusinessesFields householdName={household} onHouseholdName={setHousehold} extras={extras} onExtras={setExtras} />
         {!offline && <Field label="מספר טלפון" type="tel" dir="ltr" value={values.phone} onChange={set('phone')} error={errors.phone} hint="מוצג למנהל האפליקציה בלבד" />}
         <Field label={offline ? 'כתובת מייל (לא חובה)' : 'כתובת מייל'} type="email" dir="ltr" value={values.email} onChange={set('email')} error={errors.email} />
-        <Field label="סיסמה" type="password" dir="ltr" autoComplete="new-password" value={values.password} onChange={set('password')} error={errors.password} hint={`לפחות ${MIN_PASSWORD_LENGTH} תווים`} />
-        <Field label="אימות סיסמה" type="password" dir="ltr" autoComplete="new-password" value={values.confirmPassword} onChange={set('confirmPassword')} error={errors.confirmPassword} />
+        <Field label="סיסמה" type="password" revealPassword dir="ltr" autoComplete="new-password" value={values.password} onChange={set('password')} error={errors.password} hint={`לפחות ${MIN_PASSWORD_LENGTH} תווים`} />
+        <Field label="אימות סיסמה" type="password" revealPassword dir="ltr" autoComplete="new-password" value={values.confirmPassword} onChange={set('confirmPassword')} error={errors.confirmPassword} />
         {a.error && <div className="form-error" role="alert">{a.error}</div>}
         <button type="submit" className="btn btn-primary" disabled={a.busy}>{a.busy ? 'יוצר חשבון…' : offline ? 'המשך לשאלות שחזור' : 'יצירת חשבון'}</button>
       </div>

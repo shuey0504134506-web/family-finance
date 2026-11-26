@@ -19,6 +19,11 @@ function tx(id: string, date: string, amountAgorot: number, currency?: 'USD' | '
 afterEach(() => setCurrency('ILS'));
 
 describe('fx', () => {
+  it('manual partial rates convert only explicitly known currencies',()=>{
+    expect(mainAmountOf({currency:'USD',amountAgorot:1000},{ILS:1,USD:.25})).toBe(4000);
+    expect(mainAmountOf({currency:'EUR',amountAgorot:1000},{ILS:1,USD:.25})).toBeUndefined();
+    expect(mainAmountOf({currency:'USD',amountAgorot:1000},{ILS:1,USD:0})).toBeUndefined();
+  });
   it('ממיר דולר לשקל לפי שער היום (0.25 דולר לשקל = 4 ₪ לדולר)', () => {
     expect(mainAmountOf({ currency: 'USD', amountAgorot: 1000 }, rates(0.25))).toBe(4000);
   });

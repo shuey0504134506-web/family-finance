@@ -14,6 +14,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CategoryChip } from '../../components/CategoryChip';
 import { CategoryDialog } from '../../components/CategoryDialog';
 import { Field } from '../../components/Field';
+import { useManualRate } from '../../components/ManualRateDialog';
 import { Icon } from '../../components/Icon';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { todayIso } from '../../domain/dates';
@@ -163,6 +164,7 @@ function TransactionForm({
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
 
   const [draft, setDraft] = useState<TransactionDraft>(initial);
+  const manualRate=useManualRate(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
   // מזהה הוראת קבע חדשה, נוצר פעם אחת בפתיחת הטופס (כמו מזהה הפעולה)
   const [newOrderId] = useState(newId);
   // אם אי אפשר לקרוא הוראות קבע (למשל כללי השרת עוד לא עודכנו) לא מציעים את הסימון, כדי שלא תיכשל שמירת הפעולה
@@ -312,7 +314,7 @@ function TransactionForm({
     else navigate(`/${space.key}`, { replace: true });
   };
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (submitted.current) return;
 
@@ -323,6 +325,8 @@ function TransactionForm({
 
     const category = options.find((c) => c.id === draft.categoryId);
     if (!category) return;
+    if (!await manualRate.ensure(draft.date,draft.currency,getCurrency())) return;
+    if (submitted.current) return;
 
     const transaction = buildTransaction({ ...draft, standingOrder: !!draft.standingOrder && standingAllowed }, {
       id,
@@ -616,7 +620,7 @@ function TransactionForm({
                   role="radio"
                   aria-checked={draft.currency === code}
                   className={`chip-option${draft.currency === code ? ' is-active' : ''}`}
-                  onClick={() => update('currency', code)}
+                  onClick={async () => {if(await manualRate.ensure(draft.date,code,getCurrency())) update('currency',code);}}
                 >
                   {CURRENCY_SYMBOLS[code]} {code}
                 </button>
@@ -676,6 +680,7 @@ function TransactionForm({
         </form>
 
       </main>
+      {manualRate.dialog}
       {suggest && (
         <SimilarActionsDialog
           order={suggest.order}

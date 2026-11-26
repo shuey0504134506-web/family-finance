@@ -31,7 +31,7 @@ export function TitheScreen() {
 
   return (
     <div className="app-shell scope-household">
-      <ScreenHeader title={`מעשרות · ${nameOf(HOUSEHOLD_SPACE)}`} />
+      <ScreenHeader title={`מעשרות · ${nameOf(HOUSEHOLD_SPACE)}`} backTo="/household" />
       <main className="content" aria-busy={loading}>
         <p className="muted small">פעולות במטבע אחר נכללות אחרי המרה למטבע הראשי, לפי שער יום הפעולה.</p>
 
