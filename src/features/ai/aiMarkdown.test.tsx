@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { AiMarkdown } from './AiMarkdown';
-import { parseAiMarkdown } from './aiMarkdown';
+import { parseAiMarkdown } from './parseAiMarkdown';
 import { visibleAiHeight } from './useAiViewport';
 import { translateProps } from '../../i18n/translateProps';
 import { setLangForTest } from '../../i18n/lang';
