@@ -21,6 +21,7 @@ jobs:
       - run: node --test functions/ai/providers.test.cjs
       - run: node --test functions/ai/local-analysis.test.mjs
       - run: node --test functions/ai/routing.test.cjs
+      - run: node --test functions/ai/chat-title.test.cjs
       - name: Package isolated fictitious demo (never deploy production)
         run: |
           mkdir -p demo-dist

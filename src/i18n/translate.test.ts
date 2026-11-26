@@ -2,10 +2,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { EN } from './en';
 import { setLangForTest } from './lang';
 import { translateText } from './translate';
+import { translateProps } from './translateProps';
 
 afterEach(() => setLangForTest('he'));
 
 describe('תרגום לאנגלית', () => {
+  it('translates chat controls but preserves conversation names verbatim', () => {
+    setLangForTest('en');
+    expect(translateProps('h3', {children:'שיחות אחרונות'}).children).toBe('Recent conversations');
+    expect(translateProps('button', {translate:'no',title:'סיכום חודשי',children:'סיכום חודשי'})).toEqual({translate:'no',title:'סיכום חודשי',children:'סיכום חודשי'});
+    expect(translateText('חשיבה רגילה')).toBe('Normal thinking');
+  });
   it('בעברית הטקסט נשאר כמות שהוא', () => {
     expect(translateText('הגדרות')).toBe('הגדרות');
   });

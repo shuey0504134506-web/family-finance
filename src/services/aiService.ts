@@ -1,12 +1,11 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { collection, deleteDoc, doc, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocsFromServer, writeBatch, type Unsubscribe } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { onSnapshot } from '../firebase/cacheFirst';
 import { app, db } from '../firebase/config';
-import { MAX_CHAT_MESSAGES, MAX_RECENT_QUESTIONS, type AiChat, type AiMessage, type RecentQuestion } from '../domain/aiChats';
+import { MAX_CHAT_MESSAGES, splitChatHistory, type AiChat, type AiMessage } from '../domain/aiChats';
 
-export { MAX_RECENT_QUESTIONS, MAX_SAVED_CHATS, chatToEvict, withRecentQuestion } from '../domain/aiChats';
-export type { AiChat, AiMessage, RecentQuestion } from '../domain/aiChats';
+export type { AiChat, AiMessage } from '../domain/aiChats';
 
 /** סקירת AI באתר, באנדרואיד המקוון וב-Windows המחובר; מעולם לא בחשבון מקומי. */
 export const AI_SUPPORTED = typeof window !== 'undefined' && import.meta.env.VITE_TARGET !== 'phone';
@@ -15,11 +14,15 @@ const functions = () => getFunctions(app, 'europe-west1');
 
 export interface AiAnswer {
   answer: string;
+  title?: string;
+  source?: string;
+  model?: string;
   remaining: number;
   limit: number;
 }
 
 export interface AskOptions {
+  generateTitle?: boolean;
   remoteConsent?: boolean;
   /** חשיבה מעמיקה: איטית יותר, לשאלות מורכבות */
   deep?: boolean;
@@ -36,7 +39,7 @@ type StreamingCall = {
 /** שאלה למודל. ההגבלות (גישה, מכסה, נושא) נאכפות בשרת. */
 export async function askAi(question: string, summary: unknown, history: readonly AiMessage[], options: AskOptions = {}): Promise<AiAnswer> {
   const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk', { timeout: 125_000 });
-  const payload = { question, summary: JSON.stringify(summary), history: history.slice(-6), deep: options.deep === true, lang: options.lang ?? 'he', remoteConsent: options.remoteConsent === true };
+  const payload = { question, summary: JSON.stringify(summary), history: history.slice(-6), deep: options.deep === true, lang: options.lang ?? 'he', remoteConsent: options.remoteConsent === true, generateTitle: options.generateTitle === true };
   const streamer = (call as unknown as StreamingCall).stream;
   if (typeof streamer === 'function' && options.onText) {
     try {
@@ -92,40 +95,88 @@ export function useAiAccess(uid: string, offlineOnly = false): boolean {
 }
 
 const chatsCollection = (uid: string) => collection(db, 'users', uid, 'aiChats');
+const archiveKey = (uid: string) => `ff.ai.archive.v1.${uid}`;
+const archiveEvent = 'ff-ai-archive-changed';
+export type StoredAiChat = AiChat & { local?: true };
 
-export function subscribeAiChats(uid: string, onChange: (chats: AiChat[]) => void, onError: () => void): Unsubscribe {
-  return onSnapshot(
+function readArchive(uid: string): AiChat[] {
+  const raw = localStorage.getItem(archiveKey(uid));
+  if (!raw) return [];
+  const items: unknown = JSON.parse(raw);
+  if (!Array.isArray(items)) throw new Error('Invalid AI archive');
+  return items as AiChat[];
+}
+function writeArchive(uid: string, chats: AiChat[]) {
+  localStorage.setItem(archiveKey(uid), JSON.stringify(chats));
+  window.dispatchEvent(new Event(archiveEvent));
+}
+
+/** Serialize writes within a device so simultaneous answers cannot evict one another. */
+const queues = new Map<string, Promise<unknown>>();
+function serialize(uid: string, work: () => Promise<void>): Promise<void> {
+  const result = (queues.get(uid) ?? Promise.resolve()).catch(() => undefined).then(work);
+  queues.set(uid, result);
+  return result;
+}
+
+export function subscribeAiChats(uid: string, onChange: (chats: StoredAiChat[]) => void, onError: () => void): Unsubscribe {
+  let cloud: AiChat[] = [];
+  const publish = () => {
+    try {
+      const local = readArchive(uid).filter(c => !cloud.some(s => s.id === c.id));
+      onChange([...cloud, ...local.map(c => ({ ...c, local: true as const }))].sort((a,b) => b.updatedAt - a.updatedAt));
+    } catch { onChange(cloud); onError(); }
+  };
+  window.addEventListener(archiveEvent, publish);
+  window.addEventListener('storage', publish);
+  publish();
+  const stop = onSnapshot(
     chatsCollection(uid),
     (snap) => {
-      const chats = snap.docs.map((d) => ({ ...(d.data() as AiChat), id: d.id }));
-      chats.sort((a, b) => b.updatedAt - a.updatedAt);
-      onChange(chats);
+      cloud = snap.docs.map((d) => ({ ...(d.data() as AiChat), id: d.id }));
+      publish();
     },
     () => onError(),
   );
+  return () => { stop(); window.removeEventListener(archiveEvent, publish); window.removeEventListener('storage', publish); };
 }
 
 export function saveAiChat(uid: string, chat: AiChat): Promise<void> {
-  return setDoc(doc(chatsCollection(uid), chat.id), { ...chat, messages: chat.messages.slice(-MAX_CHAT_MESSAGES) });
+  return serialize(uid, async () => {
+    const { id, title, pinned, messages, createdAt, updatedAt } = chat;
+    const clean: AiChat = { id, title, pinned, messages: messages.slice(-MAX_CHAT_MESSAGES), createdAt, updatedAt };
+    const archive = readArchive(uid);
+    const snapshot = await getDocsFromServer(chatsCollection(uid));
+    const existing = snapshot.docs.map(d => ({ ...(d.data() as AiChat), id: d.id }));
+    const { cloud, local } = splitChatHistory([...existing, clean]);
+    // Make the archive durable before removing any cloud copy. If storage is
+    // full or blocked, no destructive cloud write is attempted.
+    const nextArchive = new Map(archive.map(c => [c.id, c]));
+    for (const c of local) nextArchive.set(c.id, c);
+    if (local.length) writeArchive(uid, [...nextArchive.values()]);
+    const batch = writeBatch(db);
+    if (cloud.some(c => c.id === id)) batch.set(doc(chatsCollection(uid), id), clean);
+    for (const c of local) if (existing.some(e => e.id === c.id)) batch.delete(doc(chatsCollection(uid), c.id));
+    await batch.commit();
+    // A reopened old conversation is promoted to the cloud when answered.
+    for (const c of cloud) nextArchive.delete(c.id);
+    if (archive.length || local.length) writeArchive(uid, [...nextArchive.values()]);
+  });
 }
 
 export function deleteAiChat(uid: string, id: string): Promise<void> {
-  return deleteDoc(doc(chatsCollection(uid), id));
+  return serialize(uid, async () => {
+    const archive = readArchive(uid);
+    if (archive.some(c => c.id === id)) {
+      writeArchive(uid, archive.filter(c => c.id !== id));
+    }
+    await deleteDoc(doc(chatsCollection(uid), id));
+  });
 }
 
-const recentDoc = (uid: string) => doc(db, 'users', uid, 'aiMeta', 'recent');
-
-export function subscribeRecentQuestions(uid: string, onChange: (items: RecentQuestion[]) => void, onError: () => void): Unsubscribe {
-  return onSnapshot(
-    recentDoc(uid),
-    (snap) => {
-      const items = snap.exists() ? (snap.data().items as unknown) : [];
-      onChange(Array.isArray(items) ? (items as RecentQuestion[]).filter((i) => typeof i?.q === 'string') : []);
-    },
-    () => onError(),
-  );
-}
-
-export function saveRecentQuestions(uid: string, items: RecentQuestion[]): Promise<void> {
-  return setDoc(recentDoc(uid), { items: items.slice(0, MAX_RECENT_QUESTIONS), updatedAt: Date.now() });
+export function toggleAiChatPin(uid: string, chat: StoredAiChat): Promise<void> {
+  if (!chat.local) return saveAiChat(uid, { ...chat, pinned: !chat.pinned });
+  return serialize(uid, async () => {
+    writeArchive(uid, readArchive(uid).map(c => c.id === chat.id ? { ...c, pinned: !c.pinned } : c));
+  });
 }
