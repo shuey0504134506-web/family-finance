@@ -1,33 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { chatToEvict, MAX_RECENT_QUESTIONS, withRecentQuestion, type AiChat } from './aiChats';
+import { chatTitle, MAX_SAVED_CHATS, splitChatHistory, type AiChat } from './aiChats';
 import { AI_QUESTION_BANK, pickQuestions } from './aiQuestions';
 import { buildAiSummary } from './aiSummary';
 
 const chat = (id: string, updatedAt: number, pinned = false): AiChat => ({ id, title: id, pinned, messages: [], createdAt: 1, updatedAt });
 
-describe('chatToEvict', () => {
-  it('לא מוחק כשיש מקום או כשהשיחה כבר שמורה', () => {
-    expect(chatToEvict([chat('a', 1)], 'new')).toBeNull();
-    const five = ['a', 'b', 'c', 'd', 'e'].map((id, i) => chat(id, i));
-    expect(chatToEvict(five, 'c')).toBeNull();
+describe('chat history', () => {
+  it('keeps ten latest in cloud and archives every older chat, including pinned ones', () => {
+    const all = Array.from({ length: 15 }, (_, i) => chat(String(i), i, true));
+    const { cloud, local } = splitChatHistory(all);
+    expect(cloud).toHaveLength(MAX_SAVED_CHATS);
+    expect(cloud[0].id).toBe('14');
+    expect(local.map(c => c.id)).toEqual(['4','3','2','1','0']);
+    expect(local.every(c => c.pinned)).toBe(true);
   });
-  it('כשהרשימה מלאה מוחק את הלא נעוצה הישנה ביותר', () => {
-    const five = [chat('a', 5, true), chat('b', 1), chat('c', 2), chat('d', 3, true), chat('e', 4)];
-    expect(chatToEvict(five, 'new')).toBe('b');
+  it('promotes a reopened chat without duplicates', () => {
+    const all = Array.from({ length: 11 }, (_, i) => chat(String(i), i));
+    const {cloud, local} = splitChatHistory([...all, chat('0', 20)]);
+    expect(cloud[0].id).toBe('0');
+    expect(local.map(c => c.id)).toEqual(['1']);
   });
-  it('כשכולן נעוצות מחזיר full', () => {
-    const five = ['a', 'b', 'c', 'd', 'e'].map((id, i) => chat(id, i, true));
-    expect(chatToEvict(five, 'new')).toBe('full');
-  });
-});
-
-describe('withRecentQuestion', () => {
-  it('מוסיף לראש, בלי כפילויות, עד 20', () => {
-    const base = Array.from({ length: 25 }, (_, i) => ({ q: `q${i}`, at: i }));
-    const next = withRecentQuestion(base, 'q3', 99);
-    expect(next[0]).toEqual({ q: 'q3', at: 99 });
-    expect(next.filter((i) => i.q === 'q3')).toHaveLength(1);
-    expect(next).toHaveLength(MAX_RECENT_QUESTIONS);
+  it('uses concise local titles instead of separate saved questions', () => {
+    expect(chatTitle('כמה הוצאתי לכבוד שבת החודש?')).toBe('הוצאות לכבוד שבת החודש');
+    expect(chatTitle('How much did I spend on groceries?')).toBe('Spending on groceries');
+    expect(chatTitle('')).toBe('שיחה חדשה');
+    expect(chatTitle('a'.repeat(500)).length).toBeLessThanOrEqual(55);
   });
 });
 

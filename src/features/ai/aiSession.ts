@@ -1,17 +1,13 @@
 import { useSyncExternalStore } from "react";
 import { newId } from "../../services/ids";
+import { chatTitle } from "../../domain/aiChats";
 import {
   askAi,
-  chatToEvict,
-  deleteAiChat,
   describeAiError,
   loadAiQuota,
   saveAiChat,
-  saveRecentQuestions,
-  withRecentQuestion,
   type AiChat,
   type AiMessage,
-  type RecentQuestion,
 } from "../../services/aiService";
 
 /**
@@ -125,7 +121,6 @@ export function openChat(uid: string, chat: AiChat): void {
 
 export interface AskContext {
   saved: readonly AiChat[];
-  recent: readonly RecentQuestion[];
 }
 
 export function askInSession(
@@ -158,6 +153,7 @@ export function askInSession(
     try {
       const result = await askAi(q, build([...before.filter(m => m.role === 'user').slice(-3).map(m => m.text), q].join(' ')), before, {
         ...options,
+        generateTitle: before.length === 0,
         onText: (partial) => {
           if (stillHere() && state) set({ ...state, partial });
         },
@@ -168,16 +164,9 @@ export function askInSession(
       ];
       // כל שיחה נשמרת אוטומטית בהיסטוריה ואפשר להמשיך אותה, גם אם המשתמש כבר עבר למסך אחר
       const existing = ctx.saved.find((c) => c.id === chatId);
-      const title = (next.find((m) => m.role === "user")?.text ?? "שיחה").slice(
-        0,
-        60,
-      );
+      const title = existing?.title ?? (typeof result.title === 'string' && result.title.trim() ? result.title.trim().slice(0,55) : chatTitle(next.find((m) => m.role === "user")?.text ?? "שיחה"));
       let notSaved = false;
-      const evict = existing ? null : chatToEvict(ctx.saved, chatId);
-      if (evict === "full") {
-        notSaved = true;
-      } else {
-        try {
+      try {
         await saveAiChat(uid, {
           id: chatId,
           title,
@@ -186,13 +175,7 @@ export function askInSession(
           createdAt,
           updatedAt: Date.now(),
         });
-        if (evict) await deleteAiChat(uid, evict);
-        } catch { notSaved = true; }
-      }
-      saveRecentQuestions(
-        uid,
-        withRecentQuestion(ctx.recent, q, Date.now()),
-      ).catch(() => undefined);
+      } catch { notSaved = true; }
       if (stillHere() && state) {
         set({
           ...state,

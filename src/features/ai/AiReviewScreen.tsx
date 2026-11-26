@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { AI_QUESTION_BANK, pickQuestions } from "../../domain/aiQuestions";
 import { getLang } from "../../i18n/lang";
+import { tr } from "../../i18n/translate";
 import {
   loadAiQuota,
-  saveAiChat,
+  deleteAiChat,
+  toggleAiChatPin,
   subscribeAiChats,
-  subscribeRecentQuestions,
   type AiChat,
-  type RecentQuestion,
+  type StoredAiChat,
 } from "../../services/aiService";
 import { useReadyAuth } from "../auth/AuthContext";
 import { useSpace } from "../spaces/SpaceRoute";
@@ -25,6 +26,7 @@ import {
   useAiSession,
 } from "./aiSession";
 import { useAiSummaryData } from "./useAiSummaryData";
+import { AiChatHistory } from "./AiChatHistory";
 
 const consentKey = (uid: string) => `ff.ai.consent.v3.${uid}`;
 const readConsent = (uid: string): boolean => {
@@ -68,11 +70,10 @@ function ThinkingIndicator({ startedAt }: { startedAt: number | null }) {
   );
 }
 
-export function AiReviewScreen() {
+export function AiReviewScreen({ initialHistory = false }: { initialHistory?: boolean } = {}) {
   const { user, profile } = useReadyAuth();
   const space = useSpace();
   const { nameOf } = useSpaces();
-  const navigate = useNavigate();
   const { reportFailure } = useSyncNotice();
   const nav = (useLocation().state ?? {}) as NavState;
   const data = useAiSummaryData();
@@ -93,7 +94,7 @@ export function AiReviewScreen() {
     if (!welcomeVisible) return;
     let previous = lastQuestion.current;
     try { previous = sessionStorage.getItem("ff.ai.lastSuggestion") || previous; } catch { /* storage unavailable */ }
-    questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+    questionQueue.current = pickQuestions(AI_QUESTION_BANK.length).map(tr);
     if (questionQueue.current[0] === previous && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
     setSuggestion(questionQueue.current.shift() ?? "");
   }, [chatId, welcomeVisible]);
@@ -118,7 +119,7 @@ export function AiReviewScreen() {
     if (!welcomeVisible || !suggestion || typed !== suggestion || suggestionFocused) return;
     const timer = window.setTimeout(() => {
       if (!questionQueue.current.length) {
-        questionQueue.current = pickQuestions(AI_QUESTION_BANK.length);
+        questionQueue.current = pickQuestions(AI_QUESTION_BANK.length).map(tr);
         if (questionQueue.current[0] === suggestion && questionQueue.current.length > 1) questionQueue.current.push(questionQueue.current.shift()!);
       }
       setTyped("");
@@ -128,8 +129,8 @@ export function AiReviewScreen() {
   }, [welcomeVisible, suggestion, typed, suggestionFocused]);
   const [deep, setDeep] = useState(false);
   const [draft, setDraft] = useState("");
-  const [saved, setSaved] = useState<AiChat[]>([]);
-  const [recent, setRecent] = useState<RecentQuestion[]>([]);
+  const [saved, setSaved] = useState<StoredAiChat[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(initialHistory);
   const threadEnd = useRef<HTMLDivElement>(null);
   const autoAsked = useRef(false);
 
@@ -137,10 +138,12 @@ export function AiReviewScreen() {
     () => subscribeAiChats(user.uid, setSaved, () => undefined),
     [user.uid],
   );
-  useEffect(
-    () => subscribeRecentQuestions(user.uid, setRecent, () => undefined),
-    [user.uid],
-  );
+  useEffect(() => {
+    if (!historyOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setHistoryOpen(false); };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [historyOpen]);
   useEffect(() => {
     loadAiQuota()
       .then((q) => setQuota(user.uid, q))
@@ -170,7 +173,7 @@ export function AiReviewScreen() {
     const q = raw.trim();
     if (!q || busy || !data.ready || data.error || !consent || (quota !== null && quota.remaining <= 0)) return;
     setDraft("");
-    askInSession(user.uid, q, data.build, { saved, recent }, { deep, lang: getLang(), remoteConsent: consent });
+    askInSession(user.uid, q, data.build, { saved }, { deep, lang: getLang(), remoteConsent: consent });
   };
 
   // כניסה משאלה מההיסטוריה: נשאלת אוטומטית ברגע שהנתונים מוכנים
@@ -193,7 +196,7 @@ export function AiReviewScreen() {
   const togglePin = () => {
     const existing = saved.find((c) => c.id === chatId);
     if (!existing) return;
-    saveAiChat(user.uid, { ...existing, pinned: !existing.pinned }).catch(() =>
+    toggleAiChatPin(user.uid, existing).catch(() =>
       reportFailure("לא הצלחנו לעדכן את השיחה."),
     );
   };
@@ -215,12 +218,11 @@ export function AiReviewScreen() {
     <div className={`app-shell has-hero ai-chat-shell scope-${space.scope}`}>
       <ScreenHeader
         title={title}
-        backTo={
-          nav.from === "history" ? `/${space.key}/ai/history` : `/${space.key}`
-        }
+        backTo={`/${space.key}`}
       />
+      <div className="ai-chat-layout">
       <main className="content ai-page ai-chat-page" aria-busy={busy}>
-        <div className="ai-chat-top"><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate(`/${space.key}/ai/history`)}>היסטוריה</button></div>
+        <div className="ai-chat-top"><button type="button" className="btn btn-secondary btn-small" aria-controls="ai-chat-history" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5m4-1v5l3 2"/></svg>היסטוריה</button></div>
         <div className="ai-chat-scroll">
         {!consent && (
           <section className="card ai-consent" aria-label="לפני שמתחילים">
@@ -252,7 +254,7 @@ export function AiReviewScreen() {
 
         {(messages.length > 0 || busy) && (
           <section
-            className="card ai-thread"
+            className="ai-thread"
             aria-label="השיחה"
             aria-live="polite"
           >
@@ -288,25 +290,24 @@ export function AiReviewScreen() {
                 ) : null}
               </div>
             )}
-            <p className="muted small">
-              התשובות הן הערכה כללית על סמך הנתונים באפליקציה, ואינן ייעוץ
-              פיננסי, מס או השקעות.
-            </p>
           </section>
         )}
 
         </div>
+        {(messages.length > 0 || busy) && <p className="ai-chat-disclaimer muted small">התשובות הן הערכה כללית על סמך הנתונים באפליקציה, ואינן ייעוץ פיננסי, מס או השקעות.</p>}
         <form className="card ai-composer" onSubmit={onSubmit}>
-          <textarea className="input" rows={2} value={draft} maxLength={500} placeholder="כתוב שאלה…" aria-label="שאלה" onChange={e => setDraft(e.target.value)} disabled={!consent || exhausted} />
+          <textarea className="input" rows={1} value={draft} maxLength={500} placeholder="שאל שאלה…" aria-label="שאלה" onChange={e => setDraft(e.target.value)} disabled={!consent || exhausted} />
           <div className="ai-composer-actions">
             <select className="input" aria-label="עוצמת חשיבה" value={deep ? "deep" : "normal"} onChange={e => setDeep(e.target.value === "deep")} disabled={busy}>
               <option value="normal">חשיבה רגילה</option><option value="deep">חשיבה מעמיקה</option>
             </select>
-            <button type="submit" className="btn btn-primary ai-send" aria-label="שליחה" disabled={!canAsk || exhausted || !draft.trim()}>↑</button>
+            <button type="submit" className="btn btn-primary ai-send" aria-label="שליחה" disabled={!canAsk || exhausted || !draft.trim()}><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
           </div>
           {(!data.ready || exhausted || data.error) && <p className="muted small" role="status">{data.error ? "טעינת הנתונים נכשלה" : exhausted ? "המכסה היומית נגמרה" : "טוען נתונים…"}</p>}
         </form>
       </main>
+      <AiChatHistory chats={saved} active={chatId} open={historyOpen} onClose={() => setHistoryOpen(false)} busy={busy} onNew={newConversation} onOpen={chat => openChat(user.uid, chat)} onPin={chat => { void toggleAiChatPin(user.uid, chat).catch(() => reportFailure('לא הצלחנו לעדכן את השיחה.')); }} onDelete={async chat => { try { await deleteAiChat(user.uid, chat.id); if (chat.id === chatId) newConversation(); } catch { reportFailure('לא הצלחנו למחוק את השיחה.'); } }} />
+      </div>
     </div>
   );
 }

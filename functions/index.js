@@ -647,7 +647,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   if (!access.exists || access.data().enabled !== true) throw new HttpsError('permission-denied', 'אין לך גישה לסקירת AI.');
   if (cfg.enabled === false) throw new HttpsError('failed-precondition', 'סקירת ה-AI כבויה כרגע.');
 
-  const { question, summary, history, deep, lang, remoteConsent } = request.data ?? {};
+  const { question, summary, history, deep, lang, remoteConsent, generateTitle } = request.data ?? {};
   const q = cleanText(question, AI_MAX_QUESTION);
   if (!q) throw new HttpsError('invalid-argument', 'יש לכתוב שאלה.');
   const data = cleanText(typeof summary === 'string' ? summary : JSON.stringify(summary ?? {}), AI_MAX_SUMMARY);
@@ -667,7 +667,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   const localAnswer = () => ({ answer: `${remoteConsent === true ? 'מענה מקומי (ספק חיצוני לא זמין)' : 'מענה מקומי (יש לאשר שימוש בספק חיצוני בגרסה החדשה)'}\n${analyze(parsed,q,history)}`, remaining: quota.remaining, limit: cfg.perUserDaily });
   if (!candidates.length) return localAnswer();
   const wantDeep = deep === true;
-  const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '');
+  const wantTitle = generateTitle === true;
+  const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '') + (wantTitle ? '\nStart the response with exactly [[TITLE]]a concise 2–6 word title in the language of the user’s question[[/TITLE]] on its own line; then answer normally. Do not include personal identifiers or specific amounts in the title.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
   let activeProvider = cfg.provider;
   let activeKey = cfg.apiKey;
@@ -716,6 +717,8 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   let lastUsage = null;
   let finishReason = '';
   let usedModel = cfg.model;
+  let generatedTitle;
+  const { createTitleStream } = require('./ai/chat-title');
   try {
     // Try configured free-capable providers in order, without retrying quota or payment failures.
     const failures = [];
@@ -729,6 +732,10 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       try { res=await openModel(model); } catch { failures.push({model,status:0,detail:'network or timeout'}); continue; }
       if(!res?.ok || !res.body) { failures.push({model,status:res?.status??0,detail:'Provider request rejected'}); continue; }
       lastUsage=null; finishReason='';
+    const titleStream = createTitleStream(wantTitle, (delta) => {
+      text += delta;
+      if (streaming) { try { response.sendChunk({ text: delta }); } catch { /* disconnected */ } }
+    });
     // קוראים את התשובה תוך כדי הגעתה ומעבירים אותה ללקוח מיד, כדי שהמשתמש יראה אותה נבנית ולא יחכה לסוף
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -742,8 +749,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
         const usage = json.usage ?? json.message?.usage;
         if (usage) lastUsage = { ...lastUsage, ...(usage.prompt_tokens != null || usage.input_tokens != null ? { promptTokenCount: usage.prompt_tokens ?? usage.input_tokens } : {}), ...(usage.completion_tokens != null || usage.output_tokens != null ? { candidatesTokenCount: usage.completion_tokens ?? usage.output_tokens } : {}) };
         if (typeof delta === 'string' && delta) {
-          text += delta;
-          if (streaming) { try { response.sendChunk({ text: delta }); } catch { /* disconnected */ } }
+          titleStream.push(delta);
         }
         return;
       }
@@ -752,14 +758,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       finishReason = String(candidate?.finishReason ?? json.promptFeedback?.blockReason ?? finishReason);
       const delta = (candidate?.content?.parts ?? []).filter((part) => !part.thought).map((part) => (typeof part.text === 'string' ? part.text : '')).join('');
       if (!delta) return;
-      text += delta;
-      if (streaming) {
-        try {
-          response.sendChunk({ text: delta });
-        } catch {
-          // הלקוח התנתק: ממשיכים לאסוף את התשובה כדי לשמור אותה ולספור שימוש
-        }
-      }
+      titleStream.push(delta);
     };
     try {
       for (;;) {
@@ -786,6 +785,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
       if (!text) { failures.push({model,status:0,detail:'stream failed before answer'}); continue; }
       text += lang === 'en' ? '\n\n(The answer was cut off.)' : '\n\n(התשובה נקטעה.)';
     }
+    generatedTitle = titleStream.finish();
     text = text.trim();
     if(text) break;
     failures.push({model,status:0,detail:'empty stream'});
@@ -833,7 +833,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   } catch {
     // המונה הוא עזר בלבד
   }
-  return { answer: text.slice(0, 6000), remaining: quota.remaining, limit: cfg.perUserDaily };
+  return { answer: text.slice(0, 6000), ...(generatedTitle ? { title: generatedTitle } : {}), source: activeProvider, model: usedModel, remaining: quota.remaining, limit: cfg.perUserDaily };
 });
 
 /** כמה שאלות נותרו היום למשתמש (להצגה במסך). הגישה עצמה נבדקת בצד הלקוח מול aiAccess, ובשרת בכל שאלה. */

@@ -10,7 +10,7 @@ function translateChild(child: unknown): unknown {
 
 /** מתרגמת ילדים ומאפיינים טקסטואליים של אלמנט, כשהשפה אנגלית. */
 export function translateProps(_type: unknown, props: Record<string, unknown>): Record<string, unknown> {
-  if (!isEnglish() || !props) return props;
+  if (!isEnglish() || !props || props.translate === 'no') return props;
   let out: Record<string, unknown> | null = null;
   for (const key of Object.keys(props)) {
     if (SKIP.has(key)) continue;
