@@ -39,6 +39,7 @@
 .fit-slot { margin: auto 0; width: 100%; display: flex; justify-content: center; align-items: flex-start; flex: 0 0 auto; }
 .fit-inner { width: min(100%, var(--shell-w, 440px)); transform-origin: top center; flex: 0 0 auto; }
 .fit-scroll .fit-inner { margin: 0 auto; }
+body.home-bg-on .auth-shell::before { background: linear-gradient(to bottom,rgba(255,252,246,.84),rgba(255,252,246,.7)), #f8f2e6 var(--home-bg) center / cover no-repeat; }
 
 /* תוכן המסכים */
 .auth-shell .auth-column { width: 100%; max-width: none; gap: 14px; }

@@ -7,9 +7,12 @@ import { requestPasswordReset } from '../../services/authService';
 import { useAuth, useReadyAuth } from '../auth/AuthContext';
 import { useLock, type UnlockResult } from './LockContext';
 import { PatternPad } from './PatternPad';
+import { useHomeBackground } from '../../services/homeBackground';
 
 /** מכסה את כל המסך כשהאפליקציה נעולה. התוכן שמתחתיו נשאר במקומו, כדי שטופס שהתחלתם למלא לא יימחק. */
 export function LockGate({ children }: { children: ReactNode }) {
+  const { user } = useReadyAuth();
+  useHomeBackground(user.uid);
   const { locked } = useLock();
   return (
     <>

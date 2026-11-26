@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   countedBusinessIds,
+  defaultVisibleSpace,
   defaultDisplayPrefs,
   visibleSpaces,
   type DisplayPrefs,
@@ -128,7 +129,7 @@ export function SpacesProvider({
       prefs,
       spaces,
       countedIds,
-      defaultSpace: spaces[0],
+      defaultSpace: defaultVisibleSpace(spaces),
       nameOf: (space) => spaceName(space, businesses, householdName),
       setPrefs,
     }),

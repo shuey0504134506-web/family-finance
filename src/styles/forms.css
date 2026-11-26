@@ -1,4 +1,14 @@
 /* שדות קלט, טפסים ובקרים */
+.password-reveal { position: relative; }
+.password-reveal .input { padding-inline-end: 48px; }
+.password-reveal .input[dir='ltr'] { padding-right: 48px; }
+.password-eye { position: absolute; inset-inline-end: 0; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: grid; place-items: center; color: var(--text-muted); background: transparent; border: 0; cursor: pointer; }
+.password-reveal:has(input[dir='ltr']) .password-eye { left: auto; right: 0; }
+.attachment-modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.background-choices { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,120px),1fr)); gap: 8px; }
+.background-choice { min-width: 0; padding: 5px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font: inherit; color: var(--text); cursor: pointer; display: grid; gap: 5px; text-align: center; }
+.background-choice[aria-pressed='true'] { outline: 2px solid var(--accent); }
+.background-choice img { width: 100%; height: 76px; object-fit: cover; border-radius: 8px; }
 
 .form-card {
   display: flex;

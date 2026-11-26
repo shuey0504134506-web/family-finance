@@ -66,7 +66,7 @@ export function SettingsScreen() {
             <FormDefaultsSection />
           </SectionItem>
 
-          <SectionItem id="homebg" title="רקע מסך הבית">
+          <SectionItem id="homebg" title="רקע">
             <HomeBackgroundControl />
           </SectionItem>
 

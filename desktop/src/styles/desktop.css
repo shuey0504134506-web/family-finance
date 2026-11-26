@@ -23,6 +23,10 @@ body { overflow-x: hidden; }
 .recovery-editor { display: flex; flex-direction: column; gap: 14px; }
 .recovery-slot { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
 .recovery-slot-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.recovery-slot-head:empty { display: none; }
+.recovery-question-row { display: flex; align-items: center; gap: 4px; }
+.recovery-question-row > input { flex: 1; min-width: 0; }
+.recovery-question-row > select { flex: 0 0 44px; width: 44px; min-width: 0; padding: 0 4px; }
 .seg { display: flex; gap: 6px; }
 .chip-active { background: var(--navy); color: #fff; border-color: var(--navy); }
 select.input { appearance: auto; }

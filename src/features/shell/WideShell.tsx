@@ -43,11 +43,11 @@ export function WideShell({
       if (/[?&]s=/.test(window.location.hash)) return;
       e.preventDefault();
       e.stopPropagation();
-      navigate(`/${key}`);
+      navigate(loc.pathname === '/tithes' ? '/household' : `/${key}`);
     };
     document.addEventListener('click', onClick, true);
     return () => document.removeEventListener('click', onClick, true);
-  }, [navigate, key]);
+  }, [navigate, key, loc.pathname]);
 
   // כרטיס "פעולות אחרונות" נמתח לגובה הכרטיס שלידו ומציג כמה פעולות שנכנסות בו.
   useEffect(() => {

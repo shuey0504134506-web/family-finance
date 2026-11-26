@@ -1,4 +1,4 @@
-import { CURRENCY_CODES, type Rates } from '../domain/currency';
+import { CURRENCY_CODES, type Rates, type CurrencyCode } from '../domain/currency';
 import { loadRates, parseRatesResponse } from './exchangeRates';
 
 /**
@@ -65,15 +65,45 @@ export function ratesVersion(): number {
 }
 
 /** השער ליום מסוים, אם כבר הגיע. */
-export function getRatesFor(date: string): Rates | undefined {
-  return cache[date] ?? live.get(date);
+export function getRatesFor(date: string, uid?: string): Partial<Rates> | undefined {
+  const auto = cache[date] ?? live.get(date);
+  if (!uid) return auto;
+  const manual=readManualRates(uid,date);
+  return typeof navigator !== 'undefined' && navigator.onLine && auto ? auto : manual ? {...auto,...manual} : auto;
+}
+
+function readManualRates(uid:string,date:string):Partial<Rates>|undefined {
+  try { const saved = JSON.parse(localStorage.getItem(`ff.manual-fx.v1.${uid}`) ?? '{}') as Record<string,Partial<Rates>>; if(!saved.default&&!saved[date])return undefined; return { ILS:1, ...saved.default, ...saved[date] }; } catch { return undefined; }
+}
+
+export function saveManualRates(uid:string,date:string,values:Partial<Rates>): void {
+  const key=`ff.manual-fx.v1.${uid}`;
+  const saved=JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string,Partial<Rates>>;
+  for(const code of CURRENCY_CODES) if(values[code] !== undefined && (!Number.isFinite(values[code]) || values[code]! <= 0)) throw new Error('invalid rate');
+  saved[date]={...saved[date],...values,ILS:1}; localStorage.setItem(key,JSON.stringify(saved)); bump();
+}
+
+export async function tryAutomaticRates(date:string): Promise<boolean> {
+  if (!navigator.onLine) return false;
+  if (cache[date] || live.has(date)) return true;
+  try {
+    const path=date >= todayIso() ? 'latest' : date;
+    const response=await fetch(`https://api.frankfurter.dev/v1/${path}?base=ILS&symbols=USD,EUR,GBP`,{signal:AbortSignal.timeout(6000)});
+    if(!response.ok) return false;
+    const snapshot=parseRatesResponse(await response.json(),Date.now()); if(!snapshot) return false;
+    if(date >= todayIso()) live.set(date,snapshot.rates); else {cache={...cache,[date]:snapshot.rates};writeStorage();} bump(); return true;
+  } catch { return false; }
+}
+
+export function hasManualPair(uid:string,date:string,from:CurrencyCode,to:CurrencyCode):boolean {
+  const r=readManualRates(uid,date); return !!r && Number.isFinite(r[from]) && Number.isFinite(r[to]) && r[from]!>0 && r[to]!>0;
 }
 
 async function fetchDay(date: string): Promise<void> {
   try {
     if (date >= todayIso()) {
       const latest = await loadRates();
-      if (!latest) throw new Error('no rates');
+      if (!latest || latest.stale) throw new Error('no fresh rates');
       live.set(date, latest.rates);
     } else {
       const response = await fetch(`https://api.frankfurter.dev/v1/${date}?base=ILS&symbols=USD,EUR,GBP`);
@@ -105,6 +135,7 @@ function pump(): void {
 
 /** מבקש שערים לתאריכים שעוד אין להם. בטוח לקריאה חוזרת. */
 export function requestRates(dates: Iterable<string>): void {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return;
   const now = Date.now();
   let added = 0;
   for (const date of dates) {
@@ -118,4 +149,9 @@ export function requestRates(dates: Iterable<string>): void {
     added += 1;
   }
   pump();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { failedAt.clear(); bump(); });
+  window.addEventListener('offline', bump);
 }

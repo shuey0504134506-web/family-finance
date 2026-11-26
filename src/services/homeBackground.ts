@@ -1,4 +1,13 @@
 import { useEffect, useSyncExternalStore } from 'react';
+import lake from '../assets/background-lake.svg';
+import desert from '../assets/background-desert.svg';
+import forest from '../assets/background-forest.svg';
+import mountains from '../assets/mountains-welcome.jpg';
+
+export const BACKGROUND_CHOICES = [{id:'default',name:'נוף ההרים המקורי',src:mountains},{id:'lake',name:'אגם שקט',src:lake},{id:'desert',name:'מדבר',src:desert},{id:'forest',name:'יער ירוק',src:forest}] as const;
+export function backgroundImage(value: string | null): string {
+  return BACKGROUND_CHOICES.find(b => value === `preset:${b.id}`)?.src ?? (value?.startsWith('data:image/') ? value : mountains);
+}
 
 /**
  * רקע מותאם אישית למסך הבית (במשק הבית ובעסק). נשמר במכשיר בלבד: כל מכשיר, גם של אותו חשבון, בוחר תמונה משלו.
@@ -13,7 +22,7 @@ const storageKey = (uid: string) => `ff.homeBg.v1.${uid}`;
 export function readHomeBackground(uid: string): string | null {
   try {
     const value = localStorage.getItem(storageKey(uid));
-    return value && value.startsWith('data:image/') ? value : null;
+    return value && (value.startsWith('data:image/') || BACKGROUND_CHOICES.some(b=>b.id !== 'default' && value === `preset:${b.id}`)) ? value : null;
   } catch {
     return null;
   }
@@ -71,7 +80,7 @@ export function useHomeBackground(uid: string): void {
   const data = useHomeBackgroundValue(uid);
   useEffect(() => {
     if (!data) return undefined;
-    document.body.style.setProperty('--home-bg', `url("${data}")`);
+    document.body.style.setProperty('--home-bg', `url("${backgroundImage(data)}")`);
     document.body.classList.add('home-bg-on');
     return () => {
       document.body.classList.remove('home-bg-on');

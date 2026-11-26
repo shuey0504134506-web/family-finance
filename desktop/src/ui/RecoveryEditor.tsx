@@ -76,7 +76,7 @@ export function RecoveryEditor({
       {slots.map((s, i) => (
         <section key={i} className="card recovery-slot" aria-label={`שאלה ${i + 1}`}>
           <div className="recovery-slot-head">
-            <strong>שאלה {i + 1}</strong>
+            {canDerive && <strong>שאלה {i + 1}</strong>}
             {canDerive && (
               <div className="seg" role="group" aria-label="סוג השאלה">
                 <button type="button" className={`chip-btn${s.mode === 'custom' ? ' chip-active' : ''}`} onClick={() => patch(i, emptySlot(i))}>
@@ -94,14 +94,10 @@ export function RecoveryEditor({
           </div>
           {s.mode === 'custom' ? (
             <>
-              <div className="field">
-                <label htmlFor={`sqp-${i}`}>בחירה מרשימת שאלות</label>
-                <select id={`sqp-${i}`} className="input" value="" onChange={(e) => e.target.value && patch(i, { ...s, text: e.target.value })}>
-                  <option value="">בחירת שאלה מוכנה…</option>
-                  {SUGGESTED_QUESTIONS.map((q) => <option key={q} value={q}>{q}</option>)}
-                </select>
+              <div className="field recovery-question-field">
+                <label htmlFor={`sq-input-${i}`}>שאלה {i + 1}</label>
+                <div className="recovery-question-row"><input id={`sq-input-${i}`} className="input" value={s.text} maxLength={120} onChange={e => patch(i, {...s,text:e.target.value})} list={`sq-${i}`} /><select className="input recovery-question-picker" aria-label={`בחירת שאלה ${i + 1}`} value="" onChange={e => e.target.value && patch(i,{...s,text:e.target.value})}><option value="">⌄</option>{SUGGESTED_QUESTIONS.map(q=><option key={q} value={q}>{q}</option>)}</select></div>
               </div>
-              <Field label="השאלה" value={s.text} maxLength={120} onChange={(e) => patch(i, { ...s, text: e.target.value })} list={`sq-${i}`} />
               <datalist id={`sq-${i}`}>{SUGGESTED_QUESTIONS.map((q) => <option key={q} value={q} />)}</datalist>
               <Field label="התשובה" value={s.answer} autoComplete="off" onChange={(e) => patch(i, { ...s, answer: e.target.value })} />
             </>
