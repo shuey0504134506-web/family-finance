@@ -69,6 +69,7 @@ export const db = initializeFirestore(app, {
 export const canVerifyAdminEmail = true;
 
 export async function verifyAdminEmail(uid: string, send: boolean): Promise<'verified' | 'sent' | 'pending'> {
+  await auth.authStateReady();
   const user = auth.currentUser;
   if (!user || user.uid !== uid) throw new Error('auth/user-changed');
   await reload(user);

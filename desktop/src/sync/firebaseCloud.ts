@@ -5,7 +5,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase-real/app';
 import {
   createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, sendPasswordResetEmail,
-  signInWithEmailAndPassword, signOut, updatePassword, updateProfile, verifyBeforeUpdateEmail, type Auth,
+  signInWithEmailAndPassword, signOut, updatePassword, updateProfile, verifyBeforeUpdateEmail, reload, getIdToken, sendEmailVerification, type Auth,
 } from 'firebase-real/auth';
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, where, type Firestore } from 'firebase-real/firestore';
 import { getFunctions, httpsCallable } from 'firebase-real/functions';
@@ -24,6 +24,7 @@ export interface CloudAuth {
   resetEmail(email: string): Promise<void>;
   changeEmail(newEmail: string): Promise<void>;
   deleteAccount(): Promise<void>;
+  verifyEmail(uid: string, send: boolean): Promise<'verified' | 'sent' | 'pending'>;
   call(name: string, data: unknown): Promise<unknown>;
   store(): Cloud;
 }
@@ -97,6 +98,16 @@ export function createFirebaseCloud(): CloudAuth {
     resetEmail: (e) => sendPasswordResetEmail(init().auth, e.trim()),
     changeEmail: (e) => verifyBeforeUpdateEmail(user(), e),
     deleteAccount: () => deleteUser(user()),
+    async verifyEmail(uid, send) {
+      const u = user();
+      if (u.uid !== uid) throw new Error('auth/user-changed');
+      await reload(u);
+      if (user() !== u) throw new Error('auth/user-changed');
+      if (u.emailVerified) { await getIdToken(u, true); return 'verified'; }
+      if (!send) return 'pending';
+      await sendEmailVerification(u);
+      return 'sent';
+    },
     async call(name, data) { const { app } = init(); return (await httpsCallable(getFunctions(app, 'europe-west1'), name)(data)).data; },
     store: () => store,
   };

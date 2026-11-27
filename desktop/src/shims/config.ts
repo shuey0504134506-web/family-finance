@@ -9,7 +9,5 @@ export const auth = getAuth();
 export const db = initializeFirestore();
 
 
-export const canVerifyAdminEmail = false;
-export const verifyAdminEmail: (uid: string, send: boolean) => Promise<'verified' | 'sent' | 'pending'> = async () => {
-  throw new Error('auth/operation-not-supported');
-};
+export const canVerifyAdminEmail = true;
+export { verifyAdminEmail } from './auth';

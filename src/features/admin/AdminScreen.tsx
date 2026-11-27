@@ -332,7 +332,7 @@ function dateTime(ms: number | null): string {
  */
 export function AdminScreen() {
   const { user } = useReadyAuth();
-  if (!isAdminEmail(user.email)) return <Navigate to="/" replace />;
+  if (!isAdminEmail(user.email) || (user as { offlineOnly?: boolean }).offlineOnly) return <Navigate to="/" replace />;
   return <AdminContent />;
 }
 
@@ -379,6 +379,7 @@ function AdminVerification({ retry }: { retry: () => void }) {
           </button>
         </>
       )}
+      <button type="button" className="btn btn-secondary" disabled={busy} onClick={retry}>ניסיון חוזר</button>
       {message && <p role="status">{message}</p>}
     </div>
   );
@@ -435,7 +436,7 @@ function AdminContent() {
     loadAdminOverview()
       .then(setData)
       .catch((e: { code?: string }) => {
-        if (e.code === 'functions/permission-denied') setNeedsVerification(true);
+        if (e.code === 'functions/permission-denied' || e.code === 'functions/unauthenticated') setNeedsVerification(true);
         setError(
           e.code === 'functions/permission-denied'
             ? 'אין הרשאה.'

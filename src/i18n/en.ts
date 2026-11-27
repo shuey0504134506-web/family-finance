@@ -1,5 +1,12 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "כדי לפתוח את מסך הניהול צריך לאמת את כתובת המייל של חשבון המנהל.": "To open advanced management, verify the administrator account's email address.",
+  "שליחת מייל אימות": "Send verification email",
+  "בדיקת אימות": "Check verification",
+  "נשלח מייל אימות. לאחר לחיצה על הקישור במייל, חזור לכאן ולחץ על „בדיקת אימות”.": "Verification email sent. Open the link in the email, then return here and select Check verification.",
+  "כתובת המייל עדיין לא אומתה. יש לפתוח את קישור האימות שנשלח למייל.": "Email is not verified yet. Open the verification link sent to your email.",
+  "בוצעו יותר מדי ניסיונות. אפשר לבדוק אם מייל האימות כבר הגיע, או לנסות שוב מאוחר יותר.": "Too many attempts. Check whether the verification email arrived or try again later.",
+  "לא הצלחנו להשלים את בדיקת האימות. יש לבדוק את החיבור ולנסות שוב.": "Could not complete verification. Check your connection and try again.",
   "״ניהול כספים״ עושה את מירב המאמצים להגן על המידע שלכם. השימוש בשירות מותנה בקריאה ובאישור של מדיניות הפרטיות.": "Family Finance takes reasonable measures to protect your information. To use the service, please read and accept the Privacy Policy.",
   "קריאת מדיניות הפרטיות": "Read the Privacy Policy",
   "קראתי ואני מאשר/ת את מדיניות הפרטיות": "I have read and accept the Privacy Policy",
