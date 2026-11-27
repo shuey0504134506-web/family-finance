@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { reload, sendEmailVerification } from 'firebase/auth';
-import { auth } from '../../firebase/config';
+import { canVerifyAdminEmail, verifyAdminEmail } from '../../firebase/config';
 import { Navigate } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { isAdminEmail } from '../../config/admin';
@@ -340,20 +339,17 @@ export function AdminScreen() {
 function AdminVerification({ retry }: { retry: () => void }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const user = auth.currentUser;
+  const { user } = useReadyAuth();
 
   async function verify(send: boolean) {
-    if (!user || auth.currentUser !== user || !isAdminEmail(user.email) || 'offlineOnly' in user) return;
+    if (!canVerifyAdminEmail || !isAdminEmail(user.email)) return;
     setBusy(true);
     setMessage('');
     try {
-      await reload(user);
-      if (auth.currentUser !== user || !isAdminEmail(user.email)) return;
-      if (user.emailVerified) {
-        await user.getIdToken(true);
+      const result = await verifyAdminEmail(user.uid, send);
+      if (result === 'verified') {
         retry();
-      } else if (send) {
-        await sendEmailVerification(user);
+      } else if (result === 'sent') {
         setMessage('נשלח מייל אימות. לאחר לחיצה על הקישור במייל, חזור לכאן ולחץ על „בדיקת אימות”.');
       } else {
         setMessage('כתובת המייל עדיין לא אומתה. יש לפתוח את קישור האימות שנשלח למייל.');
@@ -371,14 +367,14 @@ function AdminVerification({ retry }: { retry: () => void }) {
   return (
     <div className="card error-card">
       <p role="alert">כדי לפתוח את מסך הניהול צריך לאמת את כתובת המייל של חשבון המנהל.</p>
-      {user && 'offlineOnly' in user ? (
+      {!canVerifyAdminEmail ? (
         <p>יש להשלים את אימות המייל במסך הניהול באתר, ואז לצאת ולהתחבר מחדש בתוכנה.</p>
       ) : (
         <>
-          <button type="button" className="btn btn-primary" disabled={busy || !user} onClick={() => void verify(true)}>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void verify(true)}>
             שליחת מייל אימות
           </button>
-          <button type="button" className="btn btn-secondary" disabled={busy || !user} onClick={() => void verify(false)}>
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void verify(false)}>
             בדיקת אימות
           </button>
         </>
