@@ -16,6 +16,7 @@ export function createNoCloud(): CloudAuth {
     resetEmail: async () => unavailable(),
     changeEmail: async () => unavailable(),
     deleteAccount: async () => unavailable(),
+    verifyEmail: async () => unavailable(),
     call: async () => unavailable(),
     store: () => unavailable(),
   };

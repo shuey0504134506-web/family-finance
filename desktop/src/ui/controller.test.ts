@@ -3,6 +3,7 @@ import type { Storage } from '../core/session';
 import type { DocData } from '../db/localDb';
 import { auth_probe } from './probe';
 import { Controller } from './controller';
+import { verifyAdminEmail } from '../shims/auth';
 import { functionsBackend } from '../shims/functionsBackend';
 import { derivedCandidates } from '../core/recovery';
 import type { CloudAuth, CloudUser } from '../sync/firebaseCloud';
@@ -29,6 +30,10 @@ class FakeCloudAuth implements CloudAuth {
   async resetEmail() {}
   async changeEmail() {}
   async deleteAccount() {}
+  async verifyEmail(uid: string, send: boolean): Promise<'sent' | 'pending'> {
+    if (!this.signedIn || this.users.get(this.signedIn)?.uid !== uid) throw new Error('auth/user-changed');
+    return send ? 'sent' : 'pending';
+  }
   async call() { return {}; }
   store(): Cloud {
     const docs = this.docs;
@@ -69,6 +74,7 @@ describe('Controller', () => {
     expect(c.getState().phase).toBe('in');
     expect(c.getState().sync).toEqual({ kind: 'local' });
     expect(auth_probe.user()?.offlineOnly).toBe(true);
+    await expect(verifyAdminEmail(auth_probe.user()!.uid, true)).rejects.toThrow('auth/operation-not-supported');
     expect(() => functionsBackend.call('aiAsk', { question: 'test' })).toThrow('functions/unavailable');
     c.db!.set('users/x/householdTransactions/t1', { amount: 5 });
     const id = c.getState().me!.id;
@@ -86,6 +92,9 @@ describe('Controller', () => {
     const a = make();
     await a.c.boot();
     await a.c.signUpOnline(input, 'סיסמה-ארוכה-1');
+    await expect(verifyAdminEmail('uid-d@d.d', true)).resolves.toBe('sent');
+    await expect(verifyAdminEmail('uid-d@d.d', false)).resolves.toBe('pending');
+    await expect(verifyAdminEmail('other-uid', true)).rejects.toThrow('auth/operation-not-supported');
     a.c.db!.set('users/uid-d@d.d/householdTransactions/t1', { amount: 7 });
     await a.c.syncNow();
     expect(a.cloud.docs.get('users/uid-d@d.d/householdTransactions/t1')).toEqual({ amount: 7 });

@@ -258,6 +258,13 @@ export class Controller {
         this.password = p;
       },
       resetEmail: async (email) => { requireNet(); await this.cloud.resetEmail(email); },
+      verifyEmail: async (uid, send) => {
+        if (!online() || need().meta.uid !== uid) throw appErr('auth/operation-not-supported');
+        requireNet();
+        await this.connecting;
+        if (!online() || need().meta.uid !== uid) throw appErr('auth/user-changed');
+        return this.cloud.verifyEmail(uid, send);
+      },
       changeEmail: async (email) => {
         if (!online()) { await need().updateMeta({ email }); await this.session.updateIndex(need().meta); return; }
         requireNet();

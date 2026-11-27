@@ -11,7 +11,7 @@ export interface User {
   readonly offlineOnly: boolean;
   readonly metadata: { lastSignInTime?: string; creationTime?: string };
 }
-export interface Auth { currentUser: User | null }
+export interface Auth { currentUser: User | null; authStateReady(): Promise<void> }
 export interface UserCredential { user: User }
 
 export interface AuthBackend {
@@ -24,9 +24,12 @@ export interface AuthBackend {
   resetEmail(email: string): Promise<void>;
   changeEmail(newEmail: string): Promise<void>;
   deleteAccount(): Promise<void>;
+  verifyEmail(uid: string, send: boolean): Promise<'verified' | 'sent' | 'pending'>;
 }
 
-const auth: Auth = { currentUser: null };
+const auth: Auth = { currentUser: null, authStateReady: () => ready ? Promise.resolve() : new Promise<void>(resolve => {
+  const unsubscribe = onAuthStateChanged(auth, () => { unsubscribe(); resolve(); });
+}) };
 const listeners = new Set<(u: User | null) => void>();
 let ready = false;
 let backend: AuthBackend | null = null;
@@ -67,7 +70,12 @@ export const verifyBeforeUpdateEmail = (_u: User, e: string): Promise<void> => n
 export const deleteUser = (_u: User): Promise<void> => need().deleteAccount();
 
 
-// אימות מייל מתבצע בלקוח האתר, באמצעות ה-SDK האמיתי.
+export function verifyAdminEmail(uid: string, send: boolean): Promise<'verified' | 'sent' | 'pending'> {
+  if (auth.currentUser?.uid !== uid || auth.currentUser.offlineOnly) return Promise.reject(new Error('auth/operation-not-supported'));
+  return need().verifyEmail(uid, send);
+}
+
+// The actual verification runs through the online session adapter above.
 export const reload = (_u: User): Promise<void> => Promise.reject(new Error('auth/operation-not-supported'));
 export const sendEmailVerification = reload;
 export const getIdToken = (_u: User, _forceRefresh?: boolean): Promise<string> =>
