@@ -39,6 +39,7 @@ import {
 } from './adminTools';
 import { SectionItem, useOpenSection, useSectionHeader } from '../settings/SectionPages';
 import { AiAdminSection } from './AiAdminSection';
+import { AiActionsAdminSection } from './AiActionsAdminSection';
 import { useReadyAuth } from '../auth/AuthContext';
 import { useAdminMessages } from './useAdminMessages';
 
@@ -695,6 +696,9 @@ function AdminContent() {
 
               <SectionItem id="ai" title="סקירת AI">
                 <AiAdminSection users={data.users} />
+              </SectionItem>
+              <SectionItem id="ai-actions" title="יצירת פעולות באמצעות AI">
+                <AiActionsAdminSection users={data.users} />
               </SectionItem>
 
               <SectionItem id="accounts" title={`חשבונות (${data.users.length})`}>

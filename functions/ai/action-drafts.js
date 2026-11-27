@@ -1,5 +1,9 @@
 'use strict';
 
+function canDraftActions(access, config) {
+  return access?.actionsEnabled === true && config?.actionsEnabled === true;
+}
+
 // Treat the model response as untrusted proposed data, never executable actions.
 function decodeDrafts(text, categories, payments) {
   const parsed = JSON.parse(String(text).trim().replace(/^\x60\x60\x60(?:json)?\s*|\s*\x60\x60\x60$/gi, ''));
@@ -34,4 +38,4 @@ async function requestDrafts(candidate, input, signal) {
   if (typeof text !== 'string') throw new Error('Missing model output');
   return {status:200,drafts:decodeDrafts(text,input.categories,input.payments),usage:json.usageMetadata??json.usage};
 }
-module.exports={decodeDrafts,requestDrafts};
+module.exports={decodeDrafts,requestDrafts,canDraftActions};
