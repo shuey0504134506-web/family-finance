@@ -43,7 +43,7 @@ import { useMonth } from '../month/MonthContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
-import { AI_SUPPORTED, useAiAccess } from '../../services/aiService';
+import { AI_SUPPORTED, useAiActionAccess } from '../../services/aiService';
 import { AiActionEntry } from './AiActionEntry';
 
 const isType = (value: string | undefined): value is TransactionType =>
@@ -164,7 +164,7 @@ function TransactionForm({
   const scope = space.scope;
   const { reportFailure } = useSyncNotice();
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
-  const canUseAi=useAiAccess(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
+  const canUseAi=useAiActionAccess(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
   const [aiOpen,setAiOpen]=useState(false);
 
   const [draft, setDraft] = useState<TransactionDraft>(initial);

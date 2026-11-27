@@ -82,15 +82,23 @@ export function describeAiError(error: unknown): string {
 
 /** האם יש למשתמש גישת AI (נקבעת ע"י המנהל). */
 export function useAiAccess(uid: string, offlineOnly = false): boolean {
+  return useAiFeatureAccess(uid, offlineOnly, 'enabled');
+}
+
+export function useAiActionAccess(uid: string, offlineOnly = false): boolean {
+  return useAiFeatureAccess(uid, offlineOnly, 'actionsEnabled');
+}
+
+function useAiFeatureAccess(uid: string, offlineOnly: boolean, field: 'enabled' | 'actionsEnabled'): boolean {
   const [access, setAccess] = useState<{ uid: string; allowed: boolean } | null>(null);
   useEffect(() => {
     if (!AI_SUPPORTED || offlineOnly) return undefined;
     return onSnapshot(
       doc(db, 'aiAccess', uid),
-      (snap) => setAccess({ uid, allowed: snap.exists() && snap.data()?.enabled === true }),
+      (snap) => setAccess({ uid, allowed: snap.exists() && snap.data()?.[field] === true }),
       () => setAccess({ uid, allowed: false }),
     );
-  }, [uid, offlineOnly]);
+  }, [uid, offlineOnly, field]);
   return AI_SUPPORTED && !offlineOnly && access?.uid === uid && access.allowed;
 }
 

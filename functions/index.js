@@ -548,8 +548,9 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // הפנייה למודל נעשית בשרת בלבד: מפתח ה-API נשמר ב-aiConfig/main (הכללים חוסמים כל גישה ישירה אליו),
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
 const { buildRequest } = require('./ai/providers');
+const { canDraftActions } = require('./ai/action-drafts');
 const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter', 'groq'];
-const AI_DEFAULTS = { provider: 'google', model: 'auto', perUserDaily: 10, globalDaily: 200, enabled: true };
+const AI_DEFAULTS = { provider: 'google', model: 'auto', perUserDaily: 10, globalDaily: 200, enabled: true, actionsEnabled: false };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
@@ -577,7 +578,7 @@ exports.aiDraftActions = onCall({ region: REGION, timeoutSeconds: 120, memory: '
   if (!request.auth) throw new HttpsError('unauthenticated','יש להתחבר.');
   const uid=request.auth.uid;
   const [access,cfg]=await Promise.all([getFirestore().collection('aiAccess').doc(uid).get(),aiConfig()]);
-  if (!access.exists || access.data().enabled!==true || cfg.enabled===false) throw new HttpsError('permission-denied','אין לך גישה לסקירת AI.');
+  if (!canDraftActions(access.data(), cfg)) throw new HttpsError('permission-denied','אין לך גישה ליצירת פעולות באמצעות AI.');
   const raw=request.data??{};
   if(raw.consent!==true) throw new HttpsError('failed-precondition','יש לאשר שליחת הטקסט לספק AI.');
   const text=cleanText(raw.text,3000);
@@ -612,7 +613,7 @@ exports.aiTranscribeAction = onCall({region:REGION,timeoutSeconds:60,maxInstance
   if(!request.auth) throw new HttpsError('unauthenticated','יש להתחבר.');
   const uid=request.auth.uid;
   const [access,cfg]=await Promise.all([getFirestore().collection('aiAccess').doc(uid).get(),aiConfig()]);
-  if(!access.exists||access.data().enabled!==true||cfg.enabled===false)throw new HttpsError('permission-denied','אין לך גישה לסקירת AI.');
+  if(!canDraftActions(access.data(),cfg))throw new HttpsError('permission-denied','אין לך גישה ליצירת פעולות באמצעות AI.');
   const {audio,mime,lang,consent}=request.data??{};
   if(consent!==true||typeof audio!=='string'||audio.length>1600000||! /^[A-Za-z0-9+/]+={0,2}$/.test(audio)||!['audio/webm','audio/mp4','audio/ogg'].includes(mime))throw new HttpsError('invalid-argument','ההקלטה אינה תקינה.');
   const {candidatesFor}=require('./ai/routing');
@@ -918,9 +919,27 @@ exports.adminSetAiAccess = onCall({ region: REGION }, async (request) => {
   const { uid, enabled } = request.data ?? {};
   if (typeof uid !== 'string' || !uid || typeof enabled !== 'boolean') throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
   const ref = getFirestore().collection('aiAccess').doc(uid);
-  if (enabled) await ref.set({ enabled: true, at: Date.now() });
-  else await ref.delete();
+  await ref.set({ enabled, at: Date.now() }, { merge: true });
   await logAction(enabled ? 'ai-access-on' : 'ai-access-off', uid, '', '');
+  return { ok: true };
+});
+
+exports.adminSetAiActionsAccess = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { uid, enabled } = request.data ?? {};
+  if (typeof uid !== 'string' || !uid || uid.length > 128 || uid.includes('/') || typeof enabled !== 'boolean') throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  await getAuth().getUser(uid);
+  await getFirestore().collection('aiAccess').doc(uid).set({ actionsEnabled: enabled, actionsAt: Date.now() }, { merge: true });
+  await logAction(enabled ? 'ai-actions-access-on' : 'ai-actions-access-off', uid, '', '');
+  return { ok: true };
+});
+
+exports.adminSetAiActionsEnabled = onCall({ region: REGION }, async (request) => {
+  requireAdmin(request);
+  const { enabled } = request.data ?? {};
+  if (typeof enabled !== 'boolean') throw new HttpsError('invalid-argument', 'בקשה לא תקינה.');
+  await getFirestore().collection('aiConfig').doc('main').set({ actionsEnabled: enabled }, { merge: true });
+  await logAction(enabled ? 'ai-actions-on' : 'ai-actions-off', '', '', '');
   return { ok: true };
 });
 
@@ -965,6 +984,8 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
     usage,
     last: g.last ?? null,
     accessUids: access.docs.filter((d) => d.data().enabled === true).map((d) => d.id),
+    actionsEnabled: cfg.actionsEnabled === true,
+    actionsAccessUids: access.docs.filter((d) => d.data().actionsEnabled === true).map((d) => d.id),
   };
 });
 

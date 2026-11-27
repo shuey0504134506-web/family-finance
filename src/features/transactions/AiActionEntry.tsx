@@ -21,7 +21,7 @@ import { buildTask, buildShoppingItem, validateTaskDraft, validateItemName, REMI
 import { validateDebt, DEFAULT_DEBT_CATEGORIES, type Debt } from '../../domain/debt';
 import { parseShekelsToAgorot } from '../../domain/money';
 import { orderFromTransaction } from '../../domain/standingOrder';
-import { describeAiError, AI_SUPPORTED, useAiAccess } from '../../services/aiService';
+import { describeAiError, AI_SUPPORTED, useAiActionAccess } from '../../services/aiService';
 
 type Proposal = {kind: 'transaction'|'standing'|'task'|'shopping'|'debt';type: TransactionType; amountText: string; date: string; currency: string; counterparty: string; note: string; categoryId: string; payment: string; title:string; remind:RemindMode; remindDate:string; direction:'owe'|'owed'|''; dueDate:string; debtCategory:string};
 type Row = Proposal & {id: string; createdAt:number; titheStatus: TransactionDraft['titheStatus']; isTithePayment: boolean};
@@ -31,7 +31,7 @@ type SpeechConstructor = new()=>Speech;
 export function AiActionEntryButton(){
   const {user}=useReadyAuth();
   const space=useSpace();
-  const allowed=useAiAccess(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
+  const allowed=useAiActionAccess(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
   const {categories,loading}=useCategories(user.uid);
   const [open,setOpen]=useState(false);
   if(!AI_SUPPORTED||!allowed)return null;

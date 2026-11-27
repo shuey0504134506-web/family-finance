@@ -1,6 +1,13 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {decodeDrafts}=require('./action-drafts');
+const {decodeDrafts,canDraftActions}=require('./action-drafts');
+test('action creation requires explicit independent user and global grants',()=>{
+  assert.equal(canDraftActions(undefined,{actionsEnabled:true}),false);
+  assert.equal(canDraftActions({enabled:true},{enabled:true,actionsEnabled:true}),false);
+  assert.equal(canDraftActions({actionsEnabled:true},{enabled:true}),false);
+  assert.equal(canDraftActions({actionsEnabled:true},{actionsEnabled:false}),false);
+  assert.equal(canDraftActions({actionsEnabled:true,enabled:false},{actionsEnabled:true,enabled:false}),true);
+});
 const categories=[{type:'expense',id:'food'}];
 const payments=[{type:'expense',key:'cash'}];
 test('supports a mixed list of editable proposals',()=>{

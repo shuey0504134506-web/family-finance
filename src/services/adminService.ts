@@ -205,6 +205,8 @@ export interface AdminAiInfo {
   /** אבחון השאלה האחרונה שנשלחה למודל */
   last?: { at: number; uid: string; model: string; error?: string; finish?: string; promptTokens?: number; thoughtTokens?: number; outputTokens?: number; answerChars?: number; ms?: number } | null;
   accessUids: string[];
+  actionsEnabled?: boolean;
+  actionsAccessUids?: string[];
 }
 
 export async function loadAdminAi(): Promise<AdminAiInfo> {
@@ -217,4 +219,12 @@ export async function saveAdminAi(patch: { extraProvider?: Omit<ExtraAiConfig, '
 
 export async function setAiAccess(uid: string, enabled: boolean): Promise<void> {
   await httpsCallable(functions(), 'adminSetAiAccess')({ uid, enabled });
+}
+
+export async function setAiActionsAccess(uid: string, enabled: boolean): Promise<void> {
+  await httpsCallable(functions(), 'adminSetAiActionsAccess')({ uid, enabled });
+}
+
+export async function setAiActionsEnabled(enabled: boolean): Promise<void> {
+  await httpsCallable(functions(), 'adminSetAiActionsEnabled')({ enabled });
 }
