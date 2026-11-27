@@ -14,6 +14,17 @@ import { useMonth } from "../month/MonthContext";
 import { useSettings } from "../settings/SettingsContext";
 import { useSpace } from "../spaces/SpaceRoute";
 import { useSpaces } from "../spaces/SpacesContext";
+import type { Transaction } from "../../domain/types";
+
+function groupByMonth(items: readonly Transaction[]): Map<string, Transaction[]> {
+  const grouped = new Map<string, Transaction[]>();
+  for (const item of items) {
+    const group = grouped.get(item.yearMonth);
+    if (group) group.push(item);
+    else grouped.set(item.yearMonth, [item]);
+  }
+  return grouped;
+}
 
 /**
  * הנתונים המלאים של המרחב לסקירה (כמו בקובץ הגיבוי, בלי תמונות): כל ההיסטוריה, תקציבים, חובות, הוראות קבע וקטגוריות.
@@ -81,11 +92,13 @@ export function useAiSummaryData(): {
       ym = addMonths(ym, 1)
     )
       months.push(ym);
+    const householdByMonth = groupByMonth(household.items);
+    const businessByMonth = groupByMonth(businessForCalc);
     const totals: MonthTotals[] = months.map((ym) => {
       const t = periodTotals(
         space.scope,
-        household.items,
-        businessForCalc,
+        householdByMonth.get(ym) ?? [],
+        businessByMonth.get(ym) ?? [],
         [ym],
         settings.businessTransferMode,
       );

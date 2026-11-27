@@ -139,6 +139,27 @@ const STOP_WORDS = new Set([
   "גם",
   "רק",
   "עוד",
+  "תעשה",
+  "תן",
+  "תני",
+  "הוצאת",
+  "how",
+  "much",
+  "what",
+  "did",
+  "was",
+  "were",
+  "spent",
+  "spend",
+  "expenses",
+  "income",
+  "month",
+  "year",
+  "last",
+  "this",
+  "from",
+  "the",
+  "and",
 ]);
 
 /** מילות מפתח מהשאלה לחיפוש בפעולות ישנות (כולל צורה בלי אות שימוש בתחילת המילה: "לשבת" -> "שבת"). */
@@ -211,6 +232,7 @@ export function buildAiData(
     .filter((t) => t.date.startsWith(prevMonth))
     .map(line);
   const keywords = questionKeywords(question);
+  const matchesQuestion = (value: string) => keywords.some(k => value.toLowerCase().includes(k));
   const allMatchedOld = keywords.length
     ? sorted
         .filter((t) => {
@@ -223,6 +245,8 @@ export function buildAiData(
   const rows = allMatchedOld.slice(0, AI_MATCHED_OLD_ROWS).map(line);
   // סיכום חודשי לפי קטגוריה על כל ההיסטוריה, כדי שאפשר יהיה לענות על שאלות רחבות גם בלי כל הפעולות הישנות
   const byMonthCategory = new Map<string, number>();
+  const byMonthPayment = new Map<string, { amount: number; count: number }>();
+  const matchedByMonth = new Map<string, { amount: number; count: number }>();
   const byMerchant = new Map<string, number>();
   const byYear = new Map<string, { i: number; e: number }>();
   for (const m of input.months) {
@@ -233,6 +257,18 @@ export function buildAiData(
   for (const t of input.items) {
     const key = `${t.date.slice(0, 7)}|${t.type === "income" ? "I" : "E"}|${(t.categoryName ?? "").replace(/[|\r\n]+/g, " ")}`;
     byMonthCategory.set(key, (byMonthCategory.get(key) ?? 0) + t.amountAgorot);
+    const month = t.date.slice(0, 7);
+    if (t.type === "expense") {
+      const paymentKey = `${month}|${clean(paymentLabelOf(t), 80)}`;
+      const payment = byMonthPayment.get(paymentKey) ?? { amount: 0, count: 0 };
+      payment.amount += t.amountAgorot; payment.count += 1;
+      byMonthPayment.set(paymentKey, payment);
+      if (matchesQuestion(`${t.categoryName ?? ""} ${t.counterparty ?? ""} ${t.note ?? ""}`)) {
+        const match = matchedByMonth.get(month) ?? { amount: 0, count: 0 };
+        match.amount += t.amountAgorot; match.count += 1;
+        matchedByMonth.set(month, match);
+      }
+    }
     const who = (t.counterparty ?? "").replace(/[|\r\n]+/g, " ").trim();
     if (t.type === "expense" && who) {
       const mk = `${who}|${t.categoryName ?? ""}`;
@@ -240,8 +276,9 @@ export function buildAiData(
     }
   }
   const categoryTotals = [...byMonthCategory.entries()]
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .sort((a, b) => Number(matchesQuestion(b[0].split("|").slice(2).join("|"))) - Number(matchesQuestion(a[0].split("|").slice(2).join("|"))) || b[0].localeCompare(a[0]))
     .map(([key, agorot]) => `${key}|${money(agorot)}`);
+  const matchedCategoryTotals = categoryTotals.filter(row => matchesQuestion(row.split("|").slice(2,-1).join("|")));
   const topMerchants = [...byMerchant.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, AI_TOP_MERCHANTS)
@@ -273,6 +310,10 @@ export function buildAiData(
     debts: input.debts,
     standingOrders: input.standingOrders,
     categories: input.categories,
+    matchedExpenseTotals: [...matchedByMonth].sort((a,b) => b[0].localeCompare(a[0])).map(([month, value]) => ({ month, amount: money(value.amount), count: value.count })),
+    matchedKeywords: keywords,
+    matchedCategoryTotals: matchedCategoryTotals.join("\n"),
+    monthlyPaymentTotals: [...byMonthPayment].sort((a,b) => b[0].localeCompare(a[0])).map(([key, value]) => `${key}|${money(value.amount)}|${value.count}`).join("\n"),
   };
   // אם עדיין גדול מדי, חותכים קודם את הפעולות הישנות שהותאמו לשאלה, ואחר כך את סיכום הקטגוריות הישן
   const head = {
@@ -283,19 +324,35 @@ export function buildAiData(
     largestExpensesAllTime: largestExpenses.join("\n"),
   };
   let keepRows = rows.length;
+  let keepMonthRows = monthRows.length;
+  let keepPrevRows = prevRows.length;
   let keepTotals = categoryTotals.length;
   const make = () =>
     JSON.stringify({
       ...head,
-      coverage: { matchedOlderTotal: allMatchedOld.length, matchedOlderIncluded: keepRows, categoryTotalsTotal: categoryTotals.length, categoryTotalsIncluded: keepTotals, olderRowsAreKeywordMatchesOnly: true, yearlyTotalsIncludeConfiguredTransfers: true },
+      selectedMonthTransactions: monthRows.slice(0, keepMonthRows).join("\n"),
+      previousMonthTransactions: prevRows.slice(0, keepPrevRows).join("\n"),
+      coverage: { selectedRowsTotal: monthRows.length, selectedRowsIncluded: keepMonthRows, previousRowsTotal: prevRows.length, previousRowsIncluded: keepPrevRows, matchedOlderTotal: allMatchedOld.length, matchedOlderIncluded: keepRows, categoryTotalsTotal: categoryTotals.length, categoryTotalsIncluded: keepTotals, olderRowsAreKeywordMatchesOnly: true, yearlyTotalsIncludeConfiguredTransfers: true },
       monthlyCategoryTotals: categoryTotals.slice(0, keepTotals).join("\n"),
       relatedOlderTransactions: rows.slice(0, keepRows).join("\n"),
     });
   let json = make();
-  while (json.length > AI_DATA_MAX_CHARS && (keepRows > 0 || keepTotals > 60)) {
+  while (json.length > AI_DATA_MAX_CHARS && (keepRows > 0 || keepMonthRows > 0 || keepPrevRows > 0 || keepTotals > 0)) {
     if (keepRows > 0) keepRows = Math.floor(keepRows * 0.7);
+    else if (keepPrevRows > 0) keepPrevRows = Math.floor(keepPrevRows * 0.7);
+    else if (keepMonthRows > 0) keepMonthRows = Math.floor(keepMonthRows * 0.7);
     else keepTotals = Math.floor(keepTotals * 0.85);
     json = make();
   }
-  return JSON.parse(json) as Record<string, unknown>;
+  // Very large auxiliary lists may still exceed the budget. Trim optional
+  // evidence without ever truncating the JSON or changing computed amounts.
+  const result = JSON.parse(json) as Record<string, unknown>;
+  const omitted: string[] = [];
+  for (const field of ["largestExpensesAllTime","topMerchantsAllTime","categories","standingOrders","debts","budgets","monthlyPaymentTotals","matchedCategoryTotals","matchedExpenseTotals","yearlyTotals","monthlyTotals"] as const) {
+    if (JSON.stringify(result).length <= AI_DATA_MAX_CHARS - 200) break;
+    delete result[field];
+    omitted.push(field);
+  }
+  if (omitted.length) result.coverage = { ...(result.coverage as object), omitted };
+  return result;
 }

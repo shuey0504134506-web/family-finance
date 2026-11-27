@@ -1,14 +1,14 @@
 name: בניית תוכנת Windows
 
 # הרצה ידנית בלבד: לשונית Actions ← "בניית תוכנת Windows" ← Run workflow.
-# התוצאה: קובץ התקנה (.exe) וגרסה ניידת (portable) בעמוד Releases, וגם כקבצים מצורפים להרצה.
+# התוצאה: מועמדי התקנה (.exe) וגרסה ניידת (portable) לסריקה. פרסום בנפרד לאחר אימות.
 # התוכנה היא פרויקט נפרד בתיקיית desktop/ ואינה משנה את האתר או את אפליקציית האנדרואיד.
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: desktop
@@ -73,11 +73,3 @@ jobs:
           path: |
             desktop/release/*.exe
           retention-days: 30
-
-      - name: פרסום בעמוד Releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "desktop-v${DESKTOP_VERSION}" desktop/release/*.exe \
-            --title "תוכנת Windows ${DESKTOP_VERSION}" \
-            --notes "קובץ התקנה לתוכנת Windows (ללא חתימה דיגיטלית, ולכן Windows עשוי להציג אזהרת SmartScreen: 'מידע נוסף' ← 'הפעל בכל זאת'). ההוראות ב-desktop/README.md."

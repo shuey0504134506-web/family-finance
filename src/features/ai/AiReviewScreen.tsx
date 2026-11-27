@@ -28,7 +28,7 @@ import { AiChatHistory } from "./AiChatHistory";
 import { AiMarkdown } from "./AiMarkdown";
 import { useAiViewport } from "./useAiViewport";
 
-const consentKey = (uid: string) => `ff.ai.consent.v3.${uid}`;
+const consentKey = (uid: string) => `ff.ai.consent.v4.${uid}`;
 const readConsent = (uid: string): boolean => {
   try {
     return localStorage.getItem(consentKey(uid)) === "1";
@@ -127,6 +127,11 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
   const scrollRef = useRef<HTMLDivElement>(null);
   const threadEnd = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    startNewChat(user.uid);
+    setDraft("");
+  }, [user.uid, space.key]);
+
   useEffect(
     () => subscribeAiChats(user.uid, setSaved, () => undefined),
     [user.uid],
@@ -180,6 +185,7 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
 
   const newConversation = () => {
     startNewChat(user.uid);
+    setDraft("");
   };
 
   const togglePin = () => {
@@ -220,7 +226,7 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
               כדי לענות, האפליקציה שולחת לספק ה-AI שהוגדר על ידי מנהל האפליקציה את הנתונים הכספיים של
               המרחב הזה: הפעולות (כולל שמות בתי עסק והערות), התקציבים, החובות
               והוראות הקבע. לא נשלחים תמונות מצורפות, סיסמאות או פרטי חשבון.
-              במסלול חינמי ספקים כגון Google עשויים להשתמש בתוכן לשיפור השירות בהתאם למדיניות הפרטיות שלהם. אין להזין פרטים רגישים בשאלות.
+              ספקים אפשריים הם Google Gemini, Groq, OpenRouter, Cloudflare ו-Z.AI. ספקים במסלול חינמי עשויים להשתמש בתוכן לשיפור השירות בהתאם למדיניות הפרטיות שלהם. אין להזין פרטים רגישים בשאלות.
             </p>
             <button
               type="button"
@@ -287,15 +293,18 @@ export function AiReviewScreen({ initialHistory = false }: { initialHistory?: bo
         <form className="card ai-composer" onSubmit={onSubmit}>
           <textarea className="input" rows={1} value={draft} maxLength={500} placeholder="שאל שאלה…" aria-label="שאלה" onChange={e => setDraft(e.target.value)} disabled={!consent || exhausted} />
           <div className="ai-composer-actions">
-            <select className="input" aria-label="עוצמת חשיבה" value={deep ? "deep" : "normal"} onChange={e => setDeep(e.target.value === "deep")} disabled={busy}>
+            <div className="ai-thinking-picker" data-deep={deep}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 2v4M12 18v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M5 19l3-3m8-8 3-3"/><circle cx="12" cy="12" r="3"/></svg>
+            <select className="input" title={tr(deep ? "חשיבה מעמיקה" : "חשיבה רגילה")} aria-label={tr("עוצמת חשיבה")} value={deep ? "deep" : "normal"} onChange={e => setDeep(e.target.value === "deep")} disabled={busy}>
               <option value="normal">חשיבה רגילה</option><option value="deep">חשיבה מעמיקה</option>
             </select>
+            </div>
             <button type="submit" className="btn btn-primary ai-send" aria-label="שליחה" disabled={!canAsk || exhausted || !draft.trim()}><svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
           </div>
           {(!data.ready || exhausted || data.error) && <p className="muted small" role="status">{data.error ? "טעינת הנתונים נכשלה" : exhausted ? "המכסה היומית נגמרה" : "טוען נתונים…"}</p>}
         </form>
       </main>
-      <AiChatHistory chats={saved} active={chatId} open={historyOpen} onClose={() => setHistoryOpen(false)} busy={busy} onNew={newConversation} onOpen={chat => openChat(user.uid, chat)} onPin={chat => { void toggleAiChatPin(user.uid, chat).catch(() => reportFailure('לא הצלחנו לעדכן את השיחה.')); }} onDelete={async chat => { try { await deleteAiChat(user.uid, chat.id); if (chat.id === chatId) newConversation(); } catch { reportFailure('לא הצלחנו למחוק את השיחה.'); } }} />
+      <AiChatHistory chats={saved} active={chatId} open={historyOpen} onClose={() => setHistoryOpen(false)} busy={busy} onNew={newConversation} onOpen={chat => { openChat(user.uid, chat); setDraft(""); }} onPin={chat => { void toggleAiChatPin(user.uid, chat).catch(() => reportFailure('לא הצלחנו לעדכן את השיחה.')); }} onDelete={async chat => { try { await deleteAiChat(user.uid, chat.id); if (chat.id === chatId) newConversation(); } catch { reportFailure('לא הצלחנו למחוק את השיחה.'); } }} />
       </div>
     </div>
   );

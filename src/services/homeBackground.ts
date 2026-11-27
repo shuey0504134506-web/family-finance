@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
-import lake from '../assets/background-lake.svg';
-import desert from '../assets/background-desert.svg';
-import forest from '../assets/background-forest.svg';
+import lake from '../assets/background-lake.jpg';
+import desert from '../assets/background-desert.jpg';
+import forest from '../assets/background-forest.jpg';
 import mountains from '../assets/mountains-welcome.jpg';
 
 export const BACKGROUND_CHOICES = [{id:'default',name:'נוף ההרים המקורי',src:mountains},{id:'lake',name:'אגם שקט',src:lake},{id:'desert',name:'מדבר',src:desert},{id:'forest',name:'יער ירוק',src:forest}] as const;

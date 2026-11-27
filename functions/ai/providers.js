@@ -8,10 +8,11 @@ const endpoints = Object.freeze({
   xai: 'https://api.x.ai/v1/chat/completions',
   deepseek: 'https://api.deepseek.com/chat/completions',
   openrouter: 'https://openrouter.ai/api/v1/chat/completions',
+  zai: 'https://api.z.ai/api/paas/v4/chat/completions',
   anthropic: 'https://api.anthropic.com/v1/messages',
 });
 
-function buildRequest({ provider = 'google', model, apiKey, system, messages, maxTokens = 4096, thinkingConfig }) {
+function buildRequest({ provider = 'google', model, apiKey, system, messages, maxTokens = 4096, thinkingConfig, accountId }) {
   if (typeof model !== 'string' || !model.trim() || typeof apiKey !== 'string' || !apiKey.trim()) {
     throw new Error('Missing AI model or credentials');
   }
@@ -31,14 +32,15 @@ function buildRequest({ provider = 'google', model, apiKey, system, messages, ma
       },
     };
   }
-  if (!Object.hasOwn(endpoints, provider)) throw new Error('Unsupported AI provider');
+  if (provider === 'cloudflare' && !/^[a-f0-9]{32}$/i.test(accountId ?? '')) throw new Error('Invalid Cloudflare account');
+  if (provider !== 'cloudflare' && !Object.hasOwn(endpoints, provider)) throw new Error('Unsupported AI provider');
   if (provider === 'anthropic') {
     headers['x-api-key'] = apiKey;
     headers['anthropic-version'] = '2023-06-01';
     return { url: endpoints[provider], headers, body: { model, system, messages, max_tokens: maxTokens, stream: true } };
   }
   headers.authorization = 'Bearer ' + apiKey;
-  return { url: endpoints[provider], headers, body: {
+  return { url: provider === 'cloudflare' ? `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions` : endpoints[provider], headers, body: {
     model, messages: [{ role: 'system', content: system }, ...messages],
     ...(provider === 'openai' ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
     stream: true,

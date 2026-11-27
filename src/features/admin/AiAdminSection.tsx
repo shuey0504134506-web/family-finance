@@ -1,6 +1,33 @@
 import { useEffect, useState } from 'react';
 import { compatibleAiModel, defaultAiModel } from '../../domain/aiModels';
-import { loadAdminAi, saveAdminAi, setAiAccess, type AiProvider, type AdminAiInfo, type AdminUserRow } from '../../services/adminService';
+import { loadAdminAi, saveAdminAi, setAiAccess, type AiProvider, type ExtraAiProvider, type ExtraAiConfig, type AdminAiInfo, type AdminUserRow } from '../../services/adminService';
+
+const additionalProviders = [
+  { id: 'openrouter', name: 'OpenRouter', link: 'https://openrouter.ai/keys', available: true, description: 'Free models only (openrouter/free)' },
+  { id: 'cloudflare', name: 'Cloudflare Workers AI', link: 'https://dash.cloudflare.com/', available: true, description: 'Workers Free: 10,000 neurons/day' },
+  { id: 'nvidia', name: 'NVIDIA NIM', link: 'https://build.nvidia.com/', available: false, description: 'Free prototyping access; production requires verification' },
+  { id: 'cohere', name: 'Cohere', link: 'https://dashboard.cohere.com/api-keys', available: false, description: 'Evaluation key only; production is paid' },
+  { id: 'zai', name: 'Z.AI', link: 'https://z.ai/', available: true, description: 'Free GLM-4.7-Flash and GLM-4.5-Flash' },
+  { id: 'sambanova', name: 'SambaNova', link: 'https://cloud.sambanova.ai/', available: false, description: 'Requires acquired credits' },
+  { id: 'ollama', name: 'Ollama Cloud', link: 'https://ollama.com/settings/keys', available: false, description: 'Starter credits; recurring free quota not verified' },
+  { id: 'mistral', name: 'Mistral', link: 'https://console.mistral.ai/', available: false, description: 'Free evaluation and prototyping only' },
+  { id: 'cerebras', name: 'Cerebras', link: 'https://cloud.cerebras.ai/', available: false, description: 'Limited promotional credit; payment method required' },
+] as const;
+
+function AdditionalProviderSettings({ config, provider, busy, save }: { config?: ExtraAiConfig; provider: ExtraAiProvider; busy: boolean; save: (value: Omit<ExtraAiConfig, 'hasKey'> & { apiKey?: string }) => void }) {
+  const [enabled, setEnabled] = useState(config?.enabled ?? false);
+  const [confirmed, setConfirmed] = useState(config?.freeConfirmed ?? false);
+  const [apiKey, setApiKey] = useState('');
+  const [accountId, setAccountId] = useState(config?.accountId ?? '');
+  return <div className="stack">
+    <label><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)} /> הפעלת ספק</label>
+    <label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} /> אני מאשר שהחשבון במסלול חינמי ללא חיוב</label>
+    {provider === 'cloudflare' && <label>Account ID<input className="input" dir="ltr" value={accountId} onChange={e=>setAccountId(e.target.value)} /></label>}
+    <label>{config?.hasKey ? 'החלפת מפתח (אפשר להשאיר ריק)' : 'מפתח API'}<input className="input" type="password" dir="ltr" autoComplete="off" value={apiKey} onChange={e=>setApiKey(e.target.value)} /></label>
+    <p className="muted small">מודל: Auto</p>
+    <button type="button" className="btn btn-secondary" disabled={busy || (enabled && (!confirmed || (!apiKey.trim() && !config?.hasKey)))} onClick={()=>{save({provider, enabled, freeConfirmed:confirmed, accountId, model:'auto', ...(apiKey.trim()?{apiKey:apiKey.trim()}: {})});setApiKey('');}}>שמירת הגדרות ספק</button>
+  </div>;
+}
 
 /** סקירת AI: מפתח, מכסות, כיבוי כללי, ומי מורשה להשתמש. כל ההגבלות נאכפות בשרת. */
 export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
@@ -11,7 +38,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
   const [provider, setProvider] = useState<AiProvider>('google');
   const [backupEnabled, setBackupEnabled] = useState(false);
   const [backupProvider, setBackupProvider] = useState<'google' | 'groq'>('groq');
-  const [backupModel, setBackupModel] = useState('openai/gpt-oss-120b');
+  const [backupModel, setBackupModel] = useState('auto');
   const [backupKey, setBackupKey] = useState('');
   const [model, setModel] = useState('');
   const [perUser, setPerUser] = useState('');
@@ -115,7 +142,7 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       <h3 className="subhead">ספק גיבוי</h3>
       <label><input type="checkbox" checked={backupEnabled} onChange={e => setBackupEnabled(e.target.checked)} /> הפעלת גיבוי אוטומטי</label>
       <label className="field-label" htmlFor="ai-backup-provider">ספק גיבוי</label>
-      <select id="ai-backup-provider" className="input" value={backupProvider} onChange={e => { const p = e.target.value as 'google' | 'groq'; setBackupProvider(p); setBackupModel(p === 'google' ? 'gemini-3.8-flash' : 'openai/gpt-oss-120b'); setBackupKey(''); }}>
+      <select id="ai-backup-provider" className="input" value={backupProvider} onChange={e => { const p = e.target.value as 'google' | 'groq'; setBackupProvider(p); setBackupModel('auto'); setBackupKey(''); }}>
         <option value="google">Google Gemini</option><option value="groq">GroqCloud</option>
       </select>
       <label className="field-label" htmlFor="ai-backup-model">מודל גיבוי</label>
@@ -123,6 +150,13 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       <label className="field-label" htmlFor="ai-backup-key">{info.freeBackup?.hasKey && info.freeBackup.provider === backupProvider ? 'מפתח גיבוי שמור (אפשר להשאיר ריק)' : 'מפתח גיבוי'}</label>
       <input id="ai-backup-key" className="input" type="password" dir="ltr" autoComplete="off" value={backupKey} onChange={e => setBackupKey(e.target.value)} />
       <p className="muted small">Gemini ו-Groq עובדים עם מודלים הזמינים במסלול חינמי. יש לוודא שהחשבון אצל הספק נשאר ללא חיוב; מפתח API אינו מוכיח מסלול חינמי. אם הספקים אינם זמינים, המנוע המקומי עונה.</p>
+      <h3 className="subhead">ספקי AI נוספים</h3>
+      {additionalProviders.map(p=><details key={p.id} className="card">
+        <summary>{p.name} · {p.available ? 'זמין להגדרה' : 'לא זמין במסלול חינמי קבוע'}</summary>
+        <p className="muted small" translate="no">{p.description}</p>
+        <a href={p.link} target="_blank" rel="noreferrer">קבלת מפתח</a>
+        {p.available && <AdditionalProviderSettings provider={p.id as ExtraAiProvider} config={info.extraProviders?.find(c=>c.provider===p.id)} busy={busy} save={entry=>void run(()=>saveAdminAi({extraProvider:entry}))}/>}
+      </details>)}
       <label className="field-label" htmlFor="ai-user">מכסה יומית למשתמש (שאלות)</label>
       <input id="ai-user" className="input" inputMode="numeric" value={perUser} onChange={(e) => setPerUser(e.target.value)} />
       <label className="field-label" htmlFor="ai-global">תקרה יומית לכל המשתמשים ביחד</label>

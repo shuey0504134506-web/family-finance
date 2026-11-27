@@ -69,4 +69,11 @@ describe("buildAiData", () => {
     expect(JSON.stringify(out).length).toBeLessThanOrEqual(70_000);
     expect(out.yearlyTotals).toBeTruthy();
   });
+
+  it("מחשב התאמות בכל ההיסטוריה גם כאשר מדגם הפעולות נחתך", () => {
+    const many = Array.from({ length: 400 }, () => item("2025-09-10", "שבת", 250));
+    const out = buildAiData({ ...base, items: many }, "כמה הוצאתי על שבת");
+    expect(out.matchedExpenseTotals).toEqual([{ month: "2025-09", amount: 1000, count: 400 }]);
+    expect(out.coverage).toMatchObject({ matchedOlderTotal: 400, matchedOlderIncluded: 250 });
+  });
 });
