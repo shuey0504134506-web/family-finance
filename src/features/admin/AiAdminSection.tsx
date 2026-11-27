@@ -150,8 +150,13 @@ export function AiAdminSection({ users }: { users: AdminUserRow[] }) {
       <label className="field-label" htmlFor="ai-backup-key">{info.freeBackup?.hasKey && info.freeBackup.provider === backupProvider ? 'מפתח גיבוי שמור (אפשר להשאיר ריק)' : 'מפתח גיבוי'}</label>
       <input id="ai-backup-key" className="input" type="password" dir="ltr" autoComplete="off" value={backupKey} onChange={e => setBackupKey(e.target.value)} />
       <p className="muted small">Gemini ו-Groq עובדים עם מודלים הזמינים במסלול חינמי. יש לוודא שהחשבון אצל הספק נשאר ללא חיוב; מפתח API אינו מוכיח מסלול חינמי. אם הספקים אינם זמינים, המנוע המקומי עונה.</p>
+      <h3 className="subhead">ספקי גיבוי נוספים</h3>
+      {additionalProviders.filter(p=>p.available&&info.extraProviders?.some(c=>c.provider===p.id&&c.hasKey)).map(p=>{
+        const config=info.extraProviders?.find(c=>c.provider===p.id);
+        return <section key={p.id} className="card stack"><h4>{p.name} · {config?.enabled&&config.freeConfirmed?'פעיל':'מושהה'}</h4><p className="muted small" translate="no">{p.description}</p><AdditionalProviderSettings provider={p.id as ExtraAiProvider} config={config} busy={busy} save={entry=>void run(()=>saveAdminAi({extraProvider:entry}))}/></section>;
+      })}
       <h3 className="subhead">ספקי AI נוספים</h3>
-      {additionalProviders.map(p=><details key={p.id} className="card">
+      {additionalProviders.filter(p=>!info.extraProviders?.some(c=>c.provider===p.id&&c.hasKey)).map(p=><details key={p.id} className="card">
         <summary>{p.name} · {p.available ? 'זמין להגדרה' : 'לא זמין במסלול חינמי קבוע'}</summary>
         <p className="muted small" translate="no">{p.description}</p>
         <a href={p.link} target="_blank" rel="noreferrer">קבלת מפתח</a>

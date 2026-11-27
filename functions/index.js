@@ -573,6 +573,62 @@ async function aiConfig() {
   return { ...AI_DEFAULTS, ...(snap.exists ? snap.data() : {}) };
 }
 
+exports.aiDraftActions = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', maxInstances: 5 }, async request => {
+  if (!request.auth) throw new HttpsError('unauthenticated','יש להתחבר.');
+  const uid=request.auth.uid;
+  const [access,cfg]=await Promise.all([getFirestore().collection('aiAccess').doc(uid).get(),aiConfig()]);
+  if (!access.exists || access.data().enabled!==true || cfg.enabled===false) throw new HttpsError('permission-denied','אין לך גישה לסקירת AI.');
+  const raw=request.data??{};
+  if(raw.consent!==true) throw new HttpsError('failed-precondition','יש לאשר שליחת הטקסט לספק AI.');
+  const text=cleanText(raw.text,3000);
+  if(!text || !/^\d{4}-\d{2}-\d{2}$/.test(raw.date??'') || !['ILS','USD','EUR','GBP'].includes(raw.currency)) throw new HttpsError('invalid-argument','יש להזין תיאור פעולה.');
+  const cleanList=(rows,key,max)=>Array.isArray(rows)?rows.slice(0,max).filter(x=>x&&['income','expense'].includes(x.type)&&typeof x[key]==='string'&&typeof x.name==='string').map(x=>({type:x.type,[key]:cleanText(x[key],150),name:cleanText(x.name,120)})):[];
+  const input={text,date:raw.date,currency:raw.currency,categories:cleanList(raw.categories,'id',500),payments:cleanList(raw.payments,'key',50)};
+  const { candidatesFor, availableCandidate, recordProviderFailure }=require('./ai/routing');
+  const { requestDrafts }=require('./ai/action-drafts');
+  const candidates=candidatesFor(cfg,true,4);
+  if(!candidates.length) throw new HttpsError('unavailable','אין ספק AI זמין כרגע.');
+  const quota=await takeAiQuota(uid,cfg);
+  const deadline=Date.now()+95000;
+  for(const candidate of candidates) {
+    if(Date.now()>=deadline || !availableCandidate(candidate)) continue;
+    try {
+      const result=await requestDrafts(candidate,input,AbortSignal.timeout(Math.max(1000,Math.min(18000,deadline-Date.now()))));
+      if(result.status!==200) {recordProviderFailure(candidate,result.status);continue;}
+      const u=result.usage??{};
+      const tokens=(Number(u.promptTokenCount??u.prompt_tokens)||0)+(Number(u.candidatesTokenCount??u.completion_tokens)||0)+(Number(u.thoughtsTokenCount)||0);
+      if(tokens>0) {
+        const ym=dayKey(Date.now()).slice(0,7);
+        const add=FieldValue.increment(tokens);
+        await Promise.all([getFirestore().collection('aiUsage').doc(uid).set({tokens:{[ym]:add}},{merge:true}),getFirestore().collection('aiUsage').doc('_global').set({tokens:{[ym]:add}},{merge:true})]).catch(()=>undefined);
+      }
+      return {drafts:result.drafts,provider:candidate.provider,model:candidate.model,remaining:quota.remaining};
+    } catch {recordProviderFailure(candidate,0);}
+  }
+  throw new HttpsError('unavailable','לא הצלחנו להכין פעולות באמצעות AI. אפשר לנסות שוב או להזין ידנית.');
+});
+
+exports.aiTranscribeAction = onCall({region:REGION,timeoutSeconds:60,maxInstances:5},async request=>{
+  if(!request.auth) throw new HttpsError('unauthenticated','יש להתחבר.');
+  const uid=request.auth.uid;
+  const [access,cfg]=await Promise.all([getFirestore().collection('aiAccess').doc(uid).get(),aiConfig()]);
+  if(!access.exists||access.data().enabled!==true||cfg.enabled===false)throw new HttpsError('permission-denied','אין לך גישה לסקירת AI.');
+  const {audio,mime,lang,consent}=request.data??{};
+  if(consent!==true||typeof audio!=='string'||audio.length>1600000||! /^[A-Za-z0-9+/]+={0,2}$/.test(audio)||!['audio/webm','audio/mp4','audio/ogg'].includes(mime))throw new HttpsError('invalid-argument','ההקלטה אינה תקינה.');
+  const {candidatesFor}=require('./ai/routing');
+  const groq=candidatesFor(cfg,true,4).find(c=>c.provider==='groq');
+  if(!groq)throw new HttpsError('unavailable','נדרש ספק Groq פעיל להקלטה.');
+  await takeAiQuota(uid,cfg);
+  const data=new FormData();
+  data.set('file',new Blob([Buffer.from(audio,'base64')],{type:mime}),`recording.${mime.split('/')[1]}`);
+  data.set('model','whisper-large-v3-turbo');
+  data.set('language',lang==='en'?'en':'he');
+  const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{authorization:'Bearer '+groq.apiKey},body:data,signal:AbortSignal.timeout(45000)});
+  if(!res.ok)throw new HttpsError('unavailable','לא הצלחנו לתמלל את ההקלטה.');
+  const result=await res.json();
+  return {text:cleanText(result.text,3000)};
+});
+
 /** לוקח שאלה אחת מהמכסה היומית של המשתמש ושל כל המערכת. זורק resource-exhausted אם המכסה נגמרה. */
 async function takeAiQuota(uid, cfg) {
   const db = getFirestore();
