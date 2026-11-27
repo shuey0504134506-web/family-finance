@@ -3,16 +3,21 @@ import { ChevronLeft } from '../../components/icons';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSpace } from '../spaces/SpaceRoute';
+import { useReadyAuth } from '../auth/AuthContext';
+import { AI_SUPPORTED, useAiAccess } from '../../services/aiService';
 
 /** תפריט ראשי: מסך מלא עם אותה כותרת וחזרה כמו בהגדרות ובחיפוש. */
 export function MenuScreen() {
   const space = useSpace();
   const { nameOf } = useSpaces();
   const key = space.key;
+  const { user } = useReadyAuth();
+  const aiAllowed = useAiAccess(user.uid, (user as { offlineOnly?: boolean }).offlineOnly === true);
 
   const rows: { to: string; label: string; state?: { spaceKey: string } }[] = [
     { to: `/${key}/list/income`, label: 'הכנסות' },
     { to: `/${key}/list/expense`, label: 'הוצאות' },
+    ...(AI_SUPPORTED && aiAllowed ? [{ to: `/${key}/ai`, label: 'סקירת AI' }] : []),
     { to: `/${key}/budget`, label: 'תקציב' },
     { to: '/summary', label: 'סיכומים והשוואות', state: { spaceKey: key } },
     { to: `/${key}/debts`, label: 'חובות' },

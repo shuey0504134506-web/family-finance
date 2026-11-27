@@ -1,13 +1,13 @@
 name: בניית אפליקציית אנדרואיד (APK)
 
 # הרצה ידנית בלבד: לשונית Actions ← "בניית אפליקציית אנדרואיד (APK)" ← Run workflow.
-# התוצאה: קובץ APK חתום שמופיע בעמוד Releases של ה-Repository, וגם כקובץ מצורף להרצה.
+# התוצאה: מועמד חתום לסריקה, כקובץ מצורף להרצה. פרסום בנפרד לאחר אימות.
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android
@@ -105,21 +105,26 @@ jobs:
           ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: שינוי שם הקובץ ואימות חתימה
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           cp android/app/build/outputs/apk/release/app-release.apk "family-finance-${APP_VERSION_NAME}.apk"
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs "family-finance-${APP_VERSION_NAME}.apk"
+          signer="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$signer" verify --print-certs "family-finance-${APP_VERSION_NAME}.apk" | tee "$RUNNER_TEMP/current-cert.txt"
+          gh release download android-v1.0.70 --pattern family-finance-1.0.70.apk --dir "$RUNNER_TEMP"
+          echo "114a024cf06211b5a9fd572cfaebac35d415c5d6a2a5771eb098154de1a7a112  $RUNNER_TEMP/family-finance-1.0.70.apk" | sha256sum -c
+          "$signer" verify --print-certs "$RUNNER_TEMP/family-finance-1.0.70.apk" > "$RUNNER_TEMP/previous-cert.txt"
+          grep 'certificate SHA-256 digest:' "$RUNNER_TEMP/previous-cert.txt" > "$RUNNER_TEMP/previous-fingerprint.txt"
+          grep 'certificate SHA-256 digest:' "$RUNNER_TEMP/current-cert.txt" > "$RUNNER_TEMP/current-fingerprint.txt"
+          diff "$RUNNER_TEMP/previous-fingerprint.txt" "$RUNNER_TEMP/current-fingerprint.txt"
+          sha256sum "family-finance-${APP_VERSION_NAME}.apk" | tee SHA256SUMS
 
       - name: שמירה כקובץ מצורף להרצה
         uses: actions/upload-artifact@v4
         with:
           name: family-finance-apk
-          path: family-finance-*.apk
+          path: |
+            family-finance-*.apk
+            SHA256SUMS
           retention-days: 30
-
-      - name: פרסום בעמוד Releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "android-v${APP_VERSION_NAME}" "family-finance-${APP_VERSION_NAME}.apk" \
-            --title "אפליקציית אנדרואיד ${APP_VERSION_NAME}" \
-            --notes "קובץ התקנה (APK) לאנדרואיד. להורדה מהטלפון ולהתקנה לפי ההוראות ב-docs/ANDROID.md."

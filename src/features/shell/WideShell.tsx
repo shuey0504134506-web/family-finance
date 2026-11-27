@@ -6,6 +6,7 @@ import { isAdminEmail } from '../../config/admin';
 import { useAuth } from '../auth/AuthContext';
 import { parseSpaceKey } from '../../domain/spaces';
 import { useSpaces } from '../spaces/SpacesContext';
+import { AI_SUPPORTED, useAiAccess } from '../../services/aiService';
 
 /**
  * מעטפת מסך רחב (תוכנת המחשב, והאתר במחשב): תפריט צד קבוע (בימין, כמקובל בעברית) ותוכן רחב משמאלו.
@@ -72,11 +73,13 @@ export function WideShell({
   }, []);
 
   const admin = state.status === 'ready' && isAdminEmail(state.user.email);
+  const aiAllowed = useAiAccess(state.status === 'ready' ? state.user.uid : '', state.status !== 'ready' || (state.user as { offlineOnly?: boolean }).offlineOnly === true);
 
   const rows: { to: string; label: string; icon?: string; end?: boolean }[] = [
     { to: `/${key}`, label: 'סקירה', end: true },
     { to: `/${key}/list/income`, label: 'הכנסות' },
     { to: `/${key}/list/expense`, label: 'הוצאות' },
+    ...(AI_SUPPORTED && aiAllowed ? [{ to: `/${key}/ai`, label: 'סקירת AI' }] : []),
     { to: `/${key}/budget`, label: 'תקציב' },
     { to: '/summary', label: 'סיכומים והשוואות' },
     { to: `/${key}/debts`, label: 'חובות' },

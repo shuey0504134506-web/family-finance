@@ -34,8 +34,7 @@ export function AiChatHistory({ chats, active, open, onClose, onNew, onOpen, onP
     <aside id="ai-chat-history" className={`ai-history-panel${open ? ' is-open' : ''}`} aria-label="היסטוריה">
       <div className="ai-history-heading"><h2>היסטוריה</h2><button className="ai-history-icon ai-history-close" type="button" aria-label="סגירה" onClick={onClose}>×</button></div>
       <button type="button" className="ai-history-new" onClick={() => { onNew(); onClose(); }}><span aria-hidden="true">＋ </span><span>שיחה חדשה</span></button>
-      {group('שיחות אחרונות', chats.filter(c => !c.local))}
-      {group('שיחות במכשיר', chats.filter(c => c.local))}
+      {group('שיחות אחרונות', [...chats].sort((a,b)=>b.updatedAt-a.updatedAt || a.id.localeCompare(b.id)))}
     </aside>
   </>;
 }

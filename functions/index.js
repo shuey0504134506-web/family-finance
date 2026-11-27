@@ -547,7 +547,7 @@ exports.adminListLog = onCall({ region: REGION }, async (request) => {
 // הגישה ניתנת למשתמש ספציפי ע"י המנהל (aiAccess/{uid}), ולכל משתמש ולכל המערכת יש מכסה יומית קשיחה (aiUsage).
 const { buildRequest } = require('./ai/providers');
 const AI_PROVIDERS = ['google', 'openai', 'xai', 'anthropic', 'deepseek', 'openrouter', 'groq'];
-const AI_DEFAULTS = { provider: 'google', model: 'gemini-3.8-flash', fallbackModel: 'gemini-3.6-flash', perUserDaily: 10, globalDaily: 200, enabled: true };
+const AI_DEFAULTS = { provider: 'google', model: 'auto', perUserDaily: 10, globalDaily: 200, enabled: true };
 const AI_MAX_QUESTION = 500;
 const AI_MAX_SUMMARY = 150000;
 const AI_MAX_HISTORY = 6;
@@ -647,7 +647,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   if (!access.exists || access.data().enabled !== true) throw new HttpsError('permission-denied', 'אין לך גישה לסקירת AI.');
   if (cfg.enabled === false) throw new HttpsError('failed-precondition', 'סקירת ה-AI כבויה כרגע.');
 
-  const { question, summary, history, deep, lang, remoteConsent, generateTitle } = request.data ?? {};
+  const { question, summary, history, deep, lang, remoteConsent, consentVersion, generateTitle } = request.data ?? {};
   const q = cleanText(question, AI_MAX_QUESTION);
   if (!q) throw new HttpsError('invalid-argument', 'יש לכתוב שאלה.');
   const data = cleanText(typeof summary === 'string' ? summary : JSON.stringify(summary ?? {}), AI_MAX_SUMMARY);
@@ -659,19 +659,20 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     .filter((m, i, all) => m.parts[0].text && (i === 0 ? m.role === 'user' : m.role !== all[i - 1].role));
 
   const { analyze } = await import('./ai/local-analysis.mjs');
-  const { candidatesFor, compactForGroq } = require('./ai/routing');
+  const { candidatesFor, compactForGroq, availableCandidate, recordProviderFailure } = require('./ai/routing');
   let parsed;
   try { parsed = JSON.parse(data); } catch { throw new HttpsError('invalid-argument', 'נתוני הסיכום אינם תקינים או גדולים מדי.'); }
   const quota = await takeAiQuota(uid, cfg);
-  const candidates = candidatesFor(cfg, remoteConsent);
+  const candidates = candidatesFor(cfg, remoteConsent, consentVersion === 4 ? 4 : 3);
   const localAnswer = () => ({ answer: `${remoteConsent === true ? 'מענה מקומי (ספק חיצוני לא זמין)' : 'מענה מקומי (יש לאשר שימוש בספק חיצוני בגרסה החדשה)'}\n${analyze(parsed,q,history)}`, remaining: quota.remaining, limit: cfg.perUserDaily });
   if (!candidates.length) return localAnswer();
   const wantDeep = deep === true;
   const wantTitle = generateTitle === true;
-  const system = AI_SYSTEM_PROMPT + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '') + (wantTitle ? '\nStart the response with exactly [[TITLE]]a concise 2–6 word title in the language of the user’s question[[/TITLE]] on its own line; then answer normally. Do not include personal identifiers or specific amounts in the title.' : '');
+  const system = AI_SYSTEM_PROMPT + '\nPrefer exact precomputed monthly category and payment totals over transaction samples. matchedExpenseTotals are exact arithmetic over all recorded transactions matching any matchedKeywords, but keyword matches are not semantic proof. Payment rows use month|method|amount|count. Explain limitations in plain language without exposing internal field names.' + (lang === 'en' ? '\nהמשתמש בחר ממשק באנגלית: ענה באנגלית, גם אם השאלה או הנתונים בעברית.' : '') + (wantTitle ? '\nStart the response with exactly [[TITLE]]a concise 2–6 word title in the language of the user’s question[[/TITLE]] on its own line; then answer normally. Do not include personal identifiers or specific amounts in the title.' : '');
   // רמות חשיבה לפי מהירות: ברירת המחדל נמוכה ומהירה, ו"חשיבה מעמיקה" רק כשהמשתמש מבקש. ב-Gemini 3.8 הרמה minimal אינה נתמכת. אם המודל דוחה רמה (400), יורדים לרמה הבאה
   let activeProvider = cfg.provider;
   let activeKey = cfg.apiKey;
+  let activeAccountId;
   const ladderFor = (model) => {
     if (activeProvider !== 'google') return [null];
     if (/2\.5-flash/.test(model)) return [{ thinkingBudget: wantDeep ? -1 : 0 }, null];
@@ -682,7 +683,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     systemInstruction: { parts: [{ text: system }] },
     // הנתונים תמיד בתחילת השיחה ולפני השאלות: הרישא זהה בין שאלה לשאלה, ולכן המודל משתמש במטמון שלו (מהיר וזול יותר)
     contents: [
-      { role: 'user', parts: [{ text: `נתוני המשתמש (JSON):\n${activeProvider==='groq'?compactForGroq(parsed,q):data}${activeProvider==='groq'?`\nחישוב מקומי (לבדיקה): ${analyze(parsed,q,history)}`:''}` }] },
+      { role: 'user', parts: [{ text: `נתוני המשתמש (JSON):\n${activeProvider!=='google'?compactForGroq(parsed,q):data}\nחישוב מקומי (לבדיקה): ${analyze(parsed,q,history)}` }] },
       { role: 'model', parts: [{ text: 'קיבלתי את הנתונים. מה השאלה?' }] },
       ...past,
       { role: 'user', parts: [{ text: q }] },
@@ -701,7 +702,7 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
     const original = makeBody(model, thinkingConfig);
     const req = activeProvider === 'google'
       ? { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':streamGenerateContent?alt=sse', headers: { 'content-type': 'application/json', 'x-goog-api-key': activeKey }, body: original }
-      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 4096 : 2048 });
+      : buildRequest({ provider: activeProvider, model, apiKey: activeKey, accountId: activeAccountId, system, messages: original.contents.map(m => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.parts.map(p => p.text).join('\n') })), maxTokens: wantDeep ? 4096 : 2048 });
     return fetch(req.url, { method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: AbortSignal.timeout(Math.min(35000,Math.max(1000, deadline - Date.now()))) });
   };
   const openModel = async (model) => {
@@ -722,15 +723,23 @@ exports.aiAsk = onCall({ region: REGION, timeoutSeconds: 120, memory: '512MiB', 
   try {
     // Try configured free-capable providers in order, without retrying quota or payment failures.
     const failures = [];
+    const unavailableProviders = new Set();
     for (const candidate of candidates) {
       if(Date.now() >= deadline) break;
+      if(unavailableProviders.has(candidate.provider) || !availableCandidate(candidate)) continue;
       const { model } = candidate;
       activeProvider = candidate.provider;
       activeKey = candidate.apiKey;
+      activeAccountId = candidate.accountId;
       usedModel = model;
       let res;
-      try { res=await openModel(model); } catch { failures.push({model,status:0,detail:'network or timeout'}); continue; }
-      if(!res?.ok || !res.body) { failures.push({model,status:res?.status??0,detail:'Provider request rejected'}); continue; }
+      try { res=await openModel(model); } catch { recordProviderFailure(candidate,0); failures.push({model,status:0,detail:'network or timeout'}); continue; }
+      if(!res?.ok || !res.body) {
+        failures.push({model,status:res?.status??0,detail:'Provider request rejected'});
+        recordProviderFailure(candidate,res?.status??0);
+        if ([401,402,403,429].includes(res?.status)) unavailableProviders.add(candidate.provider);
+        continue;
+      }
       lastUsage=null; finishReason='';
     const titleStream = createTitleStream(wantTitle, (delta) => {
       text += delta;
@@ -887,6 +896,7 @@ exports.adminGetAi = onCall({ region: REGION }, async (request) => {
     keyHint: typeof cfg.apiKey === 'string' && cfg.apiKey.length >= 20 ? cfg.apiKey.slice(-4) : '',
     provider: cfg.provider,
     freeBackup: { enabled: cfg.freeBackup?.enabled === true, provider: cfg.freeBackup?.provider ?? 'groq', model: cfg.freeBackup?.model ?? 'openai/gpt-oss-120b', hasKey: !!cfg.freeBackup?.apiKey },
+    extraProviders: Object.entries(cfg.extraProviders ?? {}).map(([provider, value]) => ({ provider, enabled: value.enabled === true, freeConfirmed: value.freeConfirmed === true, model: value.model ?? 'auto', accountId: value.accountId ?? '', hasKey: !!value.apiKey })),
     model: cfg.model,
     perUserDaily: cfg.perUserDaily,
     globalDaily: cfg.globalDaily,
@@ -921,14 +931,14 @@ exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   if (typeof model === 'string' && model.trim()) {
     if (!/^[A-Za-z0-9._:/\-]{1,200}$/.test(model.trim())) throw new HttpsError('invalid-argument', 'שם המודל אינו תקין.');
     const effectiveProvider = patch.provider ?? (await aiConfig()).provider;
-    if ((effectiveProvider === 'google' && !/^gemini-/i.test(model.trim())) || (effectiveProvider === 'groq' && (/^gemini-/i.test(model.trim()) || model.trim() === 'llama-3.3-70b-versatile'))) throw new HttpsError('invalid-argument', 'המודל אינו מתאים לספק שנבחר.');
+    if (model.trim() !== 'auto' && ((effectiveProvider === 'google' && !/^gemini-/i.test(model.trim())) || (effectiveProvider === 'groq' && (/^gemini-/i.test(model.trim()) || model.trim() === 'llama-3.3-70b-versatile')))) throw new HttpsError('invalid-argument', 'המודל אינו מתאים לספק שנבחר.');
     patch.model = model.trim();
   }
   if (request.data?.freeBackup !== undefined) {
     const b = request.data.freeBackup;
     const current = await aiConfig();
     if (!b || typeof b.enabled !== 'boolean' || !['google', 'groq'].includes(b.provider) || typeof b.model !== 'string' || !/^[a-zA-Z0-9._:/-]{1,120}$/.test(b.model)) throw new HttpsError('invalid-argument', 'הגדרות גיבוי לא תקינות.');
-    if ((b.provider === 'google' && !/^gemini-/i.test(b.model)) || (b.provider === 'groq' && (/^gemini-/i.test(b.model) || b.model === 'llama-3.3-70b-versatile'))) throw new HttpsError('invalid-argument', 'מודל הגיבוי אינו מתאים לספק שנבחר.');
+    if (b.model !== 'auto' && ((b.provider === 'google' && !/^gemini-/i.test(b.model)) || (b.provider === 'groq' && (/^gemini-/i.test(b.model) || b.model === 'llama-3.3-70b-versatile')))) throw new HttpsError('invalid-argument', 'מודל הגיבוי אינו מתאים לספק שנבחר.');
     const key = typeof b.apiKey === 'string' && b.apiKey.trim() ? b.apiKey.trim() : (current.freeBackup?.provider === b.provider ? current.freeBackup?.apiKey : '');
     if (b.enabled && (b.provider === (patch.provider ?? current.provider) || !/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key ?? ''))) throw new HttpsError('invalid-argument', 'נדרש ספק גיבוי שונה ומפתח תקין.');
     patch.freeBackup = { enabled: b.enabled, provider: b.provider, model: b.model, apiKey: key ?? '' };
@@ -936,6 +946,19 @@ exports.adminSetAi = onCall({ region: REGION }, async (request) => {
   if (perUserDaily !== undefined) {
     if (!Number.isInteger(perUserDaily) || perUserDaily < 0 || perUserDaily > 200) throw new HttpsError('invalid-argument', 'מכסה למשתמש: מספר שלם בין 0 ל-200.');
     patch.perUserDaily = perUserDaily;
+  }
+  if (request.data?.extraProvider !== undefined) {
+    const entry = request.data.extraProvider;
+    const { FREE_MODELS } = require('./ai/routing');
+    if (!entry || !['openrouter','cloudflare','zai'].includes(entry.provider) || typeof entry.enabled !== 'boolean' || typeof entry.freeConfirmed !== 'boolean') throw new HttpsError('invalid-argument', 'ספק נוסף אינו נתמך.');
+    const current = await aiConfig();
+    const previous = current.extraProviders?.[entry.provider];
+    const key = typeof entry.apiKey === 'string' && entry.apiKey.trim() ? entry.apiKey.trim() : previous?.apiKey ?? '';
+    const model = entry.model ?? 'auto';
+    const accountId = entry.accountId ?? '';
+    if (model !== 'auto' && !FREE_MODELS[entry.provider].includes(model)) throw new HttpsError('invalid-argument', 'המודל אינו זמין במסלול הנתמך.');
+    if (entry.enabled && (!entry.freeConfirmed || !/^[A-Za-z0-9._~+/=-]{20,400}$/.test(key) || (entry.provider === 'cloudflare' && !/^[a-f0-9]{32}$/i.test(accountId)))) throw new HttpsError('invalid-argument', 'נדרש מפתח תקין ואישור מסלול ללא חיוב.');
+    patch.extraProviders = { [entry.provider]: { enabled: entry.enabled, freeConfirmed: entry.freeConfirmed, model, apiKey: key, accountId } };
   }
   if (globalDaily !== undefined) {
     if (!Number.isInteger(globalDaily) || globalDaily < 0 || globalDaily > 5000) throw new HttpsError('invalid-argument', 'מכסה כללית: מספר שלם בין 0 ל-5000.');

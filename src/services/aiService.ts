@@ -39,7 +39,7 @@ type StreamingCall = {
 /** שאלה למודל. ההגבלות (גישה, מכסה, נושא) נאכפות בשרת. */
 export async function askAi(question: string, summary: unknown, history: readonly AiMessage[], options: AskOptions = {}): Promise<AiAnswer> {
   const call = httpsCallable<unknown, AiAnswer>(functions(), 'aiAsk', { timeout: 125_000 });
-  const payload = { question, summary: JSON.stringify(summary), history: history.slice(-6), deep: options.deep === true, lang: options.lang ?? 'he', remoteConsent: options.remoteConsent === true, generateTitle: options.generateTitle === true };
+  const payload = { question, summary: JSON.stringify(summary), history: history.slice(-6), deep: options.deep === true, lang: options.lang ?? 'he', remoteConsent: options.remoteConsent === true, consentVersion: 4, generateTitle: options.generateTitle === true };
   const streamer = (call as unknown as StreamingCall).stream;
   if (typeof streamer === 'function' && options.onText) {
     try {
@@ -124,7 +124,7 @@ export function subscribeAiChats(uid: string, onChange: (chats: StoredAiChat[]) 
   const publish = () => {
     try {
       const local = readArchive(uid).filter(c => !cloud.some(s => s.id === c.id));
-      onChange([...cloud, ...local.map(c => ({ ...c, local: true as const }))].sort((a,b) => b.updatedAt - a.updatedAt));
+      onChange([...cloud, ...local.map(c => ({ ...c, local: true as const }))].sort((a,b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id)));
     } catch { onChange(cloud); onError(); }
   };
   window.addEventListener(archiveEvent, publish);

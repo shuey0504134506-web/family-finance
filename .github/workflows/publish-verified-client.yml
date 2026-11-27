@@ -1,0 +1,54 @@
+name: Publish verified client
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Client type
+        required: true
+        type: choice
+        options: [android, desktop]
+      run_id:
+        description: Successful candidate workflow run ID on main
+        required: true
+        type: string
+      verified_hashes:
+        description: SHA256 hashes of every scanned installer (space separated)
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: verified-client-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify candidate and publish scanned artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target }}
+          RUN_ID: ${{ inputs.run_id }}
+          VERIFIED_HASHES: ${{ inputs.verified_hashes }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          if [[ "$TARGET" == android ]]; then
+            workflow="build-android.yml"; artifact="family-finance-apk"; extension=apk
+          else
+            workflow="build-desktop.yml"; artifact="finance-desktop-windows"; extension=exe
+          fi
+          metadata=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
+          jq -e --arg workflow ".github/workflows/$workflow" '.path == $workflow and .conclusion == "success" and .head_branch == "main"' <<< "$metadata"
+          version="1.0.$(jq -r '.run_number' <<< "$metadata")"
+          sha=$(jq -r '.head_sha' <<< "$metadata")
+          mkdir candidate
+          gh run download "$RUN_ID" --name "$artifact" --dir candidate
+          mapfile -d '' files < <(find candidate -type f -name "*.$extension" -print0)
+          (( ${#files[@]} > 0 ))
+          expected=$(tr ' ' '\n' <<< "$VERIFIED_HASHES" | sed '/^$/d' | sort)
+          actual=$(sha256sum "${files[@]}" | cut -d ' ' -f 1 | sort)
+          [[ -n "$expected" && "$expected" == "$actual" ]]
+          gh release create "$TARGET-v$version" "${files[@]}" --target "$sha" --title "$TARGET $version" --notes "Published from verified candidate $RUN_ID. SHA-256: $actual"
