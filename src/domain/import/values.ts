@@ -20,25 +20,32 @@ export function parseAmountAgorot(value: Cell): number | null {
   if (value === null || value === undefined || value === '' || value instanceof Date) return null;
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return null;
-    return Math.round(value * 100);
+    const amount = Math.round(Math.abs(value) * 100);
+    return Number.isSafeInteger(amount) ? (value < 0 && amount ? -amount : amount) : null;
   }
   if (typeof value === 'boolean') return null;
   let s = cleanText(value);
   if (!s) return null;
   let negative = false;
+  let signed = false;
   if (/^\(.*\)$/.test(s)) {
     negative = true;
+    signed = true;
     s = s.slice(1, -1);
   }
   s = s.replace(/[₪$€£]|ש"ח|שח|ILS|USD|EUR|GBP|NIS/gi, '').replace(/\s+/g, '');
   if (s.endsWith('-')) {
-    negative = !negative;
+    if (signed) return null;
+    negative = true;
+    signed = true;
     s = s.slice(0, -1);
   }
   if (s.startsWith('-') || s.startsWith('−')) {
-    negative = !negative;
+    if (signed) return null;
+    negative = true;
     s = s.slice(1);
   } else if (s.startsWith('+')) {
+    if (signed) return null;
     s = s.slice(1);
   }
   if (!/^[0-9][0-9,.]*$/.test(s)) return null;
@@ -47,23 +54,25 @@ export function parseAmountAgorot(value: Cell): number | null {
   let normalized: string;
   if (lastComma >= 0 && lastDot >= 0) {
     const decimalIsDot = lastDot > lastComma;
+    if (!(decimalIsDot ? /^\d{1,3}(,\d{3})+\.\d{1,2}$/ : /^\d{1,3}(\.\d{3})+,\d{1,2}$/).test(s)) return null;
     normalized = decimalIsDot ? s.replace(/,/g, '') : s.replace(/\./g, '').replace(',', '.');
   } else if (lastComma >= 0) {
-    const after = s.length - lastComma - 1;
-    // פסיק יחיד ואחריו 3 ספרות = אלפים; 1-2 ספרות = עשרוני
-    normalized = after === 3 ? s.replace(/,/g, '') : s.replace(/,/g, '.');
-    if (normalized.split('.').length > 2) normalized = s.replace(/,/g, '');
+    if (/^\d{1,3}(,\d{3})+$/.test(s)) normalized = s.replace(/,/g, '');
+    else if (/^\d+,\d{1,2}$/.test(s)) normalized = s.replace(',', '.');
+    else return null;
   } else {
     normalized = s;
     if (normalized.split('.').length > 2) {
       // 1.234.567 = אלפים
+      if (!/^\d{1,3}(\.\d{3})+$/.test(s)) return null;
       normalized = normalized.replace(/\./g, '');
     }
   }
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
   const n = Number(normalized);
   if (!Number.isFinite(n)) return null;
   const agorot = Math.round(n * 100);
-  return negative ? -agorot : agorot;
+  return Number.isSafeInteger(agorot) ? (negative && agorot ? -agorot : agorot) : null;
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');

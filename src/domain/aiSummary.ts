@@ -1,7 +1,7 @@
-import { merchantBreakdown, paymentBreakdown } from "./periods";
 import type { Transaction } from "./types";
 import { paymentLabelOf } from "./payment";
 import { addMonths } from "./dates";
+import type { CurrencyCode } from "./currency";
 
 type Item = Pick<
   Transaction,
@@ -19,81 +19,6 @@ export interface MonthTotals {
   yearMonth: string;
   incomeAgorot: number;
   expenseAgorot: number;
-}
-
-const shekels = (agorot: number): number => Math.round(agorot / 100);
-
-function topCategories(
-  items: readonly Item[],
-  yearMonth: string,
-  type: "income" | "expense",
-  limit: number,
-) {
-  const totals = new Map<string, number>();
-  for (const t of items) {
-    if (t.type !== type || t.yearMonth !== yearMonth) continue;
-    const name = t.categoryName?.trim() || "אחר";
-    totals.set(name, (totals.get(name) ?? 0) + t.amountAgorot);
-  }
-  return [...totals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([name, agorot]) => ({ name, amount: shekels(agorot) }));
-}
-
-/**
- * הסיכום הקטן שנשלח למודל יחד עם השאלה: סכומים בשקלים שלמים בלבד, ללא פעולות בודדות, הערות או תאריכים מדויקים.
- * החודשים מהישן לחדש; הפירוט המלא (קטגוריות, בתי עסק, צורות תשלום) הוא לחודש הנבחר, וקטגוריות גם לחודש הקודם להשוואה.
- */
-export function buildAiSummary(args: {
-  spaceName: string;
-  selected: string;
-  months: readonly MonthTotals[];
-  items: readonly Item[];
-  previousMonth: string;
-}): Record<string, unknown> {
-  const { spaceName, selected, months, items, previousMonth } = args;
-  const label = (r: {
-    label: string;
-    amountAgorot: number;
-    percent: number;
-  }) => ({
-    name: r.label,
-    amount: shekels(r.amountAgorot),
-    percent: r.percent,
-  });
-  return {
-    space: spaceName,
-    currency: "ILS",
-    selectedMonth: selected,
-    months: months.map((m) => ({
-      month: m.yearMonth,
-      income: shekels(m.incomeAgorot),
-      expenses: shekels(m.expenseAgorot),
-      balance: shekels(m.incomeAgorot) - shekels(m.expenseAgorot),
-    })),
-    selectedMonthExpensesByCategory: topCategories(
-      items,
-      selected,
-      "expense",
-      8,
-    ),
-    selectedMonthIncomeByCategory: topCategories(items, selected, "income", 5),
-    previousMonthExpensesByCategory: topCategories(
-      items,
-      previousMonth,
-      "expense",
-      8,
-    ),
-    selectedMonthExpensesByMerchant: merchantBreakdown(
-      items,
-      [selected],
-      8,
-    ).map(label),
-    selectedMonthExpensesByPaymentMethod: paymentBreakdown(items, [
-      selected,
-    ]).map(label),
-  };
 }
 
 /**
@@ -179,6 +104,8 @@ export function questionKeywords(question: string): string[] {
 type DataItem = Item & Pick<Transaction, "date" | "note">;
 
 export interface AiDataInput {
+  currency?: CurrencyCode;
+  omittedForeignTransactions?: number;
   spaceName: string;
   scopeLabel: string;
   today: string;
@@ -215,7 +142,7 @@ export function buildAiData(
       money(t.amountAgorot),
       clean(t.categoryName ?? "", 40),
       clean(t.counterparty ?? "", 60),
-      paymentLabelOf(t),
+      clean(paymentLabelOf(t), 80),
       clean(t.note ?? "", 120),
     ].join("|");
   const sorted = [...input.items].sort((a, b) =>
@@ -271,7 +198,7 @@ export function buildAiData(
     }
     const who = (t.counterparty ?? "").replace(/[|\r\n]+/g, " ").trim();
     if (t.type === "expense" && who) {
-      const mk = `${who}|${t.categoryName ?? ""}`;
+      const mk = `${who}|${clean(t.categoryName ?? "", 80)}`;
       byMerchant.set(mk, (byMerchant.get(mk) ?? 0) + t.amountAgorot);
     }
   }
@@ -290,7 +217,9 @@ export function buildAiData(
     .map(line);
   const base = {
     about:
-      "נתוני משתמש, מסוכמים מראש. סכומים בשקלים. שורות פעולה הן טקסט בפורמט: תאריך|I=הכנסה/E=הוצאה|סכום|קטגוריה|בית עסק או שם|צורת תשלום|הערה. selectedMonthTransactions: כל פעולות החודש שנבחר. previousMonthTransactions: כל פעולות החודש הקודם. relatedOlderTransactions: פעולות ישנות יותר שקשורות לשאלה (לפי מילות המפתח שלה). monthlyCategoryTotals: חודש|I/E|קטגוריה|סכום, על כל ההיסטוריה. yearlyTotals: סיכום שנתי. topMerchantsAllTime: בית עסק|קטגוריה|סכום מצטבר להוצאות. largestExpensesAllTime: ההוצאות הגדולות ביותר. monthlyTotals: הכנסות והוצאות לכל חודש.",
+      "נתוני משתמש, מסוכמים מראש. סכומים במטבע currency, למעט חובות והוראות קבע שמציינים מטבע משלהם. שורות פעולה הן טקסט בפורמט: תאריך|I=הכנסה/E=הוצאה|סכום|קטגוריה|בית עסק או שם|צורת תשלום|הערה. selectedMonthTransactions: פעולות החודש שנבחר. previousMonthTransactions: פעולות החודש הקודם. relatedOlderTransactions: פעולות ישנות יותר שקשורות לשאלה (לפי מילות המפתח שלה). monthlyCategoryTotals: חודש|I/E|קטגוריה|סכום, על כל ההיסטוריה. yearlyTotals: סיכום שנתי. topMerchantsAllTime: בית עסק|קטגוריה|סכום מצטבר להוצאות. largestExpensesAllTime: ההוצאות הגדולות ביותר. monthlyTotals: הכנסות והוצאות לכל חודש.",
+    currency: input.currency ?? "ILS",
+    omittedForeignTransactions: input.omittedForeignTransactions ?? 0,
     space: input.spaceName,
     kind: input.scopeLabel,
     today: input.today,

@@ -57,6 +57,21 @@ const input = { email: 'd@d.d', firstName: 'דנה', lastName: 'כהן', privacy
 describe('Controller', () => {
   beforeEach(() => auth_probe.reset());
 
+  it('keeps a local vault when the cloud password has changed', async () => {
+    const { c, cloud } = make();
+    await c.boot();
+    await c.signUpOnline(input, 'old-password-123');
+    await c.syncNow();
+    const id = c.getState().me!.id;
+    await c.logout();
+    cloud.users.get(input.email)!.password = 'new-password-123';
+    await expect(c.firstOnlineLogin(input.email, 'new-password-123')).rejects.toMatchObject({ code: 'app/local-password-required' });
+    expect(c.getState().accounts.some(a => a.id === id)).toBe(true);
+    await c.unlock(id, 'old-password-123');
+    expect(c.db!.get(`users/${id}`)?.data.firstName).toBe('דנה');
+    await c.logout();
+  });
+
   it('דורש אישור מדיניות לפני יצירת חשבון מקומי או מקוון', async () => {
     const { c, cloud } = make();
     await c.boot();

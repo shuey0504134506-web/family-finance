@@ -15,7 +15,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "test:rules": "npx firebase-tools emulators:exec --only firestore --project demo-family-finance \"vitest run --config vitest.rules.config.ts\""
+    "test:rules": "npx --yes firebase-tools@15.37.0 emulators:exec --only firestore --project demo-family-finance \"vitest run --config vitest.rules.config.ts\""
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

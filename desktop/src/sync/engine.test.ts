@@ -25,6 +25,31 @@ const tx = `users/${U}/householdTransactions`;
 const make = (cloud: FakeCloud, db = new LocalDb(undefined, true)) => ({ db, eng: new SyncEngine(db, cloud, U, null, () => undefined, 5) });
 
 describe('SyncEngine', () => {
+  it('preserves a local edit made while an earlier cloud write is in flight', async () => {
+    const c = new FakeCloud();
+    const { db, eng } = make(c);
+    const path = `${tx}/race`;
+    const write = c.write.bind(c);
+    c.write = async (p, d) => { if (d.v === 1) db.set(p, { v: 2 }); await write(p, d); };
+    db.set(path, { v: 1 });
+    await eng.syncNow();
+    expect(db.get(path)?.data.v).toBe(2);
+    expect(db.pendingPaths()).toEqual([[path, 'set']]);
+    await eng.syncNow();
+    expect(c.docs.get(path)).toEqual({ v: 2 });
+    expect(db.pendingPaths()).toEqual([]);
+  });
+  it('does not continue cloud writes after the session is stopped', async () => {
+    const c = new FakeCloud();
+    const { db, eng } = make(c);
+    const write = c.write.bind(c);
+    c.write = async (p, d) => { await write(p, d); eng.stop(); };
+    db.set(`${tx}/one`, { v: 1 });
+    db.set(`${tx}/two`, { v: 2 });
+    await eng.syncNow();
+    expect(c.docs.has(`${tx}/two`)).toBe(false);
+    expect(db.pendingPaths()).toContainEqual([`${tx}/two`, 'set']);
+  });
   it('מושך הרשאת AI והיסטוריה לחשבון מקוון בלבד ומסנכרן שיחה', async () => {
     const c = new FakeCloud();
     c.docs.set(`aiAccess/${U}`, { enabled: true });

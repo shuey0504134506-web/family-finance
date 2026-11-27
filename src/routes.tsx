@@ -118,7 +118,7 @@ function RequireAccount() {
       return <CompleteSetupScreen />;
     case 'ready':
       return (
-        <ApprovalGate uid={state.user.uid} whileLoading={<LoadingScreen />}>
+        <ApprovalGate key={state.user.uid} uid={state.user.uid} whileLoading={<LoadingScreen />}>
         <SettingsProvider uid={state.user.uid}>
           <LockProvider user={state.user}>
             <SpacesProvider uid={state.user.uid} profile={state.profile}>

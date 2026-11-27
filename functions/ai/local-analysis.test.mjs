@@ -15,6 +15,13 @@ test('topic expense query answers only matching transactions',()=>{
   assert.match(analyze(s,'כמה הוצאתי על דלק החודש?'),/לא נמצאו/);
 });
 test('missing month never invents totals', () => assert.match(analyze(summary, 'סיכום חודש 2026-02'), /אין נתונים/));
+test('previous month and primary currency are respected', () => {
+  const previous = analyze({...summary, currency: 'USD', omittedForeignTransactions: 1}, 'סיכום בחודש הקודם');
+  assert.match(previous, /2025-12/);
+  assert.match(previous, /\$/);
+  assert.doesNotMatch(previous, /₪/);
+  assert.match(previous, /שער ההמרה חסר/);
+});
 test('payment method ranking and follow-up', () => {
   const s = {...summary,selectedMonthTransactions:'2026-01-01|E|10|food|shop|אשראי|\n2026-01-02|E|20|food|shop|אשראי|\n2026-01-03|E|90|food|shop|מזומן|'};
   const q = 'איזו צורת תשלום אני משתמש בה הכי הרבה?';

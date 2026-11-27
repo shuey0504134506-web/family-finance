@@ -17,7 +17,7 @@ describe('parseAmountAgorot', () => {
     ['‏45.00 ש"ח', 4500],
   ])('%s -> %s', (input, expected) => expect(parseAmountAgorot(input)).toBe(expected));
 
-  it.each(['', 'abc', null, undefined, 'סה"כ', '12/05/2026'])('לא סכום: %s', (input) =>
+  it.each(['', 'abc', null, undefined, 'סה"כ', '12/05/2026', '12,34.56', '1,,234', '1.2.3', '-12-', '(+12)', 1e20, '999999999999999999'])('לא סכום: %s', (input) =>
     expect(parseAmountAgorot(input as never)).toBeNull(),
   );
 });

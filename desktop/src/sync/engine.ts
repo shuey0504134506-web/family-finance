@@ -57,6 +57,7 @@ export class SyncEngine {
   private offDb: (() => void) | null = null;
   private failed = new Set<string>();
   private stopped = true;
+  private disposed = false;
   status: SyncStatus;
   private listeners = new Set<(s: SyncStatus) => void>();
   online = true;
@@ -84,6 +85,7 @@ export class SyncEngine {
   }
 
   start(): void {
+    this.disposed = false;
     this.stopped = false;
     this.offDb = this.db.subscribe(() => { this.set(this.status.kind === 'syncing' ? 'syncing' : this.status.kind); if (this.db.pendingPaths().length > 0) this.schedulePush(); });
     void this.syncNow().then(() => this.watch());
@@ -91,6 +93,7 @@ export class SyncEngine {
 
   stop(): void {
     this.stopped = true;
+    this.disposed = true;
     if (this.timer) clearTimeout(this.timer);
     this.offDb?.();
     this.unsubs.forEach((u) => u());
@@ -118,6 +121,7 @@ export class SyncEngine {
 
   /** דחיפה ואז משיכה. אם כבר רץ, ירוץ שוב מיד אחרי שיסתיים. */
   syncNow(): Promise<void> {
+    if (this.disposed) return Promise.resolve();
     if (!this.online) { this.set('offline'); return Promise.resolve(); }
     if (this.running) { this.again = true; return this.running; }
     this.running = this.run().finally(() => { this.running = null; });
@@ -131,8 +135,11 @@ export class SyncEngine {
         this.again = false;
         await this.push();
         for (const t of targetsFor(this.uid)) {
+          if (this.disposed) return;
           try {
-            this.applyList(t, await this.cloud.read(t));
+            const list = await this.cloud.read(t);
+            if (this.disposed) return;
+            this.applyList(t, list);
           } catch (e) {
             // יעד שנדחה בכללי האבטחה לא יעצור את משיכת שאר הנתונים
             if (!isNetwork(e) && isPermanent(e)) continue;
@@ -140,6 +147,7 @@ export class SyncEngine {
           }
         }
       } while (this.again && !this.stopped);
+      if (this.disposed) return;
       this.lastSync = Date.now();
       this.onSynced(this.lastSync);
       this.db.hydrated = true;
@@ -151,25 +159,32 @@ export class SyncEngine {
 
   private async push(): Promise<void> {
     for (const [path, op] of this.db.pendingPaths()) {
+      if (this.disposed) return;
+      // The queue may have changed while an earlier asynchronous write was in flight.
+      if (this.db.pendingOperation(path) !== op) continue;
+      const revision = this.db.pendingRevision(path);
       try {
         if (op === 'set') {
           const cur = this.db.get(path);
           if (cur) await this.cloud.write(path, cur.data);
-          else { this.db.ack(path, 'set'); continue; }
+          else { this.db.ack(path, 'set', revision); continue; }
         } else {
           await this.cloud.remove(path);
         }
+        if (this.disposed) return;
         this.failed.delete(path);
-        this.db.ack(path, op);
+        this.db.ack(path, op, revision);
       } catch (e) {
+        if (this.disposed) return;
         if (isNetwork(e)) throw e;
-        if (isPermanent(e) && DROP_ON_DENIED(path)) { this.db.ack(path, op); continue; }
+        if (isPermanent(e) && DROP_ON_DENIED(path)) { this.db.ack(path, op, revision); continue; }
         this.failed.add(path);
       }
     }
   }
 
   private applyList(target: Target, list: Remote[]): void {
+    if (this.disposed) return;
     const seen = new Set<string>();
     for (const r of list) { seen.add(r.path); this.db.applyRemote(r.path, r.data); }
     if (target.kind === 'doc') {

@@ -61,16 +61,29 @@ describe('LocalDb', () => {
     db.set(`${col}/a`, { v: 1 });
     db.applyRemote(`${col}/a`, { v: 99 });
     expect(db.get(`${col}/a`)?.data).toEqual({ v: 1 });
-    db.ack(`${col}/a`, 'set');
+    db.ack(`${col}/a`, 'set', db.pendingRevision(`${col}/a`));
     db.applyRemote(`${col}/a`, { v: 99 });
     expect(db.get(`${col}/a`)?.data).toEqual({ v: 99 });
   });
   it('ack לא מנקה אם נכתב שוב בינתיים (set אחרי delete)', () => {
     const db = new LocalDb(undefined, true);
     db.set(`${col}/a`, { v: 1 });
+    const revision = db.pendingRevision(`${col}/a`);
     db.delete(`${col}/a`);
-    db.ack(`${col}/a`, 'set');
+    db.ack(`${col}/a`, 'set', revision);
     expect(db.pendingPaths()).toEqual([[`${col}/a`, 'delete']]);
+  });
+  it('keeps newer writes even when the same operation was already in flight', () => {
+    const db = new LocalDb(undefined, true);
+    const p = `${col}/a`;
+    db.set(p, { v: 1 });
+    const first = db.pendingRevision(p);
+    db.set(p, { v: 2 });
+    db.ack(p, 'set', first);
+    expect(db.pendingPaths()).toEqual([[p, 'set']]);
+    expect(db.get(p)?.data.v).toBe(2);
+    db.ack(p, 'set', db.pendingRevision(p));
+    expect(db.pendingPaths()).toEqual([]);
   });
   it('state הולך הלוך-חזור דרך JSON', () => {
     const db = new LocalDb(undefined, true);

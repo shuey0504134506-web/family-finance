@@ -111,6 +111,8 @@ function matches(data: DocData, w: Where): boolean {
 export class LocalDb {
   private docs = new Map<string, DocData>();
   private outbox = new Map<string, 'set' | 'delete'>();
+  private revisions = new Map<string, number>();
+  private revision = 0;
   private listeners = new Set<Listener>();
   /** onChange נקרא אחרי כל שינוי מקומי או מרוחק, כדי לשמור לקובץ. */
   onChange: (() => void) | null = null;
@@ -190,12 +192,14 @@ export class LocalDb {
   /** כמה פעולות כתיבה כאחת (writeBatch): מדווח פעם אחת ורק אם הצליחו כולן. */
   batch(ops: (() => void)[]): void {
     const snapshot = this.state;
+    const revisions = new Map(this.revisions);
     try {
       this.silent = true;
       for (const op of ops) op();
     } catch (e) {
       this.docs = new Map(Object.entries(snapshot.docs));
       this.outbox = new Map(Object.entries(snapshot.outbox));
+      this.revisions = revisions;
       throw e;
     } finally {
       this.silent = false;
@@ -205,7 +209,10 @@ export class LocalDb {
   private silent = false;
 
   private mark(path: string, op: 'set' | 'delete'): void {
-    if (this.trackOutbox) this.outbox.set(path, op);
+    if (this.trackOutbox) {
+      this.outbox.set(path, op);
+      this.revisions.set(path, ++this.revision);
+    }
   }
 
   // ---- יישום שינויים מהענן (בלי לסמן כממתין) ----
@@ -217,9 +224,13 @@ export class LocalDb {
   }
 
   /** נקרא אחרי שהענן אישר כתיבה: מסיר מהתור רק אם לא נכתב שוב בינתיים. */
-  ack(path: string, op: 'set' | 'delete'): void {
-    if (this.outbox.get(path) === op) {
+  pendingRevision(path: string): number { return this.revisions.get(path) ?? 0; }
+  pendingOperation(path: string): 'set' | 'delete' | undefined { return this.outbox.get(path); }
+
+  ack(path: string, op: 'set' | 'delete', revision: number): void {
+    if (this.outbox.get(path) === op && this.pendingRevision(path) === revision) {
       this.outbox.delete(path);
+      this.revisions.delete(path);
       this.touched();
     }
   }

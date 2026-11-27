@@ -47,6 +47,7 @@ export function parseShekelsToAgorot(input: string): Agorot | null {
   }
 
   if (text.includes('.') && text.includes(',')) {
+    if (!/^\d{1,3}(,\d{3})+\.\d{1,2}$/.test(text)) return null;
     text = text.replace(/,/g, '');
   } else if (text.includes(',')) {
     if (/^\d{1,3}(,\d{3})+$/.test(text)) {
