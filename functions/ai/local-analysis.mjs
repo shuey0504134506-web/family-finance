@@ -1,8 +1,14 @@
 // Deterministic, offline financial analysis. No credentials or network access.
 const cents = (n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 1e12 ? Math.round(n * 100) : 0;
-const fmt = (n) => new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(n / 100);
+const currencyCode = (value) => ['ILS', 'USD', 'EUR', 'GBP'].includes(value) ? value : 'ILS';
 
 export function analyze(summary, question, history = []) {
+  const result = analyzeInternal(summary, question, history);
+  return result + (Number(summary?.omittedForeignTransactions) > 0 ? '\nחלק מהפעולות במטבע זר לא נכללו משום ששער ההמרה חסר.' : '');
+}
+
+function analyzeInternal(summary, question, history) {
+  const fmt = (n, currency = summary?.currency) => new Intl.NumberFormat('he-IL', { style: 'currency', currency: currencyCode(currency) }).format(n / 100);
   const rows = Array.isArray(summary?.monthlyTotals) ? summary.monthlyTotals.filter(r => r && /^\d{4}-\d{2}$/.test(r.month)) : [];
   const raw = String(question ?? '');
   const previous = Array.isArray(history) ? [...history].reverse().find(m => m?.role === 'user' && typeof m.text === 'string')?.text : '';
@@ -32,7 +38,7 @@ export function analyze(summary, question, history = []) {
   if (/חוב|חובות|הלווא|debt/i.test(q)) {
     const debts = Array.isArray(summary?.debts) ? summary.debts : [];
     if (!debts.length) return 'אין חובות רשומים בסיכום.';
-    return ['יתרות חובות לפי הרשומות:', ...debts.slice(0,30).map(d=>`${d.direction ?? ''} ${d.name ?? ''}: ${fmt(Math.max(0,cents(d.amount)-cents(d.paid)))}`)].join('\n');
+    return ['יתרות חובות לפי הרשומות:', ...debts.slice(0,30).map(d=>`${d.direction ?? ''} ${d.name ?? ''}: ${fmt(Math.max(0,cents(d.amount)-cents(d.paid)), d.currency)}`)].join('\n');
   }
   if (/תשלום|אשראי|מזומן|payment|cash|credit/i.test(q)) {
     const all = [summary?.selectedMonthTransactions, summary?.previousMonthTransactions].filter(x => typeof x === 'string').join('\n');
@@ -56,7 +62,7 @@ export function analyze(summary, question, history = []) {
   }
   if (!/הכנ|הוצ|חיס|מאזן|תקצ|חוד|שנ|כס|השוו|סיכו|יתרה|income|expense|saving|balance|budget|month|year/i.test(q)) return 'המנוע המקומי תומך בסיכום הכנסות, הוצאות, יתרה, השוואת חודשים ויעד חיסכון.';
   const year = /שנתי|השנה|annual|yearly|this year/i.test(q);
-  const month = q.match(/\b\d{4}-\d{2}\b/)?.[0] ?? summary?.selectedMonth;
+  const month = targetMonth;
   const selected = year ? rows.filter(r => r.month.slice(0, 4) === month?.slice(0, 4)) : rows.filter(r => r.month === month);
   if (!selected.length) return 'אין נתונים לתקופה המבוקשת.';
   const income = selected.reduce((s, r) => s + cents(r.income), 0);

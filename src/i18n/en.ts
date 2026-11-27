@@ -1,5 +1,6 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "החשבון כבר שמור במחשב עם סיסמה מקומית אחרת. חזור לרשימת החשבונות ופתח אותו באמצעות הסיסמה הקודמת, כדי לשמור את הנתונים.": "This account is already stored on the computer with a different local password. Return to the account list and unlock it with the previous password to keep your data.",
   "כדי לפתוח את מסך הניהול צריך לאמת את כתובת המייל של חשבון המנהל.": "To open advanced management, verify the administrator account's email address.",
   "שליחת מייל אימות": "Send verification email",
   "בדיקת אימות": "Check verification",

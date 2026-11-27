@@ -17,6 +17,7 @@
     "electron": "^44.11.6",
     "electron-builder": "^26.0.0"
   },
+  "overrides": { "fast-uri": "^3.1.9" },
   "author": "family-finance",
   "build": {
     "appId": "com.familyfinance.desktop",

@@ -33,6 +33,9 @@ describe('parseShekelsToAgorot', () => {
     expect(parseShekelsToAgorot('abc')).toBeNull();
     expect(parseShekelsToAgorot('1.500')).toBeNull();
     expect(parseShekelsToAgorot('12,34,56')).toBeNull();
+    expect(parseShekelsToAgorot('12,34.56')).toBeNull();
+    expect(parseShekelsToAgorot('1.234,56')).toBeNull();
+    expect(parseShekelsToAgorot('1,,234.56')).toBeNull();
     expect(parseShekelsToAgorot('1.2.3')).toBeNull();
     expect(parseShekelsToAgorot('.5')).toBeNull();
     expect(parseShekelsToAgorot('5.')).toBeNull();

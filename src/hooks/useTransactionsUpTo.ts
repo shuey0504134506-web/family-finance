@@ -16,7 +16,7 @@ export function useTransactionsUpTo(
   yearMonth: YearMonth,
   enabled: boolean,
 ): { items: TransactionRecord[]; all: TransactionRecord[]; loading: boolean; error: Error | null } {
-  const key = `${scope}|${yearMonth}`;
+  const key = `${uid}|${scope}|${yearMonth}`;
   const [state, setState] = useState<{
     key: string;
     items: TransactionRecord[];
@@ -34,7 +34,7 @@ export function useTransactionsUpTo(
     );
   }, [uid, scope, yearMonth, enabled, key]);
 
-  const isCurrent = state.key === key;
+  const isCurrent = enabled && state.key === key;
   const all = isCurrent ? state.items : EMPTY;
   const converted = useConvertedTransactions(all);
   return {

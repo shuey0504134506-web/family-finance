@@ -1,9 +1,11 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, net, session, shell } from 'electron';
 import { accessSync, createWriteStream, promises as fs } from 'node:fs';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { installerMetadata, updateRequest } from './updateIntegrity';
 
 /**
  * תהליך ראשי: חלון אחד, וקבצי נתונים בתיקיית המשתמש בלבד.
@@ -84,19 +86,39 @@ ipcMain.handle('files:pick', async (e, accept: unknown, multiple: unknown) => {
  * עדכון התוכנה מתוך התוכנה: מוריד את קובץ ההתקנה מגרסאות המאגר (כתובת מאושרת בלבד), פותח אותו ונסגר,
  * כדי שההתקנה תוכל להחליף את הקבצים. הנתונים נשמרים בתיקיית המשתמש ולא נפגעים.
  */
-const UPDATE_URL = /^https:\/\/github\.com\/shuey0504134506-web\/family-finance\/releases\/download\/desktop-v\d+(?:\.\d+)*\/finance-desktop-\d+(?:\.\d+)*-x64\.exe$/;
 ipcMain.handle('update:version', () => app.getVersion());
+let updateInProgress = false;
 ipcMain.handle('update:install', async (_e, url: unknown) => {
-  if (typeof url !== 'string' || !UPDATE_URL.test(url)) throw new Error('bad-url');
-  const res = await net.fetch(url);
-  if (!res.ok || !res.body) throw new Error('download-failed');
-  const file = path.join(os.tmpdir(), `finance-update-${Date.now()}.exe`);
-  await pipeline(Readable.fromWeb(res.body as never), createWriteStream(file));
-  const stat = await fs.stat(file);
-  if (stat.size < 5 * 1024 * 1024) throw new Error('download-incomplete');
-  const err = await shell.openPath(file);
-  if (err) throw new Error(err);
-  setTimeout(() => app.quit(), 1500);
+  if (updateInProgress) throw new Error('update-in-progress');
+  const request = updateRequest(url, app.getVersion());
+  updateInProgress = true;
+  let directory: string | undefined;
+  try {
+    const metadata = await net.fetch(request.api, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(30000) });
+    if (!metadata.ok) throw new Error('release-unavailable');
+    const expected = installerMetadata(await metadata.json(), request);
+    const res = await net.fetch(request.url, { signal: AbortSignal.timeout(300000) });
+    if (!res.ok || !res.body) throw new Error('download-failed');
+    directory = await fs.mkdtemp(path.join(os.tmpdir(), 'finance-update-'));
+    const file = path.join(directory, request.name);
+    const hash = createHash('sha256');
+    let size = 0;
+    const verify = new Transform({ transform(chunk, _encoding, callback) {
+      size += chunk.length;
+      if (size > expected.size) return callback(new Error('download-too-large'));
+      hash.update(chunk);
+      callback(null, chunk);
+    } });
+    await pipeline(Readable.fromWeb(res.body as never), verify, createWriteStream(file, { flags: 'wx' }));
+    if (size !== expected.size || hash.digest('hex') !== expected.sha256) throw new Error('download-integrity-failed');
+    const err = await shell.openPath(file);
+    if (err) throw new Error(err);
+    setTimeout(() => app.quit(), 1500);
+  } catch (error) {
+    if (directory) await fs.rm(directory, { recursive: true, force: true }).catch(() => undefined);
+    updateInProgress = false;
+    throw error;
+  }
 });
 
 /** הורדות (גיבוי, אקסל) נשמרות ישר בתיקיית ההורדות, בלי חלון שמירה, ובשם שאינו דורס קובץ קיים. */

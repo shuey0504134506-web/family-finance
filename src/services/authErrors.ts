@@ -11,6 +11,7 @@ const MESSAGES: Record<string, string> = {
   'auth/user-disabled': 'החשבון הזה הושבת.',
   'auth/requires-recent-login': 'לצורך הפעולה הזאת יש להיכנס מחדש לחשבון.',
   'app/offline': 'הפעולה דורשת חיבור לאינטרנט. יש להתחבר ולנסות שוב.',
+  'app/local-password-required': 'החשבון כבר שמור במחשב עם סיסמה מקומית אחרת. חזור לרשימת החשבונות ופתח אותו באמצעות הסיסמה הקודמת, כדי לשמור את הנתונים.',
   'auth/missing-password': 'יש להזין סיסמה.',
   'auth/operation-not-allowed': 'הפעולה אינה מופעלת בהגדרות Firebase.',
   'permission-denied': 'אין הרשאה לבצע את הפעולה.',

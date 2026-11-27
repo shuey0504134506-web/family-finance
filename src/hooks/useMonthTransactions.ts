@@ -26,7 +26,7 @@ export function useMonthTransactions(
   yearMonth: YearMonth,
   enabled: boolean,
 ): Result {
-  const key = `${scope}|${yearMonth}`;
+  const key = `${uid}|${scope}|${yearMonth}`;
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<{
     key: string;
@@ -45,7 +45,7 @@ export function useMonthTransactions(
     );
   }, [uid, scope, yearMonth, enabled, key, attempt]);
 
-  const isCurrent = state.key === key;
+  const isCurrent = enabled && state.key === key;
   const all = isCurrent ? state.items : EMPTY;
   const converted = useConvertedTransactions(all);
   return {

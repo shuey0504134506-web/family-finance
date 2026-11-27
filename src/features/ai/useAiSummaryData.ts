@@ -3,6 +3,7 @@ import { buildAiData, type MonthTotals } from "../../domain/aiSummary";
 import { effectiveSavingsGoal } from "../../domain/budget";
 import { addMonths, todayIso } from "../../domain/dates";
 import { periodTotals } from "../../domain/periods";
+import { currencyOf, getCurrency } from "../../domain/currency";
 import { businessIdOf, inSpace } from "../../domain/spaces";
 import { useBudgets } from "../../hooks/useBudgets";
 import { useCategories } from "../../hooks/useCategories";
@@ -55,9 +56,9 @@ export function useAiSummaryData(): {
     "9999-12",
     !isBusiness,
   );
-  const { budgets, loading: budgetsLoading } = useBudgets(user.uid);
-  const { debts, loading: debtsLoading } = useDebts(user.uid);
-  const { orders, loading: ordersLoading } = useStandingOrders(user.uid);
+  const { budgets, loading: budgetsLoading, error: budgetsError } = useBudgets(user.uid);
+  const { debts, loading: debtsLoading, error: debtsError } = useDebts(user.uid);
+  const { orders, loading: ordersLoading, error: ordersError } = useStandingOrders(user.uid);
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
 
   const businessForCalc = useMemo(() => {
@@ -75,7 +76,7 @@ export function useAiSummaryData(): {
     !debtsLoading &&
     !ordersLoading &&
     !categoriesLoading;
-  const error = Boolean(business.error || household.error);
+  const error = Boolean(business.error || household.error || budgetsError || debtsError || ordersError);
   const name = nameOf(space);
 
   const build = (question = "") => {
@@ -109,8 +110,14 @@ export function useAiSummaryData(): {
       };
     });
     const catName = new Map(categories.map((c) => [c.id, c.name]));
+    const counted = new Set(countedIds);
+    const rawBusiness = business.all.filter(t => isBusiness ? businessIdOf(t) === space.businessId : counted.has(businessIdOf(t)));
+    const omittedForeignTransactions = Math.max(0, rawBusiness.length - businessForCalc.length)
+      + (isBusiness ? 0 : Math.max(0, household.all.length - household.items.length));
     return buildAiData(
       {
+        currency: getCurrency(),
+        omittedForeignTransactions,
         spaceName: name,
         scopeLabel: isBusiness ? "עסק" : "משק בית",
         today: todayIso(),
@@ -139,6 +146,7 @@ export function useAiSummaryData(): {
           .map((d) => ({
             direction: d.direction === "owe" ? "אני חייב" : "חייבים לי",
             name: d.name,
+            currency: currencyOf(d),
             amount: Math.round(d.amountAgorot) / 100,
             date: d.date,
             ...(d.dueDate ? { dueDate: d.dueDate } : {}),
@@ -151,6 +159,7 @@ export function useAiSummaryData(): {
           .filter((o) => inSpace(o, space))
           .map((o) => ({
             name: o.name,
+            currency: currencyOf(o),
             type: o.type === "income" ? "הכנסה" : "הוצאה",
             amount: Math.round(o.amountAgorot) / 100,
             dayOfMonth: o.dayOfMonth,

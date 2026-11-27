@@ -36,6 +36,12 @@ describe("buildAiData", () => {
     categories: [],
   };
 
+  it("preserves the primary currency and flags amounts excluded by missing rates", () => {
+    const out = buildAiData({ ...base, items: [], currency: "USD", omittedForeignTransactions: 2 });
+    expect(out.currency).toBe("USD");
+    expect(out.omittedForeignTransactions).toBe(2);
+  });
+
   it("שולח פעולות החודש הנבחר בנפרד וסיכום חודשי על כל ההיסטוריה", () => {
     const items = [item("2026-11-02", "לכבוד שבת"), item("2025-01-05", "ישן")];
     const out = buildAiData({ ...base, items });

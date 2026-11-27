@@ -42,7 +42,12 @@ export class Controller {
     setAuthBackend(this.backend());
     functionsBackend.call = (name, data) => {
       if (this.cur?.meta.kind !== 'online') throw appErr('functions/unavailable');
-      return this.cloud.call(name, data);
+      const account = this.cur;
+      return (async () => {
+        await this.connecting;
+        if (this.cur !== account || !this.engine) throw appErr('functions/unauthenticated');
+        return this.cloud.call(name, data);
+      })();
     };
   }
 
@@ -79,7 +84,8 @@ export class Controller {
     const existing = this.state.accounts.find((a) => a.id === cu.uid);
     if (existing) {
       try { await this.unlock(cu.uid, password); return; } catch (e) { if (!(e instanceof WrongPassword)) throw e; }
-      await this.session.remove(cu.uid);
+      await this.cloud.signOut();
+      throw appErr('app/local-password-required');
     }
     const u = await this.session.createOnline(cu, password);
     u.db.hydrated = false;
@@ -172,7 +178,12 @@ export class Controller {
     const u = this.cur;
     if (!u || u.meta.kind !== 'online' || this.engine) return;
     try {
-      await this.cloud.signIn(u.meta.email, this.password);
+      const authenticated = await this.cloud.signIn(u.meta.email, this.password);
+      if (this.cur !== u) return;
+      if (authenticated.uid !== u.meta.uid) {
+        await this.cloud.signOut();
+        throw appErr('auth/user-changed');
+      }
     } catch (e) {
       if (isBadCredential(e)) { this.set({ needsPasswordSync: true }); return; }
       if (waitFirstPull) throw e;
@@ -211,12 +222,15 @@ export class Controller {
   }
 
   async logout(): Promise<void> {
+    const u = this.cur;
+    this.cur = null;
     this.engine?.stop();
     this.offEngine?.();
     this.engine = null;
     this.offEngine = null;
-    if (this.cur) { await this.cur.flush(); await this.cur.lock(); }
-    this.cur = null;
+    await this.connecting;
+    this.connecting = null;
+    if (u) { await u.flush(); await u.lock(); }
     this.password = '';
     setActiveDb(new LocalDb());
     try { await this.cloud.signOut(); } catch { /* אין חיבור */ }

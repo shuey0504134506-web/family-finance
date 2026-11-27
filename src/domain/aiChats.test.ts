@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { chatTitle, MAX_SAVED_CHATS, splitChatHistory, type AiChat } from './aiChats';
 import { AI_QUESTION_BANK, pickQuestions } from './aiQuestions';
-import { buildAiSummary } from './aiSummary';
 
 const chat = (id: string, updatedAt: number, pinned = false): AiChat => ({ id, title: id, pinned, messages: [], createdAt: 1, updatedAt });
 
@@ -27,7 +26,6 @@ describe('chat history', () => {
     expect(chatTitle('a'.repeat(500)).length).toBeLessThanOrEqual(55);
   });
 });
-
 describe('pickQuestions', () => {
   it('חמש שאלות שונות מהמאגר', () => {
     const picked = pickQuestions(5);
@@ -37,24 +35,5 @@ describe('pickQuestions', () => {
   it('לא כולל שאלות מקבוצת ההחרגה', () => {
     const exclude = AI_QUESTION_BANK.slice(0, 10);
     expect(pickQuestions(5, Math.random, exclude).some((q) => exclude.includes(q))).toBe(false);
-  });
-});
-
-describe('buildAiSummary', () => {
-  const item = (type: 'income' | 'expense', amountAgorot: number, yearMonth: string, categoryName: string, counterparty: string) => ({
-    type, amountAgorot, yearMonth, categoryName, counterparty, categoryId: categoryName, paymentMethod: 'credit' as const,
-  });
-  const summary = buildAiSummary({
-    spaceName: 'משק בית',
-    selected: '2026-10',
-    previousMonth: '2026-09',
-    months: [{ yearMonth: '2026-10', incomeAgorot: 900_000, expenseAgorot: 250_050 }],
-    items: [item('expense', 150_000, '2026-10', 'מזון', 'שופרסל'), item('expense', 100_050, '2026-10', 'דלק', 'פז'), item('expense', 5_000, '2026-09', 'מזון', 'שופרסל')],
-  });
-  it('מסכם בשקלים שלמים ובלי פעולות בודדות', () => {
-    expect(summary.months).toEqual([{ month: '2026-10', income: 9000, expenses: 2501, balance: 6499 }]);
-    expect(summary.selectedMonthExpensesByCategory).toEqual([{ name: 'מזון', amount: 1500 }, { name: 'דלק', amount: 1001 }]);
-    expect(summary.previousMonthExpensesByCategory).toEqual([{ name: 'מזון', amount: 50 }]);
-    expect(JSON.stringify(summary)).not.toContain('"id"');
   });
 });
