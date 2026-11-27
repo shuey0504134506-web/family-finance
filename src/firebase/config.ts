@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { browserLocalPersistence, indexedDBLocalPersistence, initializeAuth, reload, sendEmailVerification } from 'firebase/auth';
+import { browserLocalPersistence, getIdToken, indexedDBLocalPersistence, initializeAuth, reload, sendEmailVerification } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -74,7 +74,7 @@ export async function verifyAdminEmail(uid: string, send: boolean): Promise<'ver
   await reload(user);
   if (auth.currentUser !== user) throw new Error('auth/user-changed');
   if (user.emailVerified) {
-    await user.getIdToken(true);
+    await getIdToken(user, true);
     return 'verified';
   }
   if (!send) return 'pending';
