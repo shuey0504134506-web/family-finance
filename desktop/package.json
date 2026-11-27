@@ -14,7 +14,7 @@
     "dist": "npm run build && electron-builder --win --publish never"
   },
   "devDependencies": {
-    "electron": "^44.7.2",
+    "electron": "^44.11.6",
     "electron-builder": "^26.0.0"
   },
   "author": "family-finance",
