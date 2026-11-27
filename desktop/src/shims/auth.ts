@@ -65,3 +65,7 @@ export const reauthenticateWithCredential = (_u: User, c: { password: string }):
 export const updatePassword = (_u: User, p: string): Promise<void> => need().changePassword(p);
 export const verifyBeforeUpdateEmail = (_u: User, e: string): Promise<void> => need().changeEmail(e);
 export const deleteUser = (_u: User): Promise<void> => need().deleteAccount();
+
+// מסך הניהול בתוכנה מפנה לאימות בדפדפן.
+export const reload = (_u: User): Promise<void> => Promise.reject(new Error("auth/operation-not-supported"));
+export const sendEmailVerification = reload;
