@@ -7,6 +7,7 @@ import { Icon } from "../../components/Icon";
 import { AppHeader } from "../../components/AppHeader";
 import { HomeGreeting } from "./HomeGreeting";
 import { AiEntryButton } from "../ai/AiEntryButton";
+import { AiActionEntryButton } from "../transactions/AiActionEntry";
 import { ScopeTabs } from "../../components/ScopeTabs";
 import { useMonthTransactions } from "../../hooks/useMonthTransactions";
 import { useSwipe } from "../../hooks/useSwipe";
@@ -409,6 +410,7 @@ export function HomeScreen() {
         )}
 
         {!loading && !active.error && <AiEntryButton />}
+        {!loading && !active.error && <AiActionEntryButton />}
 
         {!loading && !active.error && (
           <MultiCurrencySummary

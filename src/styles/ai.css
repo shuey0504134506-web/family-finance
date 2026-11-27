@@ -262,3 +262,6 @@
 .ai-md-table-scroll th { background: #e9eee7; font-weight: 700; }
 .ai-md-table-scroll tr:last-child td { border-bottom: 0; }
 .ai-md-table-scroll th:last-child, .ai-md-table-scroll td:last-child { border-inline-end: 0; }
+.ai-action-entry fieldset { min-width: 0; max-width: 100%; }
+.ai-action-entry label { min-width: 0; overflow-wrap: anywhere; }
+.ai-action-entry .input { width: 100%; min-width: 0; }

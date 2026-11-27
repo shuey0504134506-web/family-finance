@@ -43,6 +43,8 @@ import { useMonth } from '../month/MonthContext';
 import { useSpace } from '../spaces/SpaceRoute';
 import { useSpaces } from '../spaces/SpacesContext';
 import { useSyncNotice } from '../sync/SyncNotice';
+import { AI_SUPPORTED, useAiAccess } from '../../services/aiService';
+import { AiActionEntry } from './AiActionEntry';
 
 const isType = (value: string | undefined): value is TransactionType =>
   value === 'income' || value === 'expense';
@@ -162,6 +164,8 @@ function TransactionForm({
   const scope = space.scope;
   const { reportFailure } = useSyncNotice();
   const { categories, loading: categoriesLoading } = useCategories(user.uid);
+  const canUseAi=useAiAccess(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
+  const [aiOpen,setAiOpen]=useState(false);
 
   const [draft, setDraft] = useState<TransactionDraft>(initial);
   const manualRate=useManualRate(user.uid,(user as {offlineOnly?:boolean}).offlineOnly===true);
@@ -394,6 +398,8 @@ function TransactionForm({
     <div className={`app-shell scope-${scope}`}>
       <ScreenHeader title={`${title} · ${nameOf(space)}`} />
       <main className="content">
+        {!existing && AI_SUPPORTED && canUseAi && <button type="button" className="btn btn-secondary" disabled={categoriesLoading} onClick={()=>setAiOpen(true)}>✦ יצירת פעולות באמצעות AI</button>}
+        {aiOpen && !existing && canUseAi && <AiActionEntry uid={user.uid} space={space} categories={categories} onClose={()=>setAiOpen(false)} onSaved={()=>{setAiOpen(false);navigate(`/${space.key}`);}}/>}
         <form className="card form-card" onSubmit={onSubmit} noValidate>
           <Field
             label={`סכום (${currencySymbol(draft.currency)})`}
