@@ -1,3 +1,4 @@
+import { assertPrivacyAccepted } from '../../../src/domain/privacyPolicy';
 import { Session, Unlocked, WrongPassword, type AccountMeta, type Storage } from '../core/session';
 import { normalizeAnswer, recomputeDerived, type RecoveryQuestion, type TxLike } from '../core/recovery';
 import { LocalDb } from '../db/localDb';
@@ -19,7 +20,7 @@ export interface UiState {
   recoveryQuestions: RecoveryQuestion[] | null;
 }
 
-export interface NewAccount { email: string; firstName: string; lastName: string }
+export interface NewAccount { email: string; firstName: string; lastName: string; privacyAccepted: boolean }
 type CreateRecords = (uid: string, input: never) => Promise<unknown>;
 
 const appErr = (code: string) => Object.assign(new Error(code), { code });
@@ -86,6 +87,7 @@ export class Controller {
   }
 
   async signUpOnline(input: NewAccount, password: string): Promise<void> {
+    assertPrivacyAccepted(input);
     if (!this.isOnline()) throw appErr('app/offline');
     const name = `${input.firstName.trim()} ${input.lastName.trim()}`;
     const cu = await this.cloud.signUp(input.email, password, name);
@@ -96,6 +98,7 @@ export class Controller {
 
   /** חשבון מנותק: לא מסונכרן לעולם, גם כשיש אינטרנט. */
   async signUpOffline(input: NewAccount, password: string): Promise<Unlocked> {
+    assertPrivacyAccepted(input);
     const u = await this.session.createOffline({ email: input.email.trim(), displayName: `${input.firstName.trim()} ${input.lastName.trim()}` }, password);
     await this.enter(u, password);
     await this.createRecords(u.meta.uid, { ...input, email: input.email.trim() } as never);

@@ -1,3 +1,6 @@
+import { PrivacyPolicyBody } from '../privacy/PrivacyScreen';
+import { PrivacyConsent } from '../privacy/PrivacyConsent';
+import { PRIVACY_CONSENT_REQUIRED } from '../../domain/privacyPolicy';
 import { AuthShell } from '../../components/AuthShell';
 import { usePrivacyLabel } from '../privacy/privacyLabel';
 import { useRef, useState, type FormEvent } from 'react';
@@ -32,6 +35,7 @@ export function SignupScreen() {
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
   // מונע שליחה כפולה גם אם נלחץ פעמיים לפני שהמסך הספיק להתעדכן.
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const submitting = useRef(false);
 
   const update = (field: keyof SignupValues) => (event: { target: { value: string } }) =>
@@ -44,6 +48,10 @@ export function SignupScreen() {
     const found = validateSignup(values);
     setErrors(found);
     setFormError('');
+    if (!privacyAccepted) {
+      setFormError(PRIVACY_CONSENT_REQUIRED);
+      return;
+    }
     if (Object.keys(found).length > 0) return;
 
     submitting.current = true;
@@ -57,6 +65,7 @@ export function SignupScreen() {
           phone: normalizePhone(values.phone),
           email: values.email,
           accountMode: 'both',
+          privacyAccepted,
           extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
           householdName: householdName.trim(),
         },
@@ -187,6 +196,7 @@ export function SignupScreen() {
             </div>
           )}
 
+          <PrivacyConsent checked={privacyAccepted} onChange={setPrivacyAccepted} policy={<PrivacyPolicyBody showContactForm={false} />} />
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'יוצר חשבון…' : 'יצירת חשבון'}
           </button>

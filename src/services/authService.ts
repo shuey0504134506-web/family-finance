@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { assertRequiredProfile } from '../features/auth/validation';
+import { assertPrivacyAccepted } from '../domain/privacyPolicy';
 import { createUserRecords, type NewAccountInput } from './profileService';
 
 /**
@@ -16,6 +17,7 @@ import { createUserRecords, type NewAccountInput } from './profileService';
  */
 
 export async function registerAccount(input: NewAccountInput, password: string): Promise<string> {
+  assertPrivacyAccepted(input);
   assertRequiredProfile(input);
   const credential = await createUserWithEmailAndPassword(auth, input.email.trim(), password);
   const uid = credential.user.uid;

@@ -65,6 +65,7 @@ function transaction(overrides: Record<string, unknown> = {}, id = 'tx1') {
 }
 
 const userProfile = {
+  privacyPolicyVersion: 1,
   firstName: 'דנה',
   lastName: 'כהן',
   email: 'dana@example.com',
@@ -76,8 +77,22 @@ const userProfile = {
 
 describe('בידוד בין משתמשים', () => {
   it('משתמש יכול לכתוב ולקרוא את הפרופיל של עצמו', async () => {
-    await assertSucceeds(setDoc(doc(alice(), 'users/alice'), userProfile));
+    const profile = doc(alice(), 'users/alice');
+    const { privacyPolicyVersion, ...withoutConsent } = userProfile;
+    await assertFails(setDoc(profile, withoutConsent));
+    await assertFails(setDoc(profile, { ...userProfile, privacyPolicyVersion: privacyPolicyVersion + 1 }));
+    await assertSucceeds(setDoc(profile, userProfile));
+    await assertFails(setDoc(profile, withoutConsent));
     await assertSucceeds(getDoc(doc(alice(), 'users/alice')));
+  });
+
+  it('אפשר לעדכן פרופיל שנוצר לפני הוספת אישור מדיניות הפרטיות', async () => {
+    const legacyProfile: Partial<typeof userProfile> = { ...userProfile };
+    delete legacyProfile.privacyPolicyVersion;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users/alice'), legacyProfile);
+    });
+    await assertSucceeds(updateDoc(doc(alice(), 'users/alice'), { firstName: 'דינה', updatedAt: 2 }));
   });
 
   it('משתמש אחר לא יכול לקרוא את הפרופיל', async () => {
@@ -443,7 +458,9 @@ describe('אישור חשבונות', () => {
   });
 
   it('הגדרת הדרישה: כל מחובר קורא, רק המנהל כותב', async () => {
-    const admin = () => env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com' }).firestore();
+    const admin = () => env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com', email_verified: true }).firestore();
+    const unverified = env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com', email_verified: false }).firestore();
+    await assertFails(setDoc(doc(unverified, 'config/approval'), { required: true, updatedAt: 5 }));
     await assertSucceeds(setDoc(doc(admin(), 'config/approval'), { required: true, updatedAt: 5 }));
     await assertSucceeds(getDoc(doc(as('carol'), 'config/approval')));
     await assertFails(getDoc(doc(anonymous(), 'config/approval')));
@@ -516,7 +533,7 @@ describe('אישור חשבונות', () => {
 
   it('הודעות: אימייל בהודעה חייב להתאים לשולח, והמנהל קורא הכול', async () => {
     const admin = () =>
-      env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com' }).firestore();
+      env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com', email_verified: true }).firestore();
     const carol = () => env.authenticatedContext('carol', { email: 'carol@example.com' }).firestore();
     await seed('carol', 'approved');
     await assertSucceeds(
@@ -525,6 +542,8 @@ describe('אישור חשבונות', () => {
     await assertFails(
       setDoc(doc(carol(), 'messages/a2'), { uid: 'carol', email: 'other@example.com', text: 'שלום', createdAt: 5 }),
     );
+    const unverified = env.authenticatedContext('boss', { email: 'shuey0504134506@gmail.com', email_verified: false }).firestore();
+    await assertFails(getDoc(doc(unverified, 'messages/a1')));
     await assertSucceeds(getDoc(doc(admin(), 'messages/a1')));
     await assertSucceeds(getDocs(collection(admin(), 'messages')));
     await assertFails(getDoc(doc(bob(), 'messages/a1')));
