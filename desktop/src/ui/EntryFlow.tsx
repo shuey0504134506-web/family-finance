@@ -1,3 +1,5 @@
+import { PrivacyConsent } from '../../../src/features/privacy/PrivacyConsent';
+import { PRIVACY_CONSENT_REQUIRED } from '../../../src/domain/privacyPolicy';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Field } from '../../../src/components/Field';
 import { DEFAULT_BUSINESS_ID } from '../../../src/domain/spaces';
@@ -39,7 +41,7 @@ export function EntryFlow() {
   const back = () => setView({ name: 'list' });
 
   return (
-    <AuthShell width={480} scroll={view.name === 'privacy' || view.name === 'signup-offline' || view.name === 'recover'}>
+    <AuthShell width={480} scroll={view.name === 'privacy' || view.name === 'signup-offline' || view.name === 'signup-online' || view.name === 'recover'}>
       <div className="entry-panel">
         {view.name !== 'list' && <button type="button" className="entry-back" onClick={back}><ChevronRight />חזור</button>}
         {view.name === 'list' && <AccountList accounts={ui.accounts} online={ui.online} go={setView} />}
@@ -225,6 +227,7 @@ function Signup({ kind }: { kind: 'online' | 'offline' }) {
   const a = useAction();
   const set = (f: keyof SignupValues) => (e: { target: { value: string } }) => setValues((v) => ({ ...v, [f]: e.target.value }));
   const offline = kind === 'offline';
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const validate = useMemo(() => () => {
     if (!offline) return validateSignup(values);
@@ -239,11 +242,12 @@ function Signup({ kind }: { kind: 'online' | 'offline' }) {
 
   const input = (): NewAccount & Record<string, unknown> => ({
     firstName: values.firstName, lastName: values.lastName, email: values.email, phone: offline ? '' : normalizePhone(values.phone),
-    businessName: values.businessName, accountMode: 'both', extraBusinessNames: extras.map((n) => n.trim()).filter(Boolean), householdName: household.trim(),
+    businessName: values.businessName, accountMode: 'both', privacyAccepted, extraBusinessNames: extras.map((n) => n.trim()).filter(Boolean), householdName: household.trim(),
   });
 
   function next(e: FormEvent) {
     e.preventDefault();
+    if (!privacyAccepted) return a.setError(PRIVACY_CONSENT_REQUIRED);
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) return;
@@ -281,6 +285,7 @@ function Signup({ kind }: { kind: 'online' | 'offline' }) {
         <Field label={offline ? 'כתובת מייל (לא חובה)' : 'כתובת מייל'} type="email" dir="ltr" value={values.email} onChange={set('email')} error={errors.email} />
         <Field label="סיסמה" type="password" revealPassword dir="ltr" autoComplete="new-password" value={values.password} onChange={set('password')} error={errors.password} hint={`לפחות ${MIN_PASSWORD_LENGTH} תווים`} />
         <Field label="אימות סיסמה" type="password" revealPassword dir="ltr" autoComplete="new-password" value={values.confirmPassword} onChange={set('confirmPassword')} error={errors.confirmPassword} />
+        <PrivacyConsent checked={privacyAccepted} onChange={setPrivacyAccepted} policy={<DesktopPrivacyBody kind={kind} showContactForm={false} />} />
         {a.error && <div className="form-error" role="alert">{a.error}</div>}
         <button type="submit" className="btn btn-primary" disabled={a.busy}>{a.busy ? 'יוצר חשבון…' : offline ? 'המשך לשאלות שחזור' : 'יצירת חשבון'}</button>
       </div>

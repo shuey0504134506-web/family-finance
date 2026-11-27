@@ -1,5 +1,9 @@
 /** מילון עברית -> אנגלית. מפתח: הטקסט העברי (רווחים מכווצים). {n} = ערך דינמי. */
 export const EN: Record<string, string> = {
+  "״ניהול כספים״ עושה את מירב המאמצים להגן על המידע שלכם. השימוש בשירות מותנה בקריאה ובאישור של מדיניות הפרטיות.": "Family Finance takes reasonable measures to protect your information. To use the service, please read and accept the Privacy Policy.",
+  "קריאת מדיניות הפרטיות": "Read the Privacy Policy",
+  "קראתי ואני מאשר/ת את מדיניות הפרטיות": "I have read and accept the Privacy Policy",
+  "יש לאשר את מדיניות הפרטיות כדי להמשיך.": "Accept the Privacy Policy to continue.",
   "✦ יצירת פעולות באמצעות AI": "✦ Create with AI",
   "יצירת פעולות באמצעות AI": "Create with AI",
   "תאר את הפעולות": "Describe the actions",

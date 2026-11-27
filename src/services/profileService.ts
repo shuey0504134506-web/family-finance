@@ -1,3 +1,4 @@
+import { PRIVACY_POLICY_VERSION, assertPrivacyAccepted } from '../domain/privacyPolicy';
 import { DEFAULT_ANNUAL_MODE, isAnnualMode } from '../domain/annual';
 import { DEFAULT_CURRENCY, isCurrencyCode } from '../domain/currency';
 import { doc, writeBatch, type Unsubscribe } from 'firebase/firestore';
@@ -21,6 +22,7 @@ export interface NewAccountInput {
   phone?: string;
   businessName: string;
   accountMode: AccountMode;
+  privacyAccepted: boolean;
   /** עסקים נוספים (מעבר לראשון), בשמות שהוזנו. */
   extraBusinessNames?: string[];
   /** שם משק הבית. ריק = "משק הבית של <שם> <משפחה>". */
@@ -34,6 +36,7 @@ export interface NewAccountInput {
  */
 export async function createUserRecords(uid: string, input: NewAccountInput): Promise<void> {
   // בקשת האישור חייבת להיכתב לפני שאר הרשומות: כללי Firestore בודקים אותה בכל כתיבה
+  assertPrivacyAccepted(input);
   await ensureApprovalRequest(uid);
   const now = Date.now();
   const batch = writeBatch(db);
@@ -46,6 +49,7 @@ export async function createUserRecords(uid: string, input: NewAccountInput): Pr
     ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}),
     businessName: input.businessName.trim(),
     accountMode: input.accountMode,
+    privacyPolicyVersion: PRIVACY_POLICY_VERSION,
     createdAt: now,
     updatedAt: now,
   });

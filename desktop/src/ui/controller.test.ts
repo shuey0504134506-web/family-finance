@@ -47,10 +47,20 @@ const make = (cloud = new FakeCloudAuth(), online = true) => {
   const c = new Controller(memory(), cloud, async (uid) => { created.push(uid); c.db!.set(`users/${uid}`, { firstName: 'דנה' }); }, { iterations: 1000, debounceMs: 5 }, () => online);
   return { c, cloud };
 };
-const input = { email: 'd@d.d', firstName: 'דנה', lastName: 'כהן' };
+const input = { email: 'd@d.d', firstName: 'דנה', lastName: 'כהן', privacyAccepted: true };
 
 describe('Controller', () => {
   beforeEach(() => auth_probe.reset());
+
+  it('דורש אישור מדיניות לפני יצירת חשבון מקומי או מקוון', async () => {
+    const { c, cloud } = make();
+    await c.boot();
+    const unaccepted = { ...input, privacyAccepted: false };
+    await expect(c.signUpOffline(unaccepted, 'סיסמה-ארוכה-1')).rejects.toThrow('מדיניות הפרטיות');
+    await expect(c.signUpOnline(unaccepted, 'סיסמה-ארוכה-1')).rejects.toThrow('מדיניות הפרטיות');
+    expect(c.getState().accounts).toEqual([]);
+    expect(cloud.signedIn).toBeNull();
+  });
 
   it('חשבון אופליין: הרשמה, יציאה, כניסה ללא רשת, ושום דבר לא נשלח לענן', async () => {
     const { c, cloud } = make(undefined, false);

@@ -2,6 +2,9 @@ package com.familyfinance.app;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -15,18 +18,18 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.regex.Pattern;
 
 /**
  * עדכון האפליקציה מתוך האפליקציה, בלי דפדפן: מורידה את ה-APK החדש מעמוד ה-Releases של המאגר
- * (כתובת מאושרת בלבד), ופותחת את מסך ההתקנה של אנדרואיד. אנדרואיד עצמו מוודא שהחתימה זהה
- * לאפליקציה המותקנת, ולכן הנתונים נשמרים ואי אפשר להחליף באפליקציה זרה.
+ * (כתובת מאושרת בלבד). לפני פתיחת מסך ההתקנה, בודקת את שם החבילה, חתימת ה-APK וגרסתו.
  */
 @CapacitorPlugin(name = "AppUpdater")
 public class AppUpdaterPlugin extends Plugin {
@@ -52,7 +55,7 @@ public class AppUpdaterPlugin extends Plugin {
         }
         new Thread(() -> {
             File file = target();
-            File part = new File(file.getParentFile(), "download.part");
+            File part = new File(file.getParentFile(), "download-part.apk");
             HttpURLConnection conn = null;
             try {
                 conn = (HttpURLConnection) new URL(url).openConnection();
@@ -88,6 +91,12 @@ public class AppUpdaterPlugin extends Plugin {
                     //noinspection ResultOfMethodCallIgnored
                     part.delete();
                     call.reject("incomplete");
+                    return;
+                }
+                if (!isTrustedUpdate(part)) {
+                    //noinspection ResultOfMethodCallIgnored
+                    part.delete();
+                    call.reject("invalid-update");
                     return;
                 }
                 //noinspection ResultOfMethodCallIgnored
@@ -132,8 +141,12 @@ public class AppUpdaterPlugin extends Plugin {
     public void install(PluginCall call) {
         Context ctx = getContext();
         File file = target();
-        if (!file.exists() || file.length() < MIN_SIZE || !looksLikeApk(file)) {
+        if (!file.exists() || file.length() < MIN_SIZE) {
             call.reject("no-file");
+            return;
+        }
+        if (!isTrustedUpdate(file)) {
+            call.reject("invalid-update");
             return;
         }
         JSObject result = new JSObject();
@@ -155,11 +168,27 @@ public class AppUpdaterPlugin extends Plugin {
         call.resolve(result);
     }
 
-    /** קובץ APK הוא ארכיון ZIP: מתחיל ב-"PK". */
-    private boolean looksLikeApk(File file) {
-        try (FileInputStream in = new FileInputStream(file)) {
-            return in.read() == 'P' && in.read() == 'K';
-        } catch (Exception e) {
+    @SuppressWarnings("deprecation")
+    private boolean isTrustedUpdate(File file) {
+        Context ctx = getContext();
+        PackageManager manager = ctx.getPackageManager();
+        boolean modern = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
+        int flags = modern ? PackageManager.GET_SIGNING_CERTIFICATES : PackageManager.GET_SIGNATURES;
+        try {
+            PackageInfo candidate = manager.getPackageArchiveInfo(file.getAbsolutePath(), flags);
+            if (candidate == null || !ctx.getPackageName().equals(candidate.packageName)) return false;
+
+            PackageInfo installed = manager.getPackageInfo(ctx.getPackageName(), flags);
+            long candidateVersion = modern ? candidate.getLongVersionCode() : candidate.versionCode;
+            long installedVersion = modern ? installed.getLongVersionCode() : installed.versionCode;
+            if (candidateVersion <= installedVersion) return false;
+            if (modern && (candidate.signingInfo == null || installed.signingInfo == null)) return false;
+
+            Signature[] candidateSigners = modern ? candidate.signingInfo.getApkContentsSigners() : candidate.signatures;
+            Signature[] installedSigners = modern ? installed.signingInfo.getApkContentsSigners() : installed.signatures;
+            return candidateSigners != null && candidateSigners.length > 0 && installedSigners != null
+                && new HashSet<>(Arrays.asList(candidateSigners)).equals(new HashSet<>(Arrays.asList(installedSigners)));
+        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
             return false;
         }
     }

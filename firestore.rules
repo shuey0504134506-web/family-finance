@@ -69,7 +69,7 @@ service cloud.firestore {
 
     // חשבון המנהל (לפי האימייל המחובר). משמש רק לקריאת הודעות בזמן אמת; כל פעולת ניהול אחרת בפונקציות שרת.
     function isAdminUser() {
-      return request.auth != null && request.auth.token.email in ['shuey0504134506@gmail.com'];
+      return request.auth != null && request.auth.token.email_verified == true && request.auth.token.email in ['shuey0504134506@gmail.com'];
     }
 
     // הודעות ממשתמש למנהל: messages/{id} = {uid, text, createdAt}. המשתמש יוצר וקורא את שלו בלבד.
@@ -126,12 +126,13 @@ service cloud.firestore {
     function validUser(data) {
       return data.keys().hasOnly([
                'firstName', 'lastName', 'email', 'phone', 'businessName',
-               'accountMode', 'createdAt', 'updatedAt'
+               'accountMode', 'createdAt', 'updatedAt', 'privacyPolicyVersion'
              ])
              && data.keys().hasAll([
                'firstName', 'lastName', 'email', 'businessName',
                'accountMode', 'createdAt', 'updatedAt'
              ])
+             && (!('privacyPolicyVersion' in data) || data.privacyPolicyVersion == 1)
              && isNonEmptyString(data.firstName, 60)
              && isNonEmptyString(data.lastName, 60)
              && isShortString(data.email, 254)
@@ -305,7 +306,6 @@ service cloud.firestore {
              && data.amountAgorot > 0
              && data.amountAgorot <= 100000000000
              && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
-             && (!data.keys().hasAny(['standingOrderId']) || isNonEmptyString(data.standingOrderId, 120))
              && data.createdAt is int
              && data.updatedAt is int
              && validOptionalBusinessId(data);
@@ -425,6 +425,7 @@ service cloud.firestore {
              && data.titheStatus in ['liable', 'exempt']
              && data.isTithePayment is bool
              && (!data.keys().hasAny(['currency']) || data.currency in ['ILS', 'USD', 'EUR', 'GBP'])
+             && (!data.keys().hasAny(['standingOrderId']) || isNonEmptyString(data.standingOrderId, 120))
              && data.createdAt is int
              && data.updatedAt is int
              && validOptionalBusinessId(data);
@@ -434,10 +435,13 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isWriter(uid);
-      allow create: if isWriter(uid) && validUser(request.resource.data);
+      allow create: if isWriter(uid) && validUser(request.resource.data)
+                    && request.resource.data.privacyPolicyVersion == 1;
       allow update: if isWriter(uid)
                     && validUser(request.resource.data)
-                    && request.resource.data.createdAt == resource.data.createdAt;
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && (!('privacyPolicyVersion' in resource.data)
+                        || request.resource.data.privacyPolicyVersion == resource.data.privacyPolicyVersion);
       allow delete: if isWriter(uid);
 
       match /settings/{settingsId} {

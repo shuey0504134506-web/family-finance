@@ -1,3 +1,6 @@
+import { PrivacyPolicyBody } from '../privacy/PrivacyScreen';
+import { PrivacyConsent } from '../privacy/PrivacyConsent';
+import { PRIVACY_CONSENT_REQUIRED } from '../../domain/privacyPolicy';
 import { AuthShell } from '../../components/AuthShell';
 import { useRef, useState, type FormEvent } from 'react';
 import { Field } from '../../components/Field';
@@ -20,11 +23,16 @@ export function CompleteSetupScreen() {
   const [householdName, setHouseholdName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const submitting = useRef(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (submitting.current) return;
+    if (!privacyAccepted) {
+      setError(PRIVACY_CONSENT_REQUIRED);
+      return;
+    }
     if (!firstName.trim() || !lastName.trim()) {
       setError('יש למלא את השם הפרטי ושם המשפחה');
       return;
@@ -47,6 +55,7 @@ export function CompleteSetupScreen() {
         phone: normalizePhone(phone),
         businessName,
         accountMode: 'both',
+        privacyAccepted,
         extraBusinessNames: extraBusinesses.map((n) => n.trim()).filter(Boolean),
         householdName: householdName.trim(),
       });
@@ -105,6 +114,7 @@ export function CompleteSetupScreen() {
               {error}
             </div>
           )}
+          <PrivacyConsent checked={privacyAccepted} onChange={setPrivacyAccepted} policy={<PrivacyPolicyBody showContactForm={false} />} />
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'שומר…' : 'השלמת הגדרה'}
           </button>
