@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { browserLocalPersistence, indexedDBLocalPersistence, initializeAuth } from 'firebase/auth';
+import { browserLocalPersistence, getIdToken, indexedDBLocalPersistence, initializeAuth, reload, sendEmailVerification } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -64,3 +64,20 @@ export const auth = initializeAuth(app, { persistence: [indexedDBLocalPersistenc
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
 });
+
+
+export const canVerifyAdminEmail = true;
+
+export async function verifyAdminEmail(uid: string, send: boolean): Promise<'verified' | 'sent' | 'pending'> {
+  const user = auth.currentUser;
+  if (!user || user.uid !== uid) throw new Error('auth/user-changed');
+  await reload(user);
+  if (auth.currentUser !== user) throw new Error('auth/user-changed');
+  if (user.emailVerified) {
+    await getIdToken(user, true);
+    return 'verified';
+  }
+  if (!send) return 'pending';
+  await sendEmailVerification(user);
+  return 'sent';
+}

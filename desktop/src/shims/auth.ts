@@ -65,3 +65,10 @@ export const reauthenticateWithCredential = (_u: User, c: { password: string }):
 export const updatePassword = (_u: User, p: string): Promise<void> => need().changePassword(p);
 export const verifyBeforeUpdateEmail = (_u: User, e: string): Promise<void> => need().changeEmail(e);
 export const deleteUser = (_u: User): Promise<void> => need().deleteAccount();
+
+
+// אימות מייל מתבצע בלקוח האתר, באמצעות ה-SDK האמיתי.
+export const reload = (_u: User): Promise<void> => Promise.reject(new Error('auth/operation-not-supported'));
+export const sendEmailVerification = reload;
+export const getIdToken = (_u: User, _forceRefresh?: boolean): Promise<string> =>
+  Promise.reject(new Error('auth/operation-not-supported'));

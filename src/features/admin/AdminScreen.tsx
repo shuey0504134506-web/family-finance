@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { canVerifyAdminEmail, verifyAdminEmail } from '../../firebase/config';
 import { Navigate } from 'react-router-dom';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { isAdminEmail } from '../../config/admin';
@@ -335,7 +336,56 @@ export function AdminScreen() {
   return <AdminContent />;
 }
 
+function AdminVerification({ retry }: { retry: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const { user } = useReadyAuth();
+
+  async function verify(send: boolean) {
+    if (!canVerifyAdminEmail || !isAdminEmail(user.email)) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const result = await verifyAdminEmail(user.uid, send);
+      if (result === 'verified') {
+        retry();
+      } else if (result === 'sent') {
+        setMessage('נשלח מייל אימות. לאחר לחיצה על הקישור במייל, חזור לכאן ולחץ על „בדיקת אימות”.');
+      } else {
+        setMessage('כתובת המייל עדיין לא אומתה. יש לפתוח את קישור האימות שנשלח למייל.');
+      }
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      setMessage(code === 'auth/too-many-requests'
+        ? 'בוצעו יותר מדי ניסיונות. אפשר לבדוק אם מייל האימות כבר הגיע, או לנסות שוב מאוחר יותר.'
+        : 'לא הצלחנו להשלים את בדיקת האימות. יש לבדוק את החיבור ולנסות שוב.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card error-card">
+      <p role="alert">כדי לפתוח את מסך הניהול צריך לאמת את כתובת המייל של חשבון המנהל.</p>
+      {!canVerifyAdminEmail ? (
+        <p>יש להשלים את אימות המייל במסך הניהול באתר, ואז לצאת ולהתחבר מחדש בתוכנה.</p>
+      ) : (
+        <>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void verify(true)}>
+            שליחת מייל אימות
+          </button>
+          <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => void verify(false)}>
+            בדיקת אימות
+          </button>
+        </>
+      )}
+      {message && <p role="status">{message}</p>}
+    </div>
+  );
+}
+
 function AdminContent() {
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [data, setData] = useState<AdminOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -381,17 +431,19 @@ function AdminContent() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
+    setNeedsVerification(false);
     loadAdminOverview()
       .then(setData)
-      .catch((e: { code?: string }) =>
+      .catch((e: { code?: string }) => {
+        if (e.code === 'functions/permission-denied') setNeedsVerification(true);
         setError(
           e.code === 'functions/permission-denied'
             ? 'אין הרשאה.'
             : e.code === 'functions/not-found' || e.code === 'functions/unavailable'
               ? 'פונקציות השרת עוד לא פורסמו. יש לבצע את ההוראות בקובץ docs/ADMIN_SETUP.md.'
               : 'לא הצלחנו לטעון את הנתונים. יש לבדוק חיבור ולנסות שוב.',
-        ),
-      )
+        );
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -481,6 +533,8 @@ function AdminContent() {
           <div className="card notice-card" role="status">
             טוען נתונים…
           </div>
+        ) : needsVerification ? (
+          <AdminVerification retry={load} />
         ) : error ? (
           <div className="card error-card" role="alert">
             <p>{error}</p>
